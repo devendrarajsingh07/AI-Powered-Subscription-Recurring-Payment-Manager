@@ -118,6 +118,7 @@ def preview_csv(data: bytes, *, limit: int = 5) -> dict:
         "rows": rows,
         "row_count": row_count,
         "malformed_csv": malformed,
+        "delimiter": reader.dialect.delimiter,
     }
 
 

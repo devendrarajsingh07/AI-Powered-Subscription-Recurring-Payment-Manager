@@ -66,3 +66,9 @@ def categorize(merchant: str, descriptions: tuple[str, ...] = ()) -> Category:
             (MERCHANT_CATEGORIES[w] for w in merchant.split() if w in MERCHANT_CATEGORIES), None
         )
     return Category(category) if category else Category("unknown", requires_confirmation=True)
+
+
+def kind_for_category(category: str) -> str:
+    return (
+        "fixed_bill" if category in ("rent", "loan", "insurance", "utilities") else "subscription"
+    )

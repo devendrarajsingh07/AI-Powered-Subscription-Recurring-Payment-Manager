@@ -1,0 +1,244 @@
+"""PostgreSQL domain schema. Alembic owns schema creation and changes."""
+
+import uuid
+from datetime import date, datetime
+from decimal import Decimal
+
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db import Base
+
+
+def choices(name, *values):
+    return Enum(*values, name=name, native_enum=False, create_constraint=True)
+
+
+class Identity:
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+
+class Owned(Identity):
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+
+
+class User(Identity, Base):
+    __tablename__ = "users"
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    alert_lead_days: Mapped[int] = mapped_column(Integer, server_default="3")
+    notification_email: Mapped[str | None] = mapped_column(String(254))
+    alerts_enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    __table_args__ = (CheckConstraint("alert_lead_days BETWEEN 1 AND 30", name="ck_alert_lead"),)
+
+
+class Upload(Owned, Base):
+    __tablename__ = "uploads"
+    filename: Mapped[str] = mapped_column(String(255))
+    row_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    status: Mapped[str] = mapped_column(
+        choices("upload_status", "pending", "processing", "done", "failed"), default="pending"
+    )
+    stage: Mapped[str] = mapped_column(String(32), default="queued")
+    processed_rows: Mapped[int] = mapped_column(Integer, server_default="0")
+    total_rows: Mapped[int] = mapped_column(Integer, server_default="0")
+    inserted_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    duplicate_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    malformed_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    detected_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    warnings: Mapped[list] = mapped_column(JSONB, server_default=text("'[]'::jsonb"))
+    error_message: Mapped[str | None] = mapped_column(String(255))
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    __table_args__ = (UniqueConstraint("id", "user_id", name="uq_upload_owner"),)
+
+
+class Transaction(Owned, Base):
+    __tablename__ = "transactions"
+    upload_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    date: Mapped[date] = mapped_column(Date)
+    raw_description: Mapped[str] = mapped_column(Text)
+    merchant_normalized: Mapped[str] = mapped_column(String(255))
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    type: Mapped[str] = mapped_column(choices("transaction_type", "debit", "credit"))
+    currency: Mapped[str] = mapped_column(String(3), server_default="INR")
+    __table_args__ = (
+        UniqueConstraint("id", "user_id", name="uq_transaction_owner"),
+        ForeignKeyConstraint(
+            ["upload_id", "user_id"], ["uploads.id", "uploads.user_id"], ondelete="CASCADE"
+        ),
+        UniqueConstraint(
+            "user_id", "date", "raw_description", "amount", name="uq_transaction_dedupe"
+        ),
+        Index("ix_transactions_merchant_date", "user_id", "merchant_normalized", "date"),
+        CheckConstraint("amount > 0", name="ck_transaction_amount"),
+    )
+
+
+class Subscription(Owned, Base):
+    __tablename__ = "subscriptions"
+    identity_key: Mapped[str] = mapped_column(String(64))
+    merchant: Mapped[str] = mapped_column(String(255))
+    category: Mapped[str] = mapped_column(String(64))
+    kind: Mapped[str] = mapped_column(choices("recurring_kind", "subscription", "fixed_bill"))
+    currency: Mapped[str] = mapped_column(String(3), server_default="INR")
+    cadence: Mapped[str] = mapped_column(
+        choices("cadence", "weekly", "monthly", "quarterly", "yearly")
+    )
+    avg_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    confidence: Mapped[Decimal] = mapped_column(Numeric(8, 6))
+    regularity: Mapped[Decimal] = mapped_column(Numeric(8, 6))
+    amount_cv: Mapped[Decimal] = mapped_column(Numeric(8, 6))
+    occurrences: Mapped[int] = mapped_column(Integer)
+    last_charge: Mapped[date] = mapped_column(Date)
+    next_expected: Mapped[date] = mapped_column(Date)
+    status: Mapped[str] = mapped_column(
+        choices("subscription_status", "active", "cancelled", "dismissed"), default="active"
+    )
+    user_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    category_overridden: Mapped[bool] = mapped_column(Boolean, default=False)
+    requires_confirmation: Mapped[bool] = mapped_column(Boolean, default=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_used_at: Mapped[date | None] = mapped_column(Date)
+    possibly_cancelled: Mapped[bool] = mapped_column(Boolean, default=False)
+    missed_cycles: Mapped[int] = mapped_column(Integer, default=0)
+    price_previous_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    price_new_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    price_detected_on: Mapped[date | None] = mapped_column(Date)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    __table_args__ = (
+        UniqueConstraint("id", "user_id", name="uq_subscription_owner"),
+        UniqueConstraint("user_id", "identity_key", name="uq_subscription_identity"),
+        CheckConstraint("avg_amount > 0", name="ck_subscription_amount"),
+        CheckConstraint("confidence BETWEEN 0 AND 1", name="ck_confidence"),
+    )
+
+
+class SubscriptionCharge(Base):
+    __tablename__ = "subscription_charges"
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    subscription_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    transaction_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["subscription_id", "user_id"],
+            ["subscriptions.id", "subscriptions.user_id"],
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["transaction_id", "user_id"],
+            ["transactions.id", "transactions.user_id"],
+            ondelete="CASCADE",
+        ),
+    )
+
+
+class MerchantCategory(Owned, Base):
+    __tablename__ = "merchant_categories"
+    merchant: Mapped[str] = mapped_column(String(255))
+    category: Mapped[str] = mapped_column(String(64))
+    source: Mapped[str] = mapped_column(choices("category_source", "rule", "llm", "user"))
+    confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    __table_args__ = (UniqueConstraint("user_id", "merchant", name="uq_merchant_category"),)
+
+
+class Budget(Owned, Base):
+    __tablename__ = "budgets"
+    monthly_limit: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_budget_user"),
+        CheckConstraint("monthly_limit >= 0", name="ck_budget_limit"),
+    )
+
+
+class Recommendation(Owned, Base):
+    __tablename__ = "recommendations"
+    subscription_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    type: Mapped[str] = mapped_column(
+        choices(
+            "recommendation_type", "duplicate", "high_cost", "price_increase", "possibly_unused"
+        )
+    )
+    message: Mapped[str] = mapped_column(Text)
+    est_monthly_saving: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    status: Mapped[str] = mapped_column(
+        choices("recommendation_status", "open", "accepted", "dismissed"), default="open"
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["subscription_id", "user_id"],
+            ["subscriptions.id", "subscriptions.user_id"],
+            ondelete="CASCADE",
+        ),
+    )
+
+
+class Alert(Owned, Base):
+    __tablename__ = "alerts"
+    subscription_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    kind: Mapped[str] = mapped_column(choices("alert_kind", "renewal", "budget"))
+    send_on: Mapped[date] = mapped_column(Date)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    channel: Mapped[str] = mapped_column(choices("alert_channel", "email"), default="email")
+    payload: Mapped[dict] = mapped_column(JSONB)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["subscription_id", "user_id"],
+            ["subscriptions.id", "subscriptions.user_id"],
+            ondelete="CASCADE",
+        ),
+        Index(
+            "uq_alert_identity",
+            "user_id",
+            "kind",
+            "subscription_id",
+            "send_on",
+            unique=True,
+            postgresql_nulls_not_distinct=True,
+        ),
+        CheckConstraint(
+            "kind != 'budget' OR (subscription_id IS NULL AND EXTRACT(DAY FROM send_on) = 1)",
+            name="ck_budget_alert_month",
+        ),
+        CheckConstraint(
+            "kind != 'renewal' OR subscription_id IS NOT NULL", name="ck_renewal_subscription"
+        ),
+    )
+
+
+class ChatMessage(Owned, Base):
+    __tablename__ = "chat_messages"
+    role: Mapped[str] = mapped_column(choices("chat_role", "user", "assistant", "tool"))
+    content: Mapped[str] = mapped_column(Text)
+    tool_calls: Mapped[dict | list | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

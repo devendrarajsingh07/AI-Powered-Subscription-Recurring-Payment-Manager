@@ -12,10 +12,9 @@ class Base(DeclarativeBase):
 
 @lru_cache
 def get_engine():
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    return create_engine(get_settings().database_url, pool_pre_ping=True, hide_parameters=True)
 
 
 def get_db():
     with sessionmaker(bind=get_engine())() as session:
         yield session
-

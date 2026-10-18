@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,12 +7,37 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app import uploads
+from app.api.routes import router
 from app.config import get_settings
 from app.db import get_db
+from app.middleware import SafetyMiddleware
 from app.migrations import database_at_head
 
-app = FastAPI(title="SubTrack API", version="0.1.0", openapi_url="/api/v1/openapi.json")
+
+@asynccontextmanager
+async def lifespan(app):
+    if len(get_settings().jwt_secret.get_secret_value()) < 32:
+        raise RuntimeError("JWT_SECRET must contain at least 32 characters")
+    instance = None
+    if uploads.get_worker not in app.dependency_overrides:
+        instance = uploads.start_worker()
+    yield
+    if instance:
+        instance.close()
+
+
+app = FastAPI(
+    title="SubTrack API",
+    version="0.3.0",
+    openapi_url="/api/v1/openapi.json",
+    lifespan=lifespan,
+    description="Educational use with uploaded or simulated INR data. "
+    "Monetary JSON values are decimal strings. JWT identity scopes every business route.",
+)
+app.add_middleware(SafetyMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[get_settings().web_origin],
@@ -18,6 +45,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
+app.include_router(router)
 
 
 class Health(BaseModel):
@@ -30,6 +58,16 @@ async def validation_error(_request: Request, _exc: RequestValidationError):
         status_code=422,
         content={"error": {"code": "validation_error", "message": "Invalid request data"}},
     )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_error(_request, exc):
+    detail = (
+        exc.detail
+        if isinstance(exc.detail, dict)
+        else {"code": "http_error", "message": "Request could not be completed"}
+    )
+    return JSONResponse(status_code=exc.status_code, content={"error": detail}, headers=exc.headers)
 
 
 @app.get("/api/v1/health", response_model=Health, tags=["health"])
