@@ -37,6 +37,8 @@ services:
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
       VITE_API_PROXY_TARGET: ${VITE_API_PROXY_TARGET:-http://api:8000}
+      SUBTRACK_SCHEMA: /contract/openapi.json
+      VITE_USE_POLLING: ${VITE_USE_POLLING:-true}
     ports:
       - '127.0.0.1:${WEB_PORT:-5173}:5173'
     depends_on:
@@ -44,6 +46,7 @@ services:
         condition: service_healthy
     volumes:
       - ./frontend/src:/app/src
+      - ./backend/openapi:/contract:ro
     healthcheck:
       test: [CMD, node, -e, 'fetch("http://localhost:5173").then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))']
       interval: 5s

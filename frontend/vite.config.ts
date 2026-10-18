@@ -1,16 +1,25 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    watch: {
+      usePolling: process.env.VITE_USE_POLLING === "true",
+      interval: 300,
+    },
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api': { target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8000' },
+      "/api": {
+        target: process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000",
+      },
     },
   },
-  test: { environment: 'jsdom', setupFiles: ['./src/test-setup.ts'] },
-})
-
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test-setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
+  },
+});

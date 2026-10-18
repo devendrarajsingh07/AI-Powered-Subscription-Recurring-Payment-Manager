@@ -1,4 +1,4 @@
-.PHONY: dev down test lint seed verify sample evaluate openapi
+.PHONY: dev down test lint seed verify sample evaluate openapi types e2e
 dev:
 	docker compose up --build --wait
 down:
@@ -8,6 +8,7 @@ test:
 	docker compose run --rm --no-deps api python scripts/evaluate_detector.py
 	docker compose run --rm --no-deps api python scripts/export_openapi.py --check
 	docker compose run --rm --no-deps web npm test -- --run
+	docker compose run --rm --no-deps web npm run types:check
 lint:
 	docker compose run --rm --no-deps api ruff check .
 	docker compose run --rm --no-deps web npm run lint
@@ -22,4 +23,8 @@ evaluate:
 	docker compose run --rm --no-deps api python scripts/evaluate_detector.py
 openapi:
 	docker compose run --rm --no-deps api python scripts/export_openapi.py
+types:
+	docker compose run --rm --no-deps web npm run types
+e2e:
+	cd frontend && npm run e2e
 
