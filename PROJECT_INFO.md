@@ -27,7 +27,8 @@ Updated: 2026-10-18 (Asia/Calcutta).
 - Browser verification: regular Playwright is explicitly requested; Browser plugin skill is absent.
   Capture desktop/mobile screenshots of synthetic data and commit requested evidence under docs/screenshots.
 - Remote: user supplied the exact GitHub repository URL in the Phase 4 message. Read-only ls-remote
-  succeeded with no HEAD (empty repository). No remote was invented; hosted CI is still unverified.
+  succeeded with no HEAD (empty repository). At preparation time CI was unverified; the publication
+  follow-up below supersedes that earlier status.
 
 ## Phase 4 final verification and handoff
 
@@ -96,11 +97,34 @@ An exact-label browser locator was replaced by the actual accessible combobox ro
 intermediate runs are not reported as successful gates. One existing upstream Starlette/AnyIO
 deprecation warning remains in the 161-test backend suite.
 
-Remote/CI: local `git remote -v` is still empty. The exact GitHub URL supplied by the user was checked
-read-only and was reachable with no HEAD. No repository URL was invented, no push or hosted CI pass
-is claimed. To publish this existing repository, attach the supplied URL as origin and push the current
-`master` branch; the checked-in checks/e2e jobs then need a real hosted run. A repository URL was
-provided, so there is no need to create another repository.
+### GitHub publication and hosted CI follow-up
+
+After the user authorized publication, `origin` was set to the exact supplied URL:
+`https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager.git`.
+`git push -u origin master` succeeded; the local branch now tracks `origin/master`.
+No repository or branch history was overwritten.
+
+[Initial hosted run 39101679126](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39101679126)
+passed the `e2e` job (**3 browser tests, 20.5s**) and the test stages in `checks`, but failed at
+`make lint`: the non-root container could not write `/app/.ruff_cache` in GitHub's host-owned bind
+mount. Pytest also emitted cache-permission warnings. This was an infrastructure issue, not an
+application test or lint-rule failure.
+
+Fix commit **d7ef6bf** sets container-only `RUFF_CACHE_DIR=/tmp/subtrack-ruff-cache` and
+`PYTEST_ADDOPTS=-o cache_dir=/tmp/subtrack-pytest-cache`. No API, schema or application behavior changed.
+Verified locally with stronger read-only source mounts after `make dev`:
+
+```sh
+docker compose run --rm --no-deps -v ./backend:/app:ro api ruff check .
+docker compose run --rm --no-deps -v ./backend:/app:ro api pytest -q
+```
+
+Both exited 0: Ruff clean and **161 tests passed** (35.86s); cache-permission warnings disappeared,
+leaving the existing Starlette/AnyIO deprecation warning. `git push` published the fix successfully.
+The [hosted fix verification run](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39102031888)
+and [latest workflow results](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/workflows/ci.yml)
+are the source of truth for hosted status. Both `checks` and `e2e` run on every push, including
+documentation updates; no checks are disabled or skipped for this fix.
 
 Known gaps / next phases:
 - Phase 5 recommendations engine, scheduler, notifications and actual email/budget-alert delivery

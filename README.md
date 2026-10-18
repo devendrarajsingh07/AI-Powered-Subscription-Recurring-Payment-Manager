@@ -226,7 +226,10 @@ Money must use Decimal and PostgreSQL NUMERIC, and model tools must derive ident
 
 The CI workflow installs dependencies, runs backend/frontend checks, boots all three services,
 and verifies web delivery plus database-backed readiness both directly and through the web proxy.
-CI has been authored, but no remote run is claimed.
+The repository is published to GitHub with `origin/master` tracking configured. Hosted results are
+available in [GitHub Actions](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions).
+The first hosted run passed the real browser flow but exposed a Linux cache-permissions issue in
+Ruff. Container tool caches now live under `/tmp`, so host-owned/read-only source mounts are supported.
 
 The real Compose stack boots successfully and `make verify` passes through both API and web proxy.
 Docker Desktop, GNU Make, and Python 3.12 have been installed on the development machine;
