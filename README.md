@@ -1,7 +1,8 @@
 # SubTrack
 
 AI-powered subscription and recurring payment manager for uploaded or synthetic INR transactions.
-**Current delivery: Phases 1 and 2 verified. The application is not yet demo-ready.**
+**Current delivery: authenticated Phase 3 backend, following verified Phases 1–2.**
+The frontend is still the readiness scaffold; the full application is not yet demo-ready.
 See [PROJECT_INFO.md](PROJECT_INFO.md) for the agent handoff, specification, phase gates, and verification log.
 
 ## Prerequisites and startup
@@ -39,21 +40,78 @@ PostgreSQL is internal to Compose and persists in a named volume. API startup ru
 `docker compose down` stops services without deleting database data.
 
 `make seed` is reserved for Phase 7 and currently exits with an explicit not-implemented error.
-Synthetic CSV data and the tested detection core are available. Authentication, upload APIs,
-database persistence, recommendations, alerts, chat, and demo seeding remain to be implemented.
+Authentication, PostgreSQL persistence, background CSV uploads and business APIs are available.
+Recommendations, alerts/scheduler/email, chat, demo seeding and the business frontend are later phases.
+
+## Backend API and upload flow
+
+The complete contract is checked in at [openapi.json](backend/openapi/openapi.json), with a readable
+[endpoint summary](backend/openapi/SUMMARY.md). `make openapi` regenerates both from the application;
+`make test` checks they are current. Swagger UI is at `/docs`.
+
+1. Register with `POST /api/v1/auth/register`; log in with `POST /api/v1/auth/login`.
+2. Send `Authorization: Bearer <access_token>` for every business endpoint.
+3. `POST /api/v1/uploads/preview` with multipart `file` returns delimiter, detected date formats,
+   safe preview rows, suggested mapping and capped row warnings. It creates no database records.
+4. Confirm the mapping, then `POST /api/v1/uploads` with multipart `file` and `mapping`, a JSON
+   object encoded as a form string. Example mapping:
+   `{"date":"date","description":"description","amount":"amount","type":"type"}`.
+5. The upload returns **202 pending**. Poll `GET /api/v1/uploads/{id}` for `stage`, processed/total
+   rows, inserted/duplicate/malformed counts, and `done` or `failed`. Stages reflect real worker
+   activity: parsing, waiting for user lock, ingesting, detecting, done. Financial writes commit
+   atomically; a failed upload has no partial transaction/subscription/charge-link changes.
+6. Read `/subscriptions`, `/subscriptions/{id}`, `/summary?period=month|year`,
+   `/summary/trend?months=12` and `/renewals/upcoming?days=30`. Lists use limit/offset and totals.
+7. Use `PATCH /subscriptions/{id}` for confirmation/status/category/last-used decisions,
+   `GET/PUT /budget`, `GET/PUT /settings/alerts`, and the unconfirmed category routes.
+8. `DELETE /api/v1/me/data` permanently deletes the account and all owned records in one transaction.
+   The caller's tokens stop working; other users are unaffected.
+
+Money is always a decimal string (e.g. `"119.00"`), never a JSON float. Budget input must be a
+nonnegative decimal string with at most two decimal places. Summary totals project all active
+recurring products, with subscriptions and fixed bills shown separately. Weekly projection uses
+52 charges/year, quarterly 4, yearly 1; monthly equivalent is annual/12, rounded once at aggregation.
+Trend values are actual linked charges, including historical charges for subsequently cancelled
+products. No usage is inferred from payments. Overdue renewals roll forward and retain uncertainty.
+
+Only INR is accepted by upload endpoints in this phase, including FX amounts already converted to
+INR. Other currencies are explicitly rejected instead of added to INR totals. The pure detector
+keeps currency groups separate, but multi-currency business reporting is not implemented.
+
+CSV files are limited to 5 MB/50,000 parsed records. The HTTP multipart envelope has a further
+64 KiB allowance. Malformed-row warnings are capped at 100 while counts remain complete.
+Broken quoting retains preceding valid records and reports the unreadable remainder as one
+malformed record; subsequent rows cannot be safely recovered. Raw descriptions stay untouched
+in PostgreSQL; previews and charge responses neutralize spreadsheet formula prefixes.
+
+Passwords require 12+ characters, three character classes and at most 72 UTF-8 bytes. bcrypt hashes
+are stored, not passwords. JWT access tokens expire after 30 minutes by default and require the
+configured issuer/audience. Register/login use an in-memory per-client-address sliding-window limit,
+including malformed requests; login failures do not reveal account existence.
+
+The worker queue is bounded and in-process (single API process). Interrupted pending/processing
+jobs are marked failed at startup for safe re-upload. A durable job queue and multi-process/global
+rate limiting are not implemented. Per-user PostgreSQL locks serialize work and user decisions;
+another upload can still queue while detection runs. DB uniqueness handles concurrent duplicates.
+
+Settings and price-change signals persist, but no alerts, recommendation messages, scheduler,
+emails or LLM calls are generated in Phase 3. Generic merchant categories need user confirmation.
 
 ## Local development without Docker
 
-Install Python 3.11+ and Node 22+. A local PostgreSQL 16 instance is needed for readiness and migrations.
+The reproducible runtime is Linux/Python 3.12 in Docker. A local PostgreSQL 16 instance is required
+for migrations and tests, and the test role must have CREATEDB permission for isolated test databases.
+On Linux/Python 3.12 install the hash lock; native Windows contributors should use Docker (the lock
+includes Linux uvloop). `requirements.in` is the source for regenerating platform-specific locks.
 
 ```sh
 python -m venv .venv
 # Activate the venv for your operating system.
-python -m pip install -r backend/requirements.txt
+python -m pip install --require-hashes -r backend/requirements.lock
 cd backend
 python -m pytest -q
 ruff check .
-# Set DATABASE_URL for your local PostgreSQL instance before running:
+# Export DATABASE_URL and JWT_SECRET (32+ random characters) before running:
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
@@ -83,7 +141,12 @@ variables in your shell (or provide a backend `.env`, which is gitignored).
 | `API_PORT`, `WEB_PORT` | Localhost-only published ports |
 | `VITE_API_BASE_URL` | Browser API prefix, defaults to `/api/v1` |
 | `VITE_API_PROXY_TARGET` | Server-side proxy target; `api:8000` in Compose, localhost directly |
-| `JWT_SECRET` | Reserved for Phase 3; replace example value with a strong random secret |
+| `JWT_SECRET` | Required HS256 signing secret, at least 32 random characters |
+| `JWT_ACCESS_MINUTES`, `JWT_ISSUER`, `JWT_AUDIENCE` | Access token expiry (default 30 minutes), issuer/audience |
+| `BCRYPT_ROUNDS` | bcrypt cost, default 12; tests override to 4 in isolated test settings |
+| `AUTH_REGISTER_LIMIT`, `AUTH_LOGIN_LIMIT`, `AUTH_WINDOW_SECONDS` | Per-IP auth limits, defaults 5/10 per 60 seconds |
+| `APP_TIMEZONE` | Application clock timezone, default Asia/Kolkata; tests override the clock dependency |
+| `UPLOAD_WORKERS`, `UPLOAD_QUEUE_LIMIT` | Background workers / outstanding-job capacity, defaults 2 / 8 |
 | `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL` | Reserved for Phase 6; offline fake planned, live provider undecided |
 | `NOTIFIER_PROVIDER`, `SMTP_*` | Reserved for Phase 5; console and SMTP planned |
 | `ALERT_LEAD_DAYS`, `HIGH_COST_YEARLY_INR` | Reserved alert/recommendation defaults |
@@ -97,7 +160,9 @@ The development images are not a production deployment configuration.
 flowchart LR
     Browser[React / Vite] -->|API proxy| API[FastAPI]
     API -->|SQLAlchemy + Alembic| DB[(PostgreSQL 16)]
-    API -. Phase 2/3 .-> Rules[Deterministic ingestion / detection / aggregation]
+    API --> Rules[Deterministic ingestion / detection / aggregation]
+    API --> Worker[Bounded background upload worker]
+    Worker -->|Scoped atomic writes| DB
     API -. Phase 5 .-> Jobs[APScheduler / Notifier]
     API -. Phase 6 .-> Chat[Read-only user-scoped tools / LLMClient]
 ```
@@ -114,7 +179,9 @@ CI has been authored, but no remote run is claimed.
 The real Compose stack boots successfully and `make verify` passes through both API and web proxy.
 Docker Desktop, GNU Make, and Python 3.12 have been installed on the development machine;
 reopen terminals if their PATH predates installation. The handoff lists the installed paths.
-Backend: 111 tests pass. Frontend: 2 tests pass. Lint, types, and production build pass.
+Phase 3: **161 backend tests** pass on real PostgreSQL 16, including all 114 baseline/housekeeping
+tests and 47 Phase 3 tests. The 2 frontend readiness tests pass. `make dev`, `make verify`,
+`make test`, `make lint` and `make evaluate` all exit 0. The checked-in OpenAPI contract is current.
 One upstream Starlette/AnyIO deprecation warning remains. Screenshots and the three-minute
 demo script will be added after the real application flow exists.
 
@@ -153,18 +220,21 @@ Renewals use nominal intervals and roll forward to the explicit `as_of` date. Tw
 set `possibly_cancelled`; they never change a user's subscription status automatically. Latest
 amount >prior median by >5% yields a price-increase signal. Unknown categories require confirmation.
 No LLM is called by detection or parsing. CSV limits, mapping, malformed-row reporting, raw-value
-preservation and safe display parsing are covered, but database upload idempotency is Phase 3.
+preservation, safe display and database upload idempotency are tested against PostgreSQL.
 
 Known limitations: nominal intervals approximate calendar billing dates; first-two-token unknown
 merchant grouping can merge unrelated merchants; near-identical product prices may be inseparable;
 large price changes can exceed the stability threshold; many missing charges can lower regularity
 below threshold; non-Latin merchant descriptions need a later normalization fallback. Unknown-merchant
-LLM category caching and user confirmation are not integrated yet. Fixtures are fixed as of
+LLM categorization is not wired; user category confirmation is available through the API.
+Fixtures are fixed as of
 2026-10-18; generator `--as-of` and detector's explicit clock support reproducible newer demos.
 
 ## Privacy
 
 This project is for demo/educational use. Use only synthetic fixtures in this repository.
-The API does not accept financial uploads yet. Do not add personal statements, API keys, `.env`,
-or database dumps to version control. Delete-my-data support is required before demo completion.
+Use local synthetic CSVs to exercise the upload API. Do not add personal statements, API keys, `.env`,
+or database dumps to version control. The delete-my-data endpoint is implemented; its frontend
+action belongs to Phase 4. Request/worker logs omit raw descriptions, amounts, credentials and SQL
+bind values; Uvicorn access logs are disabled to avoid logging user-controlled query strings.
 

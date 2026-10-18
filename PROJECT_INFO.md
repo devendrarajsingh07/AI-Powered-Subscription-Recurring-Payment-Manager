@@ -11,6 +11,10 @@ Updated: 2026-10-18 (Asia/Calcutta).
 - Concurrency: a PostgreSQL user-row lock serializes ingestion/detection and data deletion for each
   user. Transaction uniqueness remains the authoritative cross-upload dedupe guard. Progress is
   recorded separately; transaction inserts, subscription updates and charge links commit atomically.
+  Refined before finalizing the pipeline: use FOR NO KEY UPDATE (SQLAlchemy key_share=True),
+  which permits FK key-share checks when another upload queues. Creating the pending upload does
+  not acquire the work lock. This prevents a second POST from waiting for long detection work;
+  workers and user-decision/deletion operations still serialize on the same user row.
 - Tokens: HS256 JWT access tokens only, configurable short expiry, issuer/audience and secret from
   environment. No refresh tokens in this phase. Account deletion removes the user; subsequent access
   using its token fails. No model-supplied IDs or LLM calls exist in Phase 3.
@@ -35,9 +39,10 @@ Updated: 2026-10-18 (Asia/Calcutta).
 ## Read this first
 
 The user requested a complete, demo-ready application, with seven strictly sequential phases.
-**Phases 1 and 2 are implemented and verified. Docker startup is no longer blocked.**
-The user authorized installation of prerequisites and proceeding to Phase 2 on 2026-10-18.
-The full application remains incomplete; Phase 3 business persistence/auth/upload APIs are next.
+**Phases 1–3 are implemented and verified. Phase 3 is complete and committed.**
+The user requested Phase 3 explicitly, including housekeeping, real PostgreSQL tests, commits and
+then stopping before Phase 4. No frontend source was changed in Phase 3.
+The full application remains incomplete; Phase 4 business frontend is next after this gate.
 
 The workspace root itself is the `subtrack` repository; do not create a nested duplicate project.
 No existing application or user files were present at the beginning.
@@ -55,7 +60,7 @@ No subagent delegation was requested; do not let parallel workers edit the same 
 - `backend/app/main.py`: liveness, database + migration readiness, CORS, OpenAPI, validation-error shape.
 - `backend/app/config.py`: environment-based settings.
 - `backend/app/db.py`: lazy engine, session dependency, declarative Base; no `create_all`.
-- `backend/alembic`: baseline migration tracking; business schema is deferred to Phase 3.
+- `backend/alembic`: explicit baseline and `0002_domain` business migration, tested up/down and drift.
 - `backend/tests/test_health.py`: liveness, OpenAPI contract, database failure, CORS.
 - `frontend`: React/Vite/TypeScript/Tailwind foundation, Query and Router providers; readiness screen.
 - `scripts/verify_stack.py`: real HTTP verification through both public ports and the web API proxy.
@@ -65,16 +70,44 @@ No subagent delegation was requested; do not let parallel workers edit the same 
 - `backend/app/services/detector.py`: Decimal recurrence statistics, amount clusters, confidence,
   nominal renewal prediction, missed cycles, price-increase signals, underlying charge links.
 - `backend/app/services/ingestion.py`: pure CSV preview/mapping/parser, limits and safe row errors.
-  No persistence, authenticated upload routes, background ingestion, or DB dedupe yet.
+  Connected to the authenticated background upload pipeline in Phase 3.
 - `backend/scripts/gen_sample_data.py`: reproducible synthetic history + independent ground truth.
 - `backend/scripts/evaluate_detector.py`: one-to-one product quality metrics and CI gate.
 - `backend/data`: generated demo CSV, ground truth, two handwritten bank-shaped fixtures, report.
 - `backend/tests/test_detector.py`, `test_ingestion.py`, `test_evaluation.py`: core and data tests.
 
-`/api/v1/openapi.json` is the current API contract. It contains only the health routes.
-Future business endpoints must be added with validated request/response schemas before UI integration.
-The current readiness handler checks revision `0001_scaffold`; update to robust head validation
-when adding further migrations.
+`/api/v1/openapi.json` is the current API contract: 18 paths, 22 operations, all business routes
+JWT-protected. Checked-in JSON and endpoint inventory: `backend/openapi/`. `make openapi` regenerates;
+`make test` detects contract drift. Readiness compares database revisions with Alembic script heads.
+
+### Phase 3 implementation map
+
+- `models/__init__.py`: all requested domain tables, ownership/composite FKs, NUMERIC money,
+  check-enforced choices, cascading deletion and nullable-budget-alert idempotency index.
+- `repositories.py`: user-scoped reads/writes, bulk ON CONFLICT dedupe, overlap-based stable product
+  persistence, category cache, complete account deletion. A structure test requires user_id on
+  every public repository function. Auth's pre-login account lookup is the documented exception.
+- `auth.py`: bcrypt, redacted secret inputs, HS256 issuer/audience/expiry, missing-user dummy hash,
+  constant-time bcrypt verification, generic login errors, bounded per-address sliding-window limiter.
+- `uploads.py`: bounded background pool, separately committed real progress, same-user work lock,
+  atomic transaction/detection/link writes, safe failure status and startup interruption recovery.
+- `schemas/__init__.py`: extra-forbidden request/response contracts, UUID/ISO dates, Decimal strings.
+  Aggregated money is not truncated to per-record NUMERIC(12,2) limits.
+- `api/routes.py`: auth, CSV preview/confirmed upload/progress, subscription filters/sort/pagination/
+  charges/actions, summary/trend, renewals, budgets, alert preferences, categories and account deletion.
+- `services/summary.py`: Decimal projections (52 weekly/12 monthly/4 quarterly/1 yearly per year),
+  round once at aggregation, actual-charge history including later-cancelled subscriptions.
+- `middleware.py`: auth rate limit includes invalid bodies, bounded chunked multipart input,
+  safe error envelope, exception redaction. CORS wraps early errors too.
+- `tests/conftest.py`: creates random PostgreSQL 16 test databases, migrates with Alembic, truncates
+  only test tables between tests, drops databases afterward. Application DB is never truncated.
+- `tests/test_api.py`, `test_schema.py`: real PostgreSQL lifecycle/API/security/concurrency tests.
+- `scripts/smoke_api.py`: real deployed HTTP flow with temporary synthetic account and cleanup.
+
+API upload accepts INR only. No FX conversion or mixed-currency aggregation is implied; already
+INR-converted FX amounts are supported. The application clock uses APP_TIMEZONE; tests override
+the dependency. Pending uploads commit before 202; processing stages and counters reflect actual
+work. Preview/preflight file validation is bounded, and heavy DB/detection work runs in the pool.
 
 ## Verification log
 
@@ -87,13 +120,13 @@ when adding further migrations.
 | Default `python` | Installed normal Python 3.12.10; reopen terminals to refresh PATH |
 | Available local Python | Bundled CPython 3.12.14, satisfies 3.11+ |
 | Available Node/npm | Node 24.16.0 / npm 11.13.0; containers and CI use Node 22 |
-| Backend unit tests | PASS: 111 tests; one upstream Starlette/AnyIO deprecation warning |
+| Backend tests | PASS: 161 tests on PostgreSQL 16; 114 baseline + 47 Phase 3 |
 | Backend Ruff | PASS after import ordering and line length fixes |
 | Frontend Vitest | PASS: 2 tests |
 | Frontend ESLint | PASS |
 | TypeScript + Vite production build | PASS: 83 modules transformed |
 | Compose and CI YAML | Parsed with PyYAML; three expected services present (not a Docker validation) |
-| Git repository | Initialized; source files uncommitted, generated files ignored |
+| Git repository | Logical Phase 1/2 and housekeeping commits created; Phase 3 commits listed below |
 | `make dev` / Compose startup | PASS: PostgreSQL, API, and web all healthy |
 | `make verify` | PASS: web HTML, proxied readiness, direct API readiness |
 | `make test` | PASS: backend, quality evaluator, and frontend (final count below) |
@@ -119,13 +152,15 @@ was needed. A local `.venv` is ignored and is not a portable artifact.
 Tests/build required elevated execution because the sandbox blocked dependency file access.
 The workspace path contains an ampersand; package scripts invoke Node entry points directly
 to avoid Windows npm command-shim quoting failures. Do not revert this without testing on Windows.
-Frontend `package-lock.json` is present and used by Docker/CI. Python direct dependencies are pinned
-in requirements.txt; transitive Python dependencies are not fully locked yet.
+Frontend `package-lock.json` is present and used by Docker/CI. Python direct/transitive dependencies
+and hashes are pinned in requirements.lock; requirements.in is the editable source. requirements.txt
+is a compatibility pointer. Compile using pip-tools 7.5.2 on Linux/Python 3.12. Native Windows
+development should use Docker rather than installing Linux uvloop from this lock.
 
 ### Actual commands run successfully
 
 ```text
-backend: python -m pytest -q     -> 111 passed
+backend: python -m pytest -q     -> 161 passed (PostgreSQL 16)
 backend: ruff check .           -> All checks passed
 frontend: npm test -- --run     -> 2 passed
 frontend: npm run lint          -> exit 0
@@ -133,8 +168,8 @@ frontend: npm run build         -> TypeScript and Vite exit 0
 ```
 
 The real Compose/PostgreSQL success path has been exercised with Alembic and readiness checks.
-The two UI tests cover the readiness page only and replace its HTTP response. No business UI
-or Phase 3 API functionality is implied. Remote CI has not run; its commands have run locally.
+The two UI tests cover the readiness page only and replace its HTTP response. Business API tests
+use real PostgreSQL; no business UI is implied. Remote CI has not run; its commands run locally.
 
 ### Phase 2 evaluation results
 
@@ -178,7 +213,8 @@ Limitations: nominal day intervals approximate true calendar billing; unknown fi
 names may collide; similar product amounts may be inseparable; large price changes can fail CV;
 many missing charges can fail regularity; non-Latin descriptions need later normalization support.
 `possibly_cancelled` must remain uncertainty, never silently change user status. Fixed bills must
-be excluded from savings recommendations. Unknown-merchant LLM cache/confirmation is not integrated.
+be excluded from savings recommendations. Unknown-merchant user confirmation is implemented through
+the API and cache; LLM categorization remains unwired.
 
 CSV parser supports UTF-8/BOM, delimiter sniffing with header fallback, four specified date formats,
 mapping overrides, separate debit/credit, malformed row reasons without raw text, 5 MB/50k limits,
@@ -196,10 +232,71 @@ clock via `generate_dataset(as_of=...)`; do not silently treat stale fixed-date 
 2. Start Docker Desktop if needed. Preserve the existing ignored `.env` (random local credentials).
 3. Run `make dev`, `make verify`, `make test`, `make lint`; `make evaluate` prints quality metrics.
    Without Make, use the equivalent commands in README. Refresh PATH in old Windows terminals.
-4. Phases 1 and 2 pass. Next implement Phase 3: business migrations/auth/scoped repositories,
-   preview-confirm-progress upload pipeline, persisted detections and summary/budget/renewal APIs.
-   Add OpenAPI schemas before UI work, use the pure services above, and add isolation/idempotency tests.
+4. After the final Phase 3 gate and commits, stop and report. Do not begin Phase 4 without the
+   user's follow-up. Phase 4 will consume the checked-in OpenAPI contract and real API, replacing
+   the readiness-only frontend with auth, upload progress, dashboard and subscription workflows.
 5. Keep the repository runnable after each phase; run the full available suite and report a short status.
+
+## Phase 3 final verification and handoff
+
+Backend feature commit: **991d929** (`feat: persist authenticated multi-user subscription backend`).
+Housekeeping commit: **88c2fd5**. Earlier logical commits: 190fa80 / 401a055 / 984c600.
+README and this handoff are committed separately after recording the final results.
+No GitHub remote exists; no push or hosted-CI success is claimed.
+
+Commands ran from the repository root with the installed tools (PATH refreshed from machine/user
+environment in older PowerShell sessions). Every gate below completed with exit code 0:
+
+| Command | Actual result |
+| --- | --- |
+| `make dev` | Built images, migrated to `0002_domain`; db/api/web all healthy |
+| `make verify` | Web HTML, web-proxied readiness and direct API readiness all PASS |
+| `make test` | **161 backend tests**, **2 frontend tests**, all 3 detector evaluations and OpenAPI check pass |
+| `make lint` | Backend Ruff, frontend ESLint and TypeScript pass |
+| `make evaluate` | Synthetic 16 TP/0 FP/0 FN; handwritten bank 3/0/0; products 5/0/0; all F1=1.0 |
+| `make openapi` | Generated 18 paths / 22 operations with schemas/examples; drift check passes |
+| `docker compose run --rm --no-deps api python scripts/smoke_api.py` | Real HTTP flow: 399 transactions, 16 products; account/data deletion verified |
+
+The 47 Phase 3 tests comprise 43 API/security/concurrency/progress tests and 4 schema/migration
+tests. They use PostgreSQL 16, no SQLite. Positive-path responses are produced by real services
+and DB writes. Failure-path tests inject controlled errors and barriers only to verify rollback,
+progress, queueing and safe logging. The 2 existing frontend tests mock readiness HTTP only.
+One upstream Starlette/AnyIO deprecation warning remains; no application warnings/errors remain.
+
+Verified behaviors include independent ground-truth summary arithmetic; duplicate and concurrent
+duplicate upload dedupe; user isolation/404s; complete cascading deletion without affecting another
+user; stable identity through a price increase; preserved confirm/dismiss/cancel/category/last-use
+decisions; generic login failures and malformed-request rate limits; expired/forged JWT rejection;
+bad-file handling; money string/Decimal/rounding checks and totals above individual record bounds;
+startup interrupted-job recovery; post-commit logging failure not relabelling saved data as failed;
+schema up/down/up and zero ORM drift; no `create_all`; mandatory scoped repository parameters.
+
+Pre-commit checks: `.env` and `.venv` ignored and untracked; actual local database/JWT secret
+values absent from all candidate source files; no frontend diff; no real statements introduced.
+Fixtures and OpenAPI credential examples are synthetic. SQLAlchemy hides parameters, request/worker
+errors log no financial fields, and Uvicorn access logs are disabled to avoid raw query-string logs.
+
+### Honest gaps and next work
+
+- **Stop here before Phase 4.** No business frontend was implemented. The readiness page's older
+  placeholder wording predates the backend; replace it during Phase 4, not in this backend phase.
+- Phase 4: auth views, confirmed upload/progress/results, dashboard/charts, subscription table and
+  charge drawer, uncertainty/actions/settings/privacy UI, consuming the checked-in real contract.
+- Phase 5: recommendation engine, daily scheduler, notifier, renewal/budget alerts and emails.
+  Their tables exist, but no generation or delivery behavior is claimed.
+- Phase 6: LLMClient/FakeLLM, unknown-merchant LLM categorization/cache integration, read-only tools,
+  streaming chat and grounded evals/UI. **No LLM calls occur in Phase 3.**
+- Phase 7: authenticated demo-data loader/button reusing these services, polishing, screenshots,
+  accessibility review and three-minute demo script. `make seed` still fails explicitly until then.
+- Real-customer/bank-export accuracy is unmeasured; only generated and handwritten synthetic fixtures
+  were evaluated. Merchant/amount-cluster limitations from Phase 2 still apply.
+- Upload workers and auth limiter are in-process; one API process is supported. Jobs are not durable
+  across restart, and recovery marks interrupted jobs failed for safe re-upload. Multi-instance queue,
+  global limiting, refresh-token flows, mixed-currency reporting and production deployment are absent.
+- INR-only upload is explicit; no silent mixed-currency sums. Nominal renewal dates are approximate.
+- If historical evidence ceases to satisfy the detector, existing user-controlled records are retained
+  rather than silently cancelled; users review uncertainty. Generic merchant-level category choices
+  apply across that merchant; per-product overrides remain available on individual subscriptions.
 
 ## Required stack and design constraints
 
@@ -222,8 +319,9 @@ clock via `generate_dataset(as_of=...)`; do not silently treat stale fixed-date 
 1. **Scaffold (PASS):** Compose/env/Makefile/API health/CI. All services boot via `make dev`.
 2. **Detection/data (PASS):** normalizer, categories, detector, synthetic generator, handwritten bank
    fixtures, ground truth and evaluation. F1 1.0 on all three committed datasets; full tests pass.
-3. **Backend:** business models/migrations/auth/CSV preview+mapping+ingestion/subscriptions/summary/
-   renewals/budget/settings. Gate: upload→detect→summary integration tests plus user-isolation tests.
+3. **Backend (PASS):** business models/migrations/auth/CSV background uploads/subscriptions/summary/
+   renewals/budget/settings/categories/privacy. PostgreSQL integration, isolation, migrations and
+   concurrency tests pass; exact final test count and command log are appended below.
 4. **Frontend:** auth, CSV flow, dashboard, subscription table and charge drawer against real API.
 5. **Insights/alerts:** deterministic savings rules, scheduler, console/SMTP notifier, email templates.
    Gate: alert and ingestion idempotency, actual console renewal and budget notifications.
@@ -234,7 +332,7 @@ clock via `generate_dataset(as_of=...)`; do not silently treat stale fixed-date 
 
 No stretch features before the complete Definition of Done. No polish before detection measurement.
 
-## Required schema (Phase 3)
+## Implemented schema (Phase 3)
 
 - users: id, unique email, password_hash, created_at; alert preferences/notification email as needed.
 - uploads: id, user_id, filename, row_count, status, uploaded_at; progress and row-error reporting.
@@ -243,15 +341,18 @@ No stretch features before the complete Definition of Done. No polish before det
   Unique dedupe (user_id, date, raw_description, amount).
 - subscriptions: id, user_id, merchant, category, cadence, avg_amount, confidence, occurrences,
   last_charge, next_expected, active/cancelled/dismissed status, user_confirmed, timestamps.
-  Add real last-used signal and cancellation tracking if needed by recommendation actions.
-- subscription_charges: subscription_id, transaction_id.
+  Includes permanent identity_key, kind/currency, regularity/CV, category override flag, cancelled_at,
+  user-provided last_used_at, possibly_cancelled/missed_cycles and previous/new price/detected date.
+- subscription_charges: user_id, subscription_id, transaction_id; composite owner FKs prevent cross-user links.
 - recommendations: id, user_id, optional subscription_id, type, message, est_monthly_saving,
   open/accepted/dismissed status, created_at.
 - budgets: id, user_id, monthly_limit, updated_at.
 - alerts: id, user_id, optional subscription_id, renewal/budget kind, send_on, sent_at,
-  email channel, JSON payload. Database-level idempotency keys needed.
+  email channel, JSON payload. Unique identity index uses PostgreSQL NULLS NOT DISTINCT, with budget
+  dates constrained to the first day of the month; renewal alerts require a subscription.
 - chat_messages: id, user_id, role, content, JSON tool_calls, created_at.
-- Merchant category cache is required; cache once per unknown merchant and require user confirmation.
+- merchant_categories: user_id, merchant, category, rule|llm|user source, confirmed; unique user/merchant.
+  Phase 3 writes rule/user entries only. Generic category overrides can be per subscription too.
 
 ## CSV and detection contract (Phase 2/3)
 
