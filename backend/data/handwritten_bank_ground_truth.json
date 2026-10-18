@@ -1,0 +1,10 @@
+{
+  "as_of": "2026-05-01",
+  "expected_skipped_rows": 3,
+  "patterns": [
+    {"merchant": "netflix", "cadence": "monthly", "kind": "subscription", "avg_amount": "199.00", "category": "streaming"},
+    {"merchant": "spotify", "cadence": "monthly", "kind": "subscription", "avg_amount": "121.50", "category": "music"},
+    {"merchant": "rent", "cadence": "monthly", "kind": "fixed_bill", "avg_amount": "15000.00", "category": "rent"}
+  ]
+}
+

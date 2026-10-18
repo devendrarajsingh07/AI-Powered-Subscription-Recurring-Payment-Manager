@@ -1,0 +1,12 @@
+{
+  "as_of": "2026-06-15",
+  "expected_skipped_rows": 0,
+  "patterns": [
+    {"merchant": "apple", "cadence": "monthly", "kind": "subscription", "avg_amount": "75.00", "category": "unknown"},
+    {"merchant": "apple", "cadence": "monthly", "kind": "subscription", "avg_amount": "119.00", "category": "unknown"},
+    {"merchant": "microsoft", "cadence": "yearly", "kind": "subscription", "avg_amount": "4899.00", "category": "software"},
+    {"merchant": "adobe", "cadence": "monthly", "kind": "subscription", "avg_amount": "809.93", "category": "software"},
+    {"merchant": "cultfit", "cadence": "monthly", "kind": "subscription", "avg_amount": "1200.00", "category": "fitness", "possibly_cancelled": true}
+  ]
+}
+

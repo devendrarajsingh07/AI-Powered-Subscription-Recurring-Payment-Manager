@@ -1,0 +1,32 @@
+[
+  {
+    "dataset": "Synthetic (seed 42)",
+    "true_positive": 16,
+    "false_positive": 0,
+    "false_negative": 0,
+    "precision": "1",
+    "recall": "1",
+    "f1": "1",
+    "failures": []
+  },
+  {
+    "dataset": "Handwritten bank",
+    "true_positive": 3,
+    "false_positive": 0,
+    "false_negative": 0,
+    "precision": "1",
+    "recall": "1",
+    "f1": "1",
+    "failures": []
+  },
+  {
+    "dataset": "Handwritten products",
+    "true_positive": 5,
+    "false_positive": 0,
+    "false_negative": 0,
+    "precision": "1",
+    "recall": "1",
+    "f1": "1",
+    "failures": []
+  }
+]
