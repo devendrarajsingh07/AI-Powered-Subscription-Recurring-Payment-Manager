@@ -1,6 +1,9 @@
 FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+# Keep tool caches writable when /app is a host-owned or read-only bind mount.
+ENV RUFF_CACHE_DIR=/tmp/subtrack-ruff-cache \
+    PYTEST_ADDOPTS="-o cache_dir=/tmp/subtrack-pytest-cache"
 COPY requirements.lock .
 RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY . .
