@@ -43,3 +43,19 @@ def test_cors_only_allows_configured_origin(client):
     assert good.headers["access-control-allow-origin"] == "http://localhost:5173"
     assert "access-control-allow-origin" not in bad.headers
 
+
+@pytest.mark.parametrize(
+    "actual,expected_status", [(["new_head"], 200), (["0001_scaffold"], 503), ([], 503)]
+)
+def test_readiness_compares_database_to_script_heads(client, monkeypatch, actual, expected_status):
+    from unittest.mock import MagicMock
+
+    import app.migrations as migrations
+
+    scripts = MagicMock()
+    scripts.get_heads.return_value = ["new_head"]
+    monkeypatch.setattr(migrations, "ScriptDirectory", lambda _: scripts)
+    session = MagicMock()
+    session.execute.return_value.scalars.return_value.all.return_value = actual
+    app.dependency_overrides[get_db] = lambda: session
+    assert client.get("/api/v1/health/ready").status_code == expected_status

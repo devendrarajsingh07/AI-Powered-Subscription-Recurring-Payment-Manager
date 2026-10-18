@@ -2,6 +2,36 @@
 
 Updated: 2026-10-18 (Asia/Calcutta).
 
+## Phase 3 decisions (recorded before implementation)
+
+- Identity: each subscription has a permanent UUID and a user-scoped unique identity key based on
+  normalized merchant/currency/cadence and its initial charge anchor. Re-detection matches existing
+  products by greatest charge overlap before creating identities. Average amount is mutable, not
+  an identity field, so price changes preserve user decisions. Matching is one-to-one for clusters.
+- Concurrency: a PostgreSQL user-row lock serializes ingestion/detection and data deletion for each
+  user. Transaction uniqueness remains the authoritative cross-upload dedupe guard. Progress is
+  recorded separately; transaction inserts, subscription updates and charge links commit atomically.
+- Tokens: HS256 JWT access tokens only, configurable short expiry, issuer/audience and secret from
+  environment. No refresh tokens in this phase. Account deletion removes the user; subsequent access
+  using its token fails. No model-supplied IDs or LLM calls exist in Phase 3.
+- Background work: bounded in-process worker pool; upload bytes are held only until processing ends.
+  Interrupted pending/processing uploads become failed on startup (safe retry; no partial financial
+  data). A durable distributed queue is outside this phase. Single API process is supported.
+- Category cache is per user/merchant. Generic multi-product merchants may need per-subscription
+  overrides; a merchant-level choice deliberately applies across that merchant's products.
+- Tests use a separate PostgreSQL database on Compose's PostgreSQL 16 service, never SQLite or the
+  developer's application database. Migration lifecycle tests use a dedicated temporary database.
+- Housekeeping commits: 190fa80 scaffold, 401a055 detection/CSV, 984c600 data/evaluation.
+  No GitHub remote is configured; hosted CI is unverified. `.env`/`.venv` remain ignored.
+- Python dependencies are compiled in Linux/Python 3.12 with pip-tools 7.5.2 from requirements.in
+  into requirements.lock, including transitive pins and artifact hashes. Docker and CI install
+  with --require-hashes. The lock targets the container/Ubuntu CI, not native Windows uvloop.
+- Readiness compares the full set of database Alembic revisions to ScriptDirectory.get_heads(),
+  not a literal migration ID. Missing schema, stale head and database failure return safe 503.
+- Step 0 gate completed: make dev, make verify, make test, make lint, make evaluate all exited 0
+  against real Compose; 114 backend tests and 2 frontend tests passed; all three evaluator suites
+  retained precision/recall/F1 1.0. No remote exists, so hosted CI is explicitly unverified.
+
 ## Read this first
 
 The user requested a complete, demo-ready application, with seven strictly sequential phases.

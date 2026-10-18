@@ -3,12 +3,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
+from app.migrations import database_at_head
 
 app = FastAPI(title="SubTrack API", version="0.1.0", openapi_url="/api/v1/openapi.json")
 app.add_middleware(
@@ -41,8 +41,7 @@ def health():
 @app.get("/api/v1/health/ready", response_model=Health, tags=["health"])
 def ready(db: Session = Depends(get_db)):
     try:
-        version = db.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-        if version != "0001_scaffold":
+        if not database_at_head(db):
             raise ValueError("Unexpected migration version")
     except (SQLAlchemyError, ValueError):
         return JSONResponse(
@@ -50,4 +49,3 @@ def ready(db: Session = Depends(get_db)):
             content={"error": {"code": "not_ready", "message": "Database is not ready"}},
         )
     return Health(status="ready")
-
