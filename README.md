@@ -1,8 +1,9 @@
 # SubTrack
 
 AI-powered subscription and recurring payment manager for uploaded or synthetic INR transactions.
-**Current delivery: authenticated Phase 3 backend, following verified Phases 1–2.**
-The frontend is still the readiness scaffold; the full application is not yet demo-ready.
+**Current delivery: Phase 4 frontend on the authenticated PostgreSQL backend.**
+Register, upload a CSV, review detections, explore spending and manage your preferences in the UI.
+Recommendations, chat, email delivery and one-click demo seeding arrive in Phases 5–7.
 See [PROJECT_INFO.md](PROJECT_INFO.md) for the agent handoff, specification, phase gates, and verification log.
 
 ## Prerequisites and startup
@@ -35,13 +36,64 @@ docker compose run --rm --no-deps web npm run build
 ```
 
 Web: [localhost:5173](http://localhost:5173). API docs: [localhost:8000/docs](http://localhost:8000/docs).
-The web page queries the real API readiness endpoint through Vite's `/api` proxy.
+The React app calls the real API through Vite's `/api` proxy.
 PostgreSQL is internal to Compose and persists in a named volume. API startup runs Alembic.
 `docker compose down` stops services without deleting database data.
 
 `make seed` is reserved for Phase 7 and currently exits with an explicit not-implemented error.
 Authentication, PostgreSQL persistence, background CSV uploads and business APIs are available.
-Recommendations, alerts/scheduler/email, chat, demo seeding and the business frontend are later phases.
+Recommendations, alerts/scheduler/email, chat and demo seeding are later phases.
+
+## Frontend development and verification
+
+Node.js 22+ and npm are required for local frontend development and browser tests. Compose includes
+the web runtime; a local npm install is only needed for local scripts and Playwright.
+
+```sh
+cd frontend
+npm ci
+npm run dev
+npm test -- --run
+npm run lint
+npm run typecheck
+npm run build
+npm audit --audit-level=low
+node node_modules/@playwright/test/cli.js install chromium
+cd ..
+make dev
+make e2e
+```
+
+On Linux, use `install --with-deps chromium` to install browser system dependencies. On Windows use
+`npm.cmd` when PowerShell blocks npm's script shim. The npm scripts invoke Node entrypoints directly
+to support workspace paths containing `&`. `make e2e` runs three Chromium flows against the real
+Compose services, with fresh synthetic accounts; it does not mock the API. Set `E2E_BASE_URL` to
+test a different local stack. Test accounts are deleted by successful runs. Failed runs can leave
+synthetic accounts for investigation; remove them through Settings. Reports/traces are ignored and
+must be treated as private because browser traces can contain short-lived test tokens.
+
+`make types` (or `cd frontend && npm run types`) generates `src/api/schema.ts` from
+`backend/openapi/openapi.json` with openapi-typescript. Do not edit generated types. `make test`
+checks both the backend OpenAPI export and TypeScript drift; the frontend build also checks drift.
+The thin openapi-fetch client uses these generated paths and schemas. In Compose the schema is
+mounted read-only at `/contract`; `SUBTRACK_SCHEMA` overrides its location for generation only.
+
+`VITE_API_BASE_URL` defaults to `/api/v1`; `VITE_API_PROXY_TARGET` is the server-only Vite proxy
+destination. Do not put secrets in `VITE_*` variables. Compose enables `VITE_USE_POLLING=true` for
+reliable source updates on Windows Docker bind mounts. Restart/rebuild after changing Vite config.
+
+Access tokens stay in memory with a per-tab sessionStorage fallback. Logout, expiry and protected
+401 responses clear the token and Query cache. This allows tab reloads but remains vulnerable to
+XSS; uploaded/server text is never rendered as HTML. No refresh token exists. Money is displayed
+from API decimal strings with Indian grouping. Charts use BigInt-based dimensionless coordinates;
+tooltips, legends and table alternatives retain exact API strings. The browser computes no totals,
+projections or savings. Amount sorting is performed by the API.
+
+The UI includes keyboard-operated native dialogs, visible focus, a skip link, dark/light tokens,
+and chart data-table alternatives. Vitest uses MSW responses typed from the generated contract;
+axe checks structural accessibility in jsdom and full browser checks cover contrast as well.
+Screenshots with synthetic data are in [docs/screenshots](docs/screenshots). Design decisions and
+verification evidence are recorded in [PROJECT_INFO.md](PROJECT_INFO.md).
 
 ## Backend API and upload flow
 
@@ -179,11 +231,12 @@ CI has been authored, but no remote run is claimed.
 The real Compose stack boots successfully and `make verify` passes through both API and web proxy.
 Docker Desktop, GNU Make, and Python 3.12 have been installed on the development machine;
 reopen terminals if their PATH predates installation. The handoff lists the installed paths.
-Phase 3: **161 backend tests** pass on real PostgreSQL 16, including all 114 baseline/housekeeping
-tests and 47 Phase 3 tests. The 2 frontend readiness tests pass. `make dev`, `make verify`,
+Phase 4: **161 backend tests** pass on real PostgreSQL 16, including all 114 baseline/housekeeping
+tests and 47 Phase 3 tests. The frontend has **27 unit/component tests** and **3 real-stack Playwright
+flows**, including browser axe checks at desktop/360px and in dark mode. `make dev`, `make verify`,
 `make test`, `make lint` and `make evaluate` all exit 0. The checked-in OpenAPI contract is current.
-One upstream Starlette/AnyIO deprecation warning remains. Screenshots and the three-minute
-demo script will be added after the real application flow exists.
+One upstream Starlette/AnyIO deprecation warning remains. Synthetic browser screenshots are
+committed under `docs/screenshots/`; the complete three-minute demo script remains Phase 7.
 
 ## Detection and evaluation
 
@@ -234,7 +287,7 @@ Fixtures are fixed as of
 
 This project is for demo/educational use. Use only synthetic fixtures in this repository.
 Use local synthetic CSVs to exercise the upload API. Do not add personal statements, API keys, `.env`,
-or database dumps to version control. The delete-my-data endpoint is implemented; its frontend
-action belongs to Phase 4. Request/worker logs omit raw descriptions, amounts, credentials and SQL
+or database dumps to version control. Settings includes typed confirmation for complete account/data
+deletion and shows the returned deletion counts after logout. Request/worker logs omit raw descriptions, amounts, credentials and SQL
 bind values; Uvicorn access logs are disabled to avoid logging user-controlled query strings.
 

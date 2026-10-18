@@ -2,6 +2,120 @@
 
 Updated: 2026-10-18 (Asia/Calcutta).
 
+## Phase 4 preparation and decisions (before frontend implementation)
+
+- Baseline: make dev / verify / test / lint / evaluate all passed before source changes. Backend
+  161 tests, frontend 2 tests, three detector suites F1=1.0, OpenAPI check green.
+- Token strategy: in-memory token with sessionStorage fallback for tab reloads. No localStorage,
+  cookies, URL tokens or token logging. sessionStorage is readable by same-origin JavaScript, so
+  XSS could steal a token; strict text rendering, no HTML injection and short backend expiry limit
+  exposure. Every 401 clears session and Query cache and redirects to login with an expiry message.
+  Logout and deletion clear cached data. Intended protected routes survive the login redirect.
+- Money: generated contract decimal strings are formatted by string operations with Indian grouping.
+  No monetary amounts converted to Number/parseFloat, totals, projections or savings math in the frontend.
+  Amount sorting is delegated to the API. Decimal comparisons use normalized strings/BigInt only.
+  Charts use exact integer paise geometry, not binary-float monetary values; tooltips/tables always
+  show the original API strings. Any numeric chart coordinate is a dimensionless visual position.
+- State: TanStack Query owns server state; keys include all filters/pagination. Mutations invalidate
+  summaries, trend, subscriptions, renewals and categories. Upload polling backs off, stops at terminal
+  states and cancels on unmount. Decisions wait for server acknowledgement rather than optimistic money.
+- UI direction: slate sidebar, light cool-gray canvas, white panels, teal actions, system typography,
+  CSS-variable light/dark themes, semantic tables and compact accessible forms. No generated data.
+  Future savings is labelled Coming soon with no figures; no recommendations/chat/demo buttons.
+- Contract: generate all TypeScript API types from backend/openapi/openapi.json using openapi-typescript.
+  A thin typed client and generated-artifact drift checks prevent handwritten duplicate API types.
+- Browser verification: regular Playwright is explicitly requested; Browser plugin skill is absent.
+  Capture desktop/mobile screenshots of synthetic data and commit requested evidence under docs/screenshots.
+- Remote: user supplied the exact GitHub repository URL in the Phase 4 message. Read-only ls-remote
+  succeeded with no HEAD (empty repository). No remote was invented; hosted CI is still unverified.
+
+## Phase 4 final verification and handoff
+
+Delivered the real React frontend without changing backend behavior, schemas or OpenAPI. All data
+comes from the authenticated API. Token/money/state choices above were recorded before building.
+Feature/test/contract/infra commit: **e91bf2a**. Screenshots, README and this handoff are committed
+as a separate documentation/evidence commit after the verified feature commit.
+
+Implementation map:
+
+- `frontend/src/api/schema.ts`: generated contract; `scripts/types.mjs`: generation/drift guard,
+  including Windows CRLF normalization. `api/client.ts`: typed paths, auth and safe error envelope.
+- `lib/session.ts`: memory/sessionStorage, expiry, clearing; `lib/money.ts`: exact decimal display,
+  comparisons and dimensionless BigInt chart coordinates. No client financial aggregation.
+- `App.tsx`: protected routing, intended destination, shell, theme, logout, 404 and error boundary.
+- `pages/Auth.tsx`, `Upload.tsx`: validation, auth errors/429, drag/drop/picker, editable single/split
+  mapping, safe preview/warnings, background progress with capped polling backoff and AbortSignal,
+  terminal results/retry, recent uploads. Leaving a page does not cancel the server's upload job.
+- `Dashboard.tsx` / `SpendCharts.tsx`: API KPIs, subscriptions/fixed bills, exact chart alternatives,
+  next-five renewals, clearly labelled Coming soon savings without estimates.
+- `Subscriptions.tsx`: server filters/sort/pagination, confidence/uncertainty, confirmed/cancelled/
+  dismissed/category/last-used decisions, focus-contained native charges dialog and pagination.
+- `Renewals.tsx`, `Categories.tsx`, `Settings.tsx`: actual renewals, explicit category choices,
+  budget/preferences, honest delivery notice, typed deletion confirmation and returned counts.
+- Vitest/MSW fixtures derive from generated schemas. Playwright uses the actual Compose stack.
+  GitHub Actions has a separate Chromium e2e job. Native browser dependencies were installed.
+
+Exact verification commands run from the root unless a directory is shown:
+
+| Command | Final result |
+| --- | --- |
+| `make dev` | PASS, db/api/web healthy; Alembic applies existing head |
+| `make verify` | PASS, all 3 HTTP checks: web / proxied API readiness / direct API readiness |
+| `make types` | PASS, generated from the mounted checked-in contract |
+| `make test` | PASS: **161 PostgreSQL backend tests + 27 frontend tests**, 3 detector suites, OpenAPI and generated-type drift checks |
+| `make lint` | PASS: backend Ruff, frontend ESLint, TypeScript |
+| `make evaluate` | PASS: synthetic 16 TP/0 FP/0 FN; handwritten bank 3/0/0; handwritten products 5/0/0; precision/recall/F1 all 1.0000 |
+| `docker compose run --rm --no-deps web npm run build` | PASS, TypeScript + drift guard + Vite production build, no chunk-size warnings |
+| `make e2e` | PASS: **3 real-stack Chromium flows** (25.6s recorded run) |
+| `cd frontend; npm.cmd run e2e` | PASS again after adding all screen captures: **3/3**, 27.3s |
+| `cd frontend; npm.cmd audit --audit-level=low` | PASS: **0 vulnerabilities**, including development dependencies |
+| `cd frontend; npm.cmd run types:check` | PASS; deliberate generated-file drift was rejected with exit 1, then regeneration restored a passing check |
+| `git diff --check` | PASS; backend files unchanged; `.env`, `.venv`, dependencies, build outputs and browser artifacts remain ignored |
+
+The 27 frontend tests are 8 decimal-format/comparison/chart-coordinate cases plus 19 component/
+behavior cases (including parameterized pending/processing/done/failed progress). Browser flow:
+register → logout/login → 399-row sample → 16 ground-truth products and UI rows → charge drawer →
+confirm and change category → reload persistence → server amount sorting → API-equal monthly/yearly
+and trend values → budget → typed deletion → receipt counts and cleared session. Separate flows
+exercise handwritten Withdrawal/Deposit mapping with 3 malformed rows and empty CSV error/retry.
+No API is mocked in Playwright. Component tests mock only HTTP with typed MSW fixtures.
+
+Browser axe passes on registration, the populated charge drawer, dashboard desktop/light, dark,
+and 360px mobile. Native dialog focus/Shift+Tab/Escape/restoration and absence of document-wide
+mobile overflow are asserted. The main flow records no page errors. Structural axe also passes in
+jsdom; browser axe covers actual contrast. Synthetic screenshots for auth, empty/populated dashboard,
+light/dark/mobile, mapping, subscriptions/drawer, renewals, categories and settings are committed in
+`docs/screenshots/` (11 images). `docs/design/QA.md` records reference comparison and intentional differences.
+
+Issues found and corrected during verification: login/deletion navigation lost its success receipt;
+the receipt now survives route transitions and has a regression test. Windows bind-mount notifications
+left Vite serving stale modules; Compose now enables polling. Browser axe found success text contrast,
+the mobile header landmark and non-focusable scrolling tables; all were fixed. Initial lint accidentally
+included generated Playwright report bundles; reports are now excluded from ESLint and Docker context.
+An exact-label browser locator was replaced by the actual accessible combobox role. These failed
+intermediate runs are not reported as successful gates. One existing upstream Starlette/AnyIO
+deprecation warning remains in the 161-test backend suite.
+
+Remote/CI: local `git remote -v` is still empty. The exact GitHub URL supplied by the user was checked
+read-only and was reachable with no HEAD. No repository URL was invented, no push or hosted CI pass
+is claimed. To publish this existing repository, attach the supplied URL as origin and push the current
+`master` branch; the checked-in checks/e2e jobs then need a real hosted run. A repository URL was
+provided, so there is no need to create another repository.
+
+Known gaps / next phases:
+- Phase 5 recommendations engine, scheduler, notifications and actual email/budget-alert delivery
+  are not built. Preference controls save settings only. No implied delivery or estimated savings.
+- Phase 6 chat/LLM adapters and unknown-merchant LLM categorization remain absent; user confirmation works.
+- Phase 7 one-click demo loader, `make seed`, full theme polish and final demo script remain absent.
+- Real-bank accuracy is unmeasured; committed bank-shaped fixtures are handwritten synthetic data.
+- In-process upload workers support one API instance; no durable distributed queue exists.
+- sessionStorage allows reloads but is readable by same-origin JavaScript (documented XSS trade-off).
+- Browser verification covers Chromium; manual screen-reader and Firefox/WebKit passes remain future work.
+- Synthetic fixtures are fixed to 2026-10-18; regenerate for newer demonstration dates rather than
+  treating old transactions as recent. Failed browser runs can leave their synthetic accounts for investigation.
+
+Phase 4 is complete. Stop here; do not begin Phase 5 without the user's next instruction.
+
 ## Phase 3 decisions (recorded before implementation)
 
 - Identity: each subscription has a permanent UUID and a user-scoped unique identity key based on
@@ -39,10 +153,10 @@ Updated: 2026-10-18 (Asia/Calcutta).
 ## Read this first
 
 The user requested a complete, demo-ready application, with seven strictly sequential phases.
-**Phases 1–3 are implemented and verified. Phase 3 is complete and committed.**
-The user requested Phase 3 explicitly, including housekeeping, real PostgreSQL tests, commits and
-then stopping before Phase 4. No frontend source was changed in Phase 3.
-The full application remains incomplete; Phase 4 business frontend is next after this gate.
+**Phases 1–4 are implemented. Phase 4 is the current delivery; see its final verification below.**
+The real frontend consumes the Phase 3 contract. No backend behavior or contract was changed in
+Phase 4. Stop after this phase; do not start recommendations, scheduler/email, chat or demo seeding
+without the user's next instruction. The full seven-phase application remains incomplete.
 
 The workspace root itself is the `subtrack` repository; do not create a nested duplicate project.
 No existing application or user files were present at the beginning.
@@ -62,7 +176,8 @@ No subagent delegation was requested; do not let parallel workers edit the same 
 - `backend/app/db.py`: lazy engine, session dependency, declarative Base; no `create_all`.
 - `backend/alembic`: explicit baseline and `0002_domain` business migration, tested up/down and drift.
 - `backend/tests/test_health.py`: liveness, OpenAPI contract, database failure, CORS.
-- `frontend`: React/Vite/TypeScript/Tailwind foundation, Query and Router providers; readiness screen.
+- `frontend`: React/Vite/TypeScript/Tailwind app, generated OpenAPI types, auth, real upload mapping/progress,
+  dashboard, Recharts, subscription filters/actions/charge drawer, renewals, categories and settings/privacy.
 - `scripts/verify_stack.py`: real HTTP verification through both public ports and the web API proxy.
 - `.github/workflows/ci.yml`: unit checks, lint/type/build, real Compose boot and readiness verification.
 - `backend/app/services/normalizer.py`: merchant aliases, rail/reference/noise removal, safe display.
@@ -232,9 +347,8 @@ clock via `generate_dataset(as_of=...)`; do not silently treat stale fixed-date 
 2. Start Docker Desktop if needed. Preserve the existing ignored `.env` (random local credentials).
 3. Run `make dev`, `make verify`, `make test`, `make lint`; `make evaluate` prints quality metrics.
    Without Make, use the equivalent commands in README. Refresh PATH in old Windows terminals.
-4. After the final Phase 3 gate and commits, stop and report. Do not begin Phase 4 without the
-   user's follow-up. Phase 4 will consume the checked-in OpenAPI contract and real API, replacing
-   the readiness-only frontend with auth, upload progress, dashboard and subscription workflows.
+4. Phase 4 is delivered. Read its final results and known gaps below. Do not begin Phase 5 until
+   the user asks. Start that phase from the real existing API/client; do not redo earlier phases.
 5. Keep the repository runnable after each phase; run the full available suite and report a short status.
 
 ## Phase 3 final verification and handoff
