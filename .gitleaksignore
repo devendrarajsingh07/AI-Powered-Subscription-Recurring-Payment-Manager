@@ -1,0 +1,5 @@
+# Verified synthetic production-guard JWT test literals; never used by app accounts.
+# See docs/DOD.md. Exact historical fingerprints only, not a path/rule allowlist.
+f9043c5295326d369ba18a2251862195a7c2026e:backend/tests/test_demo.py:generic-api-key:148
+f9043c5295326d369ba18a2251862195a7c2026e:backend/tests/test_demo.py:generic-api-key:163
+f9043c5295326d369ba18a2251862195a7c2026e:backend/tests/test_demo.py:generic-api-key:209

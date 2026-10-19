@@ -112,6 +112,12 @@ clock in a finally block. Pass arguments with `python scripts/run_e2e.py demo.sp
 Failed browser runs can leave synthetic accounts; successful flows delete their accounts/outbox.
 Reports/traces are ignored because they can contain short-lived tokens. Do not publish private traces.
 
+On this Windows host the downloaded Firefox157 executable failed before page launch with a native
+side-by-side activation error (dependent assembly mozglue). Chromium and WebKit run locally.
+Until that host runtime is repaired, run `python scripts/run_e2e.py --project=chromium --project=webkit`
+to exercise available browsers. The default `make e2e` keeps Firefox enabled and reports its failure;
+Ubuntu CI installs all dependencies and runs all three engines. No failing browser is silently skipped.
+
 The API's `/api/v1/openapi.json` is checked in with an endpoint summary under backend/openapi.
 `make types` uses openapi-typescript; never hand-edit src/api/schema.ts. Build/test fail on drift.
 Money stays decimal strings with Indian grouping; charts only derive dimensionless BigInt coordinates.

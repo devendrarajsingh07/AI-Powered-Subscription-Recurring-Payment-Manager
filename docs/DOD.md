@@ -48,6 +48,11 @@ Final command/count/CI and fresh-clone evidence will be appended below after exe
 ## Measurements and verification log
 
 - Gitleaks 8.30.1, full history before edits: 18 commits/~1.35 MB, no leaks.
+- Expanded history scan initially flagged three synthetic production-guard JWT literals in
+  f9043c5:tests/test_demo.py, never used as account/application credentials. Reported to the owner;
+  no history rewrite. Tests now generate ephemeral values. .gitleaksignore lists ONLY those exact
+  three historical fingerprints, with no path/rule suppression. Reviewed scan:22 commits, no
+  unreviewed findings. No real secret was discovered. Retain this explanation with the scan result.
 - Baseline pip-audit reported 49 advisory entries (including duplicate identifiers) in PyJWT,
   pytest, python-multipart and Starlette. Updated PyJWT2.15.0, pytest9.0.3, multipart0.0.31,
   FastAPI0.147.0 and compatible Starlette1.9.0; regenerated hash lock. Repeat audit: no known vulnerabilities.

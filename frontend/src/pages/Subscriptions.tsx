@@ -237,7 +237,11 @@ export default function Subscriptions() {
                         <td>
                           <button
                             aria-label={`Review ${item.merchant}`}
-                            onClick={() => setSelected(item.id)}
+                            onClick={(event) => {
+                              // Safari does not focus buttons on pointer activation.
+                              event.currentTarget.focus();
+                              setSelected(item.id);
+                            }}
                           >
                             Review
                           </button>

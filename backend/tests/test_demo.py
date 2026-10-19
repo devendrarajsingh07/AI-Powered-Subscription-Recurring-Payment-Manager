@@ -1,3 +1,4 @@
+import secrets
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from decimal import Decimal
@@ -145,7 +146,7 @@ def production(**extra):
         demo_enabled=False,
         notifier_provider="smtp",
         web_origin="https://subtrack.example.org",
-        jwt_secret="p6wN7GqH9rFd3KzB2sX8mLc4VjA5tYuE0iOoRaQW",
+        jwt_secret=secrets.token_urlsafe(48),
         **extra,
     )
 
@@ -160,7 +161,7 @@ def test_production_guards(field, value):
         demo_enabled=False,
         notifier_provider="smtp",
         web_origin="https://subtrack.example.org",
-        jwt_secret="p6wN7GqH9rFd3KzB2sX8mLc4VjA5tYuE0iOoRaQW",
+        jwt_secret=secrets.token_urlsafe(48),
     )
     values[field] = value
     with pytest.raises(ValidationError):
@@ -206,7 +207,7 @@ def test_explicit_cors_and_security_headers(api_client, monkeypatch):
         Settings(
             _env_file=None,
             environment="test",
-            jwt_secret="p6wN7GqH9rFd3KzB2sX8mLc4VjA5tYuE0iOoRaQW",
+            jwt_secret=secrets.token_urlsafe(48),
         )
     response = api_client.get("/api/v1/health/ready")
     assert response.headers["x-content-type-options"] == "nosniff"
