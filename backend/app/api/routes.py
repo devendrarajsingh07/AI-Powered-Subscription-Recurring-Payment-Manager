@@ -12,10 +12,12 @@ from app import schemas as s
 from app.clock import today
 from app.config import get_settings
 from app.db import get_db
-from app.models import Budget, MerchantCategory, Subscription, Upload
+from app.models import Alert, Budget, MerchantCategory, Recommendation, Subscription, Upload
+from app.services.alerts import generate as generate_alerts
 from app.services.categories import kind_for_category
 from app.services.detector import CADENCES
 from app.services.ingestion import MAX_BYTES, CsvValidationError, parse_csv, preview_csv
+from app.services.insights import potential_savings, regenerate
 from app.services.normalizer import safe_display
 from app.services.summary import summarize, trend
 from app.uploads import get_worker
@@ -334,6 +336,8 @@ def patch_subscription(
         elif key == "status":
             record.cancelled_at = datetime.now(timezone.utc) if value == "cancelled" else None
     record.requires_confirmation = record.category == "unknown" and not record.user_confirmed
+    regenerate(db, user.id, as_of=as_of)
+    generate_alerts(db, user.id, as_of=as_of, now=datetime.now(timezone.utc))
     db.commit()
     return sub_out(record)
 
@@ -374,34 +378,43 @@ def budget(user: CurrentUser, db: Db):
 
 
 @router.put("/budget", response_model=s.BudgetOut, tags=["budget"])
-def put_budget(body: s.BudgetPut, user: CurrentUser, db: Db):
+def put_budget(body: s.BudgetPut, user: CurrentUser, db: Db, as_of=Depends(today)):
     lock_user(db, user.id)
     records = repo.list_owned(db, user.id, Budget, limit=1)
     if records:
         records[0].monthly_limit = body.monthly_limit
     else:
         repo.create_owned(db, user.id, Budget, monthly_limit=body.monthly_limit)
+    generate_alerts(db, user.id, as_of=as_of, now=datetime.now(timezone.utc))
     db.commit()
     return dict(monthly_limit=body.monthly_limit)
 
 
-@router.get("/settings/alerts", response_model=s.AlertSettings, tags=["settings"])
+@router.get("/settings/alerts", response_model=s.AlertSettingsOut, tags=["settings"])
 def settings(user: CurrentUser):
-    return s.AlertSettings(
+    cfg = get_settings()
+    return s.AlertSettingsOut(
         lead_time_days=user.alert_lead_days,
-        notification_email=user.notification_email or user.email,
+        notification_email=user.notification_email,
         enabled=user.alerts_enabled,
+        delivery_mode=cfg.notifier_provider,
+        delivery_notice=(
+            "Development mode: emails are saved to a private outbox, not delivered to an inbox."
+            if cfg.notifier_provider == "console"
+            else "Email delivery is configured via SMTP. Check recent alerts for delivery status."
+        ),
     )
 
 
-@router.put("/settings/alerts", response_model=s.AlertSettings, tags=["settings"])
-def put_settings(body: s.AlertSettings, user: CurrentUser, db: Db):
+@router.put("/settings/alerts", response_model=s.AlertSettingsOut, tags=["settings"])
+def put_settings(body: s.AlertSettings, user: CurrentUser, db: Db, as_of=Depends(today)):
     lock_user(db, user.id)
     user.alert_lead_days = body.lead_time_days
     user.notification_email = (
         str(body.notification_email).lower() if body.notification_email else None
     )
     user.alerts_enabled = body.enabled
+    generate_alerts(db, user.id, as_of=as_of, now=datetime.now(timezone.utc))
     db.commit()
     return settings(user)
 
@@ -419,10 +432,14 @@ def unconfirmed(user: CurrentUser, db: Db, limit: Limit = 20, offset: Offset = 0
 
 
 @router.patch("/categories/{category_id}", response_model=s.CategoryOut, tags=["categories"])
-def patch_category(category_id: uuid.UUID, body: s.CategoryPatch, user: CurrentUser, db: Db):
+def patch_category(
+    category_id: uuid.UUID, body: s.CategoryPatch, user: CurrentUser, db: Db, as_of=Depends(today)
+):
     lock_user(db, user.id)
     record = require_owned(db, user.id, MerchantCategory, category_id)
     result = repo.confirm_category(db, user.id, record.merchant, body.category)
+    regenerate(db, user.id, as_of=as_of)
+    generate_alerts(db, user.id, as_of=as_of, now=datetime.now(timezone.utc))
     db.commit()
     return result
 
@@ -431,6 +448,103 @@ def patch_category(category_id: uuid.UUID, body: s.CategoryPatch, user: CurrentU
 def delete_my_data(user: CurrentUser, db: Db):
     """Atomically delete the account and its owned records. Its tokens stop working."""
     lock_user(db, user.id)
+    from app.services.notifier import ConsoleNotifier, DeliveryError
+
+    try:
+        ConsoleNotifier(get_settings().outbox_dir).purge(user.id)
+    except (OSError, DeliveryError):
+        fail(503, "outbox_unavailable", "Could not remove private outbox copies; please retry")
     counts = repo.delete_data(db, user.id)
     db.commit()
     return dict(deleted=counts)
+
+
+def recommendation_out(record):
+    return s.RecommendationOut(
+        **{
+            name: getattr(record, name)
+            for name in s.RecommendationOut.model_fields
+            if name != "members"
+        },
+        members=record.facts.get("members", []),
+    )
+
+
+@router.get(
+    "/recommendations", response_model=s.Page[s.RecommendationOut], tags=["recommendations"]
+)
+def recommendations(
+    user: CurrentUser,
+    db: Db,
+    status: s.RecommendationStatus | None = None,
+    type: s.RecommendationType | None = None,
+    limit: Limit = 20,
+    offset: Offset = 0,
+):
+    conditions = [
+        getattr(Recommendation, name) == value
+        for name, value in (("status", status), ("type", type))
+        if value is not None
+    ]
+    return dict(
+        items=[
+            recommendation_out(row)
+            for row in repo.list_owned(
+                db,
+                user.id,
+                Recommendation,
+                *conditions,
+                limit=limit,
+                offset=offset,
+                order_by=Recommendation.created_at.desc(),
+            )
+        ],
+        total=repo.count_owned(db, user.id, Recommendation, *conditions),
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.patch(
+    "/recommendations/{recommendation_id}",
+    response_model=s.RecommendationOut,
+    tags=["recommendations"],
+)
+def patch_recommendation(
+    recommendation_id: uuid.UUID, body: s.RecommendationPatch, user: CurrentUser, db: Db
+):
+    lock_user(db, user.id)
+    record = require_owned(db, user.id, Recommendation, recommendation_id)
+    if record.status == "resolved":
+        fail(409, "resolved_recommendation", "This recommendation no longer applies")
+    target = "accepted" if body.action == "accept" else "dismissed"
+    if record.status != target:
+        record.status = target
+        record.decisions = {**record.decisions, record.facts_hash: target}
+        if target == "accepted":
+            record.accepted_at = datetime.now(timezone.utc)
+    db.commit()
+    return recommendation_out(record)
+
+
+@router.get("/summary/savings", response_model=s.SavingsOut, tags=["summary"])
+def savings(user: CurrentUser, db: Db):
+    return dict(potential_savings=potential_savings(db, user.id))
+
+
+@router.get("/alerts", response_model=s.Page[s.AlertOut], tags=["alerts"])
+def alerts(user: CurrentUser, db: Db, limit: Limit = 20, offset: Offset = 0):
+    return dict(
+        items=repo.list_owned(
+            db, user.id, Alert, limit=limit, offset=offset,
+            order_by=Alert.last_attempt_at.desc().nullslast()
+        ),
+        total=repo.count_owned(db, user.id, Alert),
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/alerts/{alert_id}", response_model=s.AlertOut, tags=["alerts"])
+def alert_detail(alert_id: uuid.UUID, user: CurrentUser, db: Db):
+    return require_owned(db, user.id, Alert, alert_id)

@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.db import get_engine
 from app.models import Upload, User
 from app.services.ingestion import parse_csv
+from app.services.insights import regenerate
 
 logger = logging.getLogger("subtrack.uploads")
 
@@ -103,6 +104,7 @@ class UploadWorker:
                     )
                 self._progress(user_id, upload_id, stage="detecting")
                 detected = repo.redetect(db, user_id, as_of=as_of)
+                regenerate(db, user_id, as_of=as_of)
                 repo.update_upload(
                     db,
                     user_id,

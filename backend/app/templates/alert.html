@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>SubTrack reminder</title></head>
+<body><main><h1>SubTrack</h1>
+{% if kind == 'renewal' %}
+<h2>An expected renewal is coming up</h2>
+<p><strong>{{ payload.merchant }}</strong></p>
+<p>Estimated charge: INR {{ payload.amount }}<br>Expected renewal: {{ payload.renewal_date }}</p>
+<p>This is an estimate based on past charges, not a confirmed charge.</p>
+{% else %}
+<h2>Your recurring spend is above your budget</h2>
+<p>Budget: INR {{ payload.budget }}<br>Recurring total: INR {{ payload.total }}<br>Overage: INR {{ payload.overage }}</p>
+<h3>Top contributors</h3><ul>{% for item in payload.contributors %}
+<li>{{ item.merchant }} ({{ item.kind }}): INR {{ item.monthly_equivalent }} per month</li>{% endfor %}</ul>
+{% endif %}
+<p><a href="{{ settings_url }}">Review your alert preferences</a></p>
+<p>For demo and educational use with uploaded or simulated data. This is not financial advice.</p>
+</main></body></html>

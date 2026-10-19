@@ -290,6 +290,11 @@ class AlertSettings(Schema):
     enabled: StrictBool = True
 
 
+class AlertSettingsOut(AlertSettings):
+    delivery_mode: Literal["console", "smtp"]
+    delivery_notice: str
+
+
 class CategoryOut(Schema):
     id: uuid.UUID
     merchant: str
@@ -372,3 +377,54 @@ class Page(Schema, Generic[T]):
     total: int
     limit: int
     offset: int
+
+
+RecommendationType = Literal["duplicate", "high_cost", "price_increase", "possibly_unused"]
+RecommendationStatus = Literal["open", "accepted", "dismissed", "resolved"]
+
+
+class RecommendationMember(Schema):
+    subscription_id: uuid.UUID
+    merchant: str
+    category: Category
+    cadence: Cadence
+    avg_amount: Money
+    monthly_equivalent: AggregateMoney
+
+
+class RecommendationOut(Schema):
+    id: uuid.UUID
+    type: RecommendationType
+    status: RecommendationStatus
+    message: str
+    subscription_id: uuid.UUID | None
+    members: list[RecommendationMember]
+    est_monthly_saving: AggregateMoney | None
+    extra_monthly_cost: AggregateMoney | None
+    percent_change: AggregateMoney | None
+    accepted_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class RecommendationPatch(Schema):
+    action: Literal["accept", "dismiss"]
+
+
+class SavingsOut(Schema):
+    potential_savings: AggregateMoney
+    currency: Literal["INR"] = "INR"
+
+
+class AlertOut(Schema):
+    id: uuid.UUID
+    subscription_id: uuid.UUID | None
+    kind: Literal["renewal", "budget"]
+    send_on: date
+    status: Literal["pending", "retrying", "sent", "skipped", "failed"]
+    sent_at: datetime | None
+    channel: Literal["email"]
+    attempt_count: int
+    last_attempt_at: datetime | None
+    next_attempt_at: datetime | None
+    safe_failure_reason: str | None

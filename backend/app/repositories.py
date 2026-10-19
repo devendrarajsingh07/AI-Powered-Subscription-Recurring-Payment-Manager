@@ -191,9 +191,14 @@ def persist_detections(db, user_id, detections: list[Detection], *, as_of):
             )
         record.requires_confirmation = record.category == "unknown" and not record.user_confirmed
         price = detection.price_increase
+        same_price = price and (
+            record.price_previous_amount == price.previous_median
+            and record.price_new_amount == price.latest_amount
+        )
+        detected_on = record.price_detected_on if same_price else as_of
         record.price_previous_amount = price.previous_median if price else None
         record.price_new_amount = price.latest_amount if price else None
-        record.price_detected_on = as_of if price else None
+        record.price_detected_on = detected_on if price else None
         db.execute(
             delete(m.SubscriptionCharge).where(
                 m.SubscriptionCharge.user_id == user_id,

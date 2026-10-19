@@ -26,6 +26,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - outbox_data:/var/subtrack/outbox
     command: [sh, -c, 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --no-access-log']
     healthcheck:
       test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://localhost:8000/api/v1/health/ready", timeout=3)']
@@ -54,4 +55,5 @@ services:
       retries: 20
 volumes:
   postgres_data:
+  outbox_data:
 

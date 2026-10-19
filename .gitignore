@@ -14,5 +14,6 @@ coverage/
 playwright-report/
 test-results/
 *.log
+var/
 .DS_Store
 

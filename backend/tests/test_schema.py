@@ -48,7 +48,9 @@ def test_model_schema_has_no_drift_and_money_is_numeric(pg_engine):
                 if column.name == "amount_cv":
                     continue
                 assert isinstance(column.type, Numeric)
-                assert column.type.precision == 12 and column.type.scale == 2
+                # Duplicate estimates aggregate multiple individually valid monetary records.
+                expected_precision = 24 if column.name == "est_monthly_saving" else 12
+                assert column.type.precision == expected_precision and column.type.scale == 2
 
 
 def test_budget_alert_null_subscription_dedupe_and_cascades(db):

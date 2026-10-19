@@ -189,12 +189,24 @@ class Recommendation(Owned, Base):
         )
     )
     message: Mapped[str] = mapped_column(Text)
-    est_monthly_saving: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    est_monthly_saving: Mapped[Decimal | None] = mapped_column(Numeric(24, 2))
+    subject_key: Mapped[str] = mapped_column(String(100), default=lambda: uuid.uuid4().hex)
+    facts_hash: Mapped[str] = mapped_column(String(64), default="legacy")
+    facts: Mapped[dict] = mapped_column(JSONB, default=dict)
+    decisions: Mapped[dict] = mapped_column(JSONB, default=dict)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    extra_monthly_cost: Mapped[Decimal | None] = mapped_column(Numeric(24, 2))
+    percent_change: Mapped[Decimal | None] = mapped_column(Numeric(20, 2))
     status: Mapped[str] = mapped_column(
-        choices("recommendation_status", "open", "accepted", "dismissed"), default="open"
+        choices("recommendation_status", "open", "accepted", "dismissed", "resolved"),
+        default="open",
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     __table_args__ = (
+        UniqueConstraint("user_id", "type", "subject_key", name="uq_recommendation_subject"),
         ForeignKeyConstraint(
             ["subscription_id", "user_id"],
             ["subscriptions.id", "subscriptions.user_id"],
@@ -211,20 +223,30 @@ class Alert(Owned, Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     channel: Mapped[str] = mapped_column(choices("alert_channel", "email"), default="email")
     payload: Mapped[dict] = mapped_column(JSONB)
+    event_key: Mapped[str] = mapped_column(String(100), default=lambda: uuid.uuid4().hex)
+    recipient: Mapped[str | None] = mapped_column(String(254))
+    status: Mapped[str] = mapped_column(
+        choices("alert_status", "pending", "retrying", "sent", "skipped", "failed"),
+        default="pending",
+    )
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    safe_failure_reason: Mapped[str | None] = mapped_column(String(255))
+    delivery_snapshot: Mapped[dict | None] = mapped_column(JSONB)
     __table_args__ = (
         ForeignKeyConstraint(
             ["subscription_id", "user_id"],
             ["subscriptions.id", "subscriptions.user_id"],
             ondelete="CASCADE",
         ),
+        UniqueConstraint("user_id", "kind", "event_key", name="uq_alert_event"),
         Index(
-            "uq_alert_identity",
+            "uq_alert_budget_month",
             "user_id",
-            "kind",
-            "subscription_id",
             "send_on",
             unique=True,
-            postgresql_nulls_not_distinct=True,
+            postgresql_where=text("kind = 'budget'"),
         ),
         CheckConstraint(
             "kind != 'budget' OR (subscription_id IS NULL AND EXTRACT(DAY FROM send_on) = 1)",

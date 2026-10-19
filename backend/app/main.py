@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app import uploads
 from app.api.routes import router
 from app.config import get_settings
-from app.db import get_db
+from app.db import get_db, get_engine
 from app.middleware import SafetyMiddleware
 from app.migrations import database_at_head
 
@@ -22,16 +22,25 @@ async def lifespan(app):
     if len(get_settings().jwt_secret.get_secret_value()) < 32:
         raise RuntimeError("JWT_SECRET must contain at least 32 characters")
     instance = None
+    scheduler = None
     if uploads.get_worker not in app.dependency_overrides:
         instance = uploads.start_worker()
-    yield
-    if instance:
-        instance.close()
+        if get_settings().scheduler_enabled:
+            from app.scheduler import start_scheduler
+
+            scheduler = start_scheduler(get_engine())
+    try:
+        yield
+    finally:
+        if scheduler:
+            scheduler.shutdown(wait=True)
+        if instance:
+            instance.close()
 
 
 app = FastAPI(
     title="SubTrack API",
-    version="0.3.0",
+    version="0.5.0",
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
     description="Educational use with uploaded or simulated INR data. "

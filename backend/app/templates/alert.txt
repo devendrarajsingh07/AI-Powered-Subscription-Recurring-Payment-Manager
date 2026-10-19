@@ -1,0 +1,18 @@
+SubTrack
+{% if kind == 'renewal' %}
+An expected renewal is coming up.
+Merchant: {{ payload.merchant }}
+Estimated charge: INR {{ payload.amount }}
+Expected renewal: {{ payload.renewal_date }}
+This is an estimate based on past charges, not a confirmed charge.
+{% else %}
+Your monthly-equivalent recurring spend is above your budget.
+Budget: INR {{ payload.budget }}
+Recurring total: INR {{ payload.total }}
+Overage: INR {{ payload.overage }}
+Top contributors:
+{% for item in payload.contributors %}- {{ item.merchant }} ({{ item.kind }}): INR {{ item.monthly_equivalent }} per month
+{% endfor %}
+{% endif %}
+Review preferences: {{ settings_url }}
+For demo and educational use with uploaded or simulated data. This is not financial advice.

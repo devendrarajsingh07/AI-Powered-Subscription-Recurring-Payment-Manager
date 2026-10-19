@@ -8,6 +8,8 @@ COPY requirements.lock .
 RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY . .
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
+RUN mkdir -p /var/subtrack/outbox && chown -R appuser:appuser /var/subtrack
+ENV OUTBOX_DIR=/var/subtrack/outbox
 USER appuser
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

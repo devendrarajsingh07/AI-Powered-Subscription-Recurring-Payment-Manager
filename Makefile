@@ -1,4 +1,4 @@
-.PHONY: dev down test lint seed verify sample evaluate openapi types e2e
+.PHONY: dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox
 dev:
 	docker compose up --build --wait
 down:
@@ -27,4 +27,9 @@ types:
 	docker compose run --rm --no-deps web npm run types
 e2e:
 	cd frontend && npm run e2e
+run-alerts:
+	docker compose exec -T api python -m app.jobs run $(if $(AS_OF),--as-of $(AS_OF),)
+outbox:
+	python -c "from pathlib import Path; Path('var/outbox').mkdir(parents=True, exist_ok=True)"
+	docker compose cp api:/var/subtrack/outbox/. var/outbox
 
