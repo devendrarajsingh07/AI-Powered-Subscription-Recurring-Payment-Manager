@@ -34,6 +34,7 @@ import { clearSession, getSignOutNotice, useSession } from "./lib/session";
 import { ErrorState, Loading } from "./components/Common";
 import { Auth } from "./pages/Auth";
 import { ChatAssistant } from "./components/ChatAssistant";
+import { applyTheme, readTheme, type Theme } from "./lib/theme";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const UploadPage = lazy(() => import("./pages/Upload"));
 const Subscriptions = lazy(() => import("./pages/Subscriptions"));
@@ -77,8 +78,9 @@ function Shell() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(
-    () => localStorage.getItem("subtrack.theme") === "dark",
+    () => document.documentElement.dataset.theme === "dark",
   );
+  const [theme, setTheme] = useState<Theme>(readTheme);
   const me = useQuery({
     queryKey: ["me"],
     queryFn: async ({ signal }) =>
@@ -86,9 +88,16 @@ function Shell() {
     enabled: !!session,
   });
   useEffect(() => {
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
-    localStorage.setItem("subtrack.theme", dark ? "dark" : "light");
-  }, [dark]);
+    applyTheme(theme);
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const update = () => {
+      applyTheme(theme);
+      setDark(document.documentElement.dataset.theme === "dark");
+    };
+    update();
+    media?.addEventListener("change", update);
+    return () => media?.removeEventListener("change", update);
+  }, [theme]);
   if (!session)
     return (
       <Navigate
@@ -145,11 +154,23 @@ function Shell() {
             <button
               className="icon-button"
               aria-label={dark ? "Use light theme" : "Use dark theme"}
-              onClick={() => setDark(!dark)}
+              onClick={() => setTheme(dark ? "light" : "dark")}
             >
               {dark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           </div>
+          <label className="theme-control">
+            Theme
+            <select
+              aria-label="Theme preference"
+              value={theme}
+              onChange={(event) => setTheme(event.target.value as Theme)}
+            >
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
         </div>
       </aside>
       <main id="content" tabIndex={-1}>
@@ -178,6 +199,17 @@ export function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const session = useSession();
+  useEffect(() => {
+    const title =
+      navigation.find(([path]) => path === location.pathname)?.[1] ||
+      (location.pathname === "/login"
+        ? "Sign in"
+        : location.pathname === "/register"
+          ? "Create account"
+          : "Page not found");
+    document.title = `${title} · SubTrack`;
+    document.getElementById("content")?.focus();
+  }, [location.pathname]);
   useEffect(() => {
     const onLogout = (event: Event) => {
       const expired = (event as CustomEvent<{ expired: boolean }>).detail
@@ -208,6 +240,14 @@ export function App() {
   }, [session]);
   return (
     <ErrorBoundary>
+      <span className="sr-only" role="status" aria-live="polite">
+        {navigation.find(([path]) => path === location.pathname)?.[1] ||
+          (location.pathname === "/login"
+            ? "Sign in"
+            : location.pathname === "/register"
+              ? "Create account"
+              : "Page not found")}
+      </span>
       <Routes>
         <Route path="/login" element={<Auth />} />
         <Route path="/register" element={<Auth register />} />

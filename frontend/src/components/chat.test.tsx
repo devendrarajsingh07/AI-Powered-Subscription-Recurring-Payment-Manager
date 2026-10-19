@@ -13,7 +13,7 @@ const config: Config = {
   mode: "offline",
   live_opt_in: false,
   disclosure:
-    "Live Claude receives subscription names, amounts and dates only after consent.",
+    "Live Gemini receives subscription names, amounts and dates only after consent.",
 };
 const history: components["schemas"]["Page_ChatHistory_"] = {
   items: [],
@@ -107,7 +107,7 @@ test("live consent gates the first message and can be withdrawn", async () => {
   );
   mount();
   const user = userEvent.setup();
-  expect(await screen.findByText(/Live Claude assistant/)).toBeVisible();
+  expect(await screen.findByText(/Live Gemini assistant/)).toBeVisible();
   expect(screen.getByRole("button", { name: "Send question" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Enable live AI" })).toBeDisabled();
   await user.click(screen.getByRole("checkbox"));

@@ -1,3 +1,4 @@
+import { DemoPanel } from "../components/DemoPanel";
 import { Link } from "react-router";
 import {
   ArrowUpRight,
@@ -33,6 +34,7 @@ export default function Dashboard() {
           Upload statement
         </Link>
       </Heading>
+      <DemoPanel />
       {summary.isPending ? (
         <Loading />
       ) : summary.isError ? (

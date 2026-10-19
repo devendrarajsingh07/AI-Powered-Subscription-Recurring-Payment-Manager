@@ -211,7 +211,7 @@ export function ChatPanel() {
       <p className="notice-box">
         {config.data.mode === "offline"
           ? "Offline demo assistant — answers come from your data using built-in rules; no external AI."
-          : "Live Claude assistant — your permission controls external data sharing."}
+          : "Live Gemini assistant — your permission controls external data sharing."}
       </p>
       <details className="chat-disclosure" open={!permitted}>
         <summary>Data sharing and consent</summary>
@@ -229,7 +229,7 @@ export function ChatPanel() {
                   checked={consent}
                   onChange={(event) => setConsent(event.target.checked)}
                 />{" "}
-                I agree to send the disclosed data to Claude.
+                I agree to send the disclosed data to Gemini.
               </label>
             )}
             <button

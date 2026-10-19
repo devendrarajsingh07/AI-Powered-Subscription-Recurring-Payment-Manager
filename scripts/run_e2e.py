@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,7 +16,7 @@ def main():
     command = ['docker', 'compose', 'up', '-d', '--wait', 'api']
     try:
         subprocess.run(command, cwd=ROOT, env=fixed, check=True)
-        result = subprocess.run(['node', 'node_modules/@playwright/test/cli.js', 'test'],
+        result = subprocess.run(['node', 'node_modules/@playwright/test/cli.js', 'test', *sys.argv[1:]],
                                 cwd=ROOT/'frontend', env=fixed)
         return result.returncode
     finally:

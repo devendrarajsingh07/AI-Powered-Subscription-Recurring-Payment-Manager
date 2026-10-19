@@ -71,7 +71,7 @@ export function Auth({ register = false }: { register?: boolean }) {
     }
   }
   return (
-    <main className="auth-page">
+    <main id="content" tabIndex={-1} className="auth-page">
       <section className="auth-story">
         <Link className="brand" to="/login">
           SubTrack<span className="brand-dot">.</span>
@@ -123,7 +123,10 @@ export function Auth({ register = false }: { register?: boolean }) {
               </dl>
             </details>
           )}
-          <form onSubmit={submit}>
+          <form
+            onSubmit={submit}
+            aria-describedby={error ? "auth-error" : undefined}
+          >
             <label>
               Email address
               <input
@@ -154,7 +157,7 @@ export function Auth({ register = false }: { register?: boolean }) {
               </small>
             )}
             {error && (
-              <p role="alert" className="error">
+              <p id="auth-error" role="alert" className="error">
                 {error}
               </p>
             )}

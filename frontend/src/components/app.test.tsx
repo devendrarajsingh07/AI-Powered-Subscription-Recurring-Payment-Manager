@@ -21,6 +21,14 @@ import { api } from "../api/client";
 import { App } from "../App";
 import Categories from "../pages/Categories";
 const server = setupServer(
+  http.get("*/api/v1/uploads", () =>
+    HttpResponse.json({
+      items: [],
+      total: 0,
+      limit: 100,
+      offset: 0,
+    } satisfies components["schemas"]["Page_UploadOut_"]),
+  ),
   http.get("*/api/v1/alerts", () =>
     HttpResponse.json({
       items: [],
@@ -54,6 +62,7 @@ function wrapper(ui: React.ReactNode, path = "/login") {
   );
 }
 const upload: components["schemas"]["UploadOut"] = {
+  source: "upload",
   id: "upload-1",
   filename: "synthetic.csv",
   row_count: 3,

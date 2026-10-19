@@ -1,13 +1,15 @@
+import { UploadProgress, Warnings } from "../components/UploadProgress";
+export { UploadProgress } from "../components/UploadProgress";
+import { DemoPanel } from "../components/DemoPanel";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router";
-import { CheckCircle2, FileUp } from "lucide-react";
+import { FileUp } from "lucide-react";
 import { api, errorMessage } from "../api/client";
 import type { components } from "../api/schema";
 import { Empty, ErrorState, Heading, Loading } from "../components/Common";
 import { useRefresh } from "../hooks/data";
 type Preview = components["schemas"]["Preview"];
-type Upload = components["schemas"]["UploadOut"];
+
 export type Layout = "single" | "split";
 export function mappingForLayout(
   mapping: Record<string, string>,
@@ -32,95 +34,6 @@ export function mappingValid(mapping: Record<string, string>, layout: Layout) {
   return (
     required.every((key) => !!mapping[key]) &&
     new Set(selected).size === selected.length
-  );
-}
-export function UploadProgress({ upload }: { upload: Upload }) {
-  return (
-    <section className="panel" aria-label="Upload progress">
-      <div className="section-heading">
-        <h2>
-          {upload.status === "done"
-            ? "Statement processed"
-            : upload.status === "failed"
-              ? "Upload failed"
-              : "Processing your statement"}
-        </h2>
-        <span className="badge">{upload.status}</span>
-      </div>
-      <div role="status" aria-live="polite">
-        <p>
-          Stage: <strong>{upload.stage.replaceAll("_", " ")}</strong>
-        </p>
-        <progress
-          max={upload.total_rows || 1}
-          value={upload.processed_rows}
-          aria-label="Rows processed"
-        />
-        <p>
-          {upload.processed_rows} / {upload.total_rows} rows processed
-        </p>
-      </div>
-      {upload.status === "failed" && (
-        <p role="alert" className="error">
-          {upload.error_message ||
-            "Processing failed. Please retry your upload."}
-        </p>
-      )}
-      {upload.status === "done" && (
-        <>
-          <div className="result-grid">
-            <div>
-              <strong>{upload.inserted_count}</strong>
-              <span>Inserted</span>
-            </div>
-            <div>
-              <strong>{upload.duplicate_count}</strong>
-              <span>Duplicates skipped</span>
-            </div>
-            <div>
-              <strong>{upload.malformed_count}</strong>
-              <span>Malformed rows</span>
-            </div>
-            <div>
-              <strong>{upload.detected_count}</strong>
-              <span>Detected products</span>
-            </div>
-          </div>
-          <p className="success">
-            <CheckCircle2 size={18} />
-            Your subscription view is ready.
-          </p>
-          <Link className="button primary" to="/">
-            View dashboard
-          </Link>{" "}
-          <Link className="button" to="/subscriptions">
-            View subscriptions
-          </Link>
-        </>
-      )}
-      {upload.warnings.length > 0 && <Warnings warnings={upload.warnings} />}
-      {upload.malformed_count > 0 && (
-        <p className="notice-box">{upload.remainder_notice}</p>
-      )}
-    </section>
-  );
-}
-function Warnings({
-  warnings,
-}: {
-  warnings: components["schemas"]["RowWarning"][];
-}) {
-  return (
-    <details open>
-      <summary>Row warnings ({warnings.length} shown)</summary>
-      <ul>
-        {warnings.map((warning, index) => (
-          <li key={index}>
-            Line {warning.line}: {warning.reason}
-          </li>
-        ))}
-      </ul>
-    </details>
   );
 }
 export default function UploadPage() {
@@ -220,6 +133,7 @@ export default function UploadPage() {
         title="Upload a statement"
         subtitle="Turn transaction history into a clearer recurring spend picture."
       />
+      <DemoPanel />
       <div className="steps" aria-label="Upload steps">
         <span className={!preview && !uploadId ? "current" : ""}>
           1 · Choose CSV

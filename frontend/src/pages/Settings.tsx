@@ -1,3 +1,4 @@
+import { DemoPanel } from "../components/DemoPanel";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, errorMessage } from "../api/client";
@@ -70,6 +71,7 @@ export default function SettingsPage() {
           )}
         </section>
       </div>
+      <DemoPanel settings />
       <RecentAlerts />
       <section className="panel danger-zone">
         <h2>Your data, your control</h2>
@@ -100,6 +102,7 @@ function BudgetForm({
   const [busy, setBusy] = useState(false);
   return (
     <form
+      aria-describedby={error ? "budget-error" : undefined}
       onSubmit={async (event) => {
         event.preventDefault();
         if (!/^\d{1,10}(?:\.\d{1,2})?$/.test(amount)) {
@@ -144,7 +147,11 @@ function BudgetForm({
       <button className="primary" disabled={busy}>
         {busy ? "Saving…" : "Save budget"}
       </button>
-      {error && <ErrorState error={new Error(error)} />}
+      {error && (
+        <div id="budget-error">
+          <ErrorState error={new Error(error)} />
+        </div>
+      )}
       {message && (
         <p className="success" role="status">
           {message}
@@ -167,6 +174,7 @@ function AlertForm({
   const [message, setMessage] = useState("");
   return (
     <form
+      aria-describedby={error ? "alert-error" : undefined}
       onSubmit={async (event) => {
         event.preventDefault();
         setBusy(true);
@@ -211,7 +219,10 @@ function AlertForm({
           onChange={(event) => setEmail(event.target.value)}
         />
       </label>
-      <small>If blank, alerts are recorded as skipped. Your sign-in email is not used automatically.</small>
+      <small>
+        If blank, alerts are recorded as skipped. Your sign-in email is not used
+        automatically.
+      </small>
       <label className="checkbox">
         <input
           type="checkbox"
@@ -223,7 +234,11 @@ function AlertForm({
       <button className="primary" disabled={busy}>
         {busy ? "Saving…" : "Save preferences"}
       </button>
-      {error && <ErrorState error={new Error(error)} />}
+      {error && (
+        <div id="alert-error">
+          <ErrorState error={new Error(error)} />
+        </div>
+      )}
       {message && (
         <p className="success" role="status">
           {message}
@@ -243,6 +258,7 @@ export function DeleteDialog({ onClose }: { onClose: () => void }) {
         <strong>DELETE</strong> to confirm.
       </p>
       <form
+        aria-describedby={error ? "delete-error" : undefined}
         onSubmit={async (event) => {
           event.preventDefault();
           if (word !== "DELETE") return;
@@ -273,7 +289,11 @@ export function DeleteDialog({ onClose }: { onClose: () => void }) {
             {busy ? "Deleting…" : "Permanently delete data"}
           </button>
         </div>
-        {error && <ErrorState error={new Error(error)} />}
+        {error && (
+          <div id="delete-error">
+            <ErrorState error={new Error(error)} />
+          </div>
+        )}
       </form>
     </Dialog>
   );

@@ -1501,3 +1501,25 @@ dialog.drawer:has(.chat-panel) .dialog-header {
 .chat-panel .chat-prompts {
   flex-shrink: 0;
 }
+
+.theme-control {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.demo-panel {
+  margin-bottom: 20px;
+}
+.demo-panel p {
+  overflow-wrap: anywhere;
+}
+html {
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+.sidebar {
+  overflow-y: auto;
+}
