@@ -4,7 +4,7 @@ Updated 2026-10-19. Workspace root is the repository; do not create a nested sub
 
 ## Current state
 
-Phases 1–6 delivered and hosted CI verified. Phase 7 remains out of scope.
+Phases 1–6 delivered and hosted CI verified. Phase 7 is now authorized and in progress.
 React/Vite/TypeScript/Tailwind/Recharts/TanStack Query/Router; FastAPI/SQLAlchemy/Alembic;
 PostgreSQL 16; Decimal money and decimal-string API values. No create_all or SQLite.
 Run: make dev, make verify, make test, make lint, make evaluate, make e2e.
@@ -20,7 +20,35 @@ Known renewal dates only; no real-bank accuracy claim. Demo loader absent. Phase
 provider tests use local HTTP only; actual live evaluation requires an operator-provided key.
 Correct numbers > data safety > working demo > polish > extras.
 
-## Phase 6 decisions — recorded before implementation
+## Phase 7 decisions — recorded before implementation
+
+- Baseline: make dev, verify, test, lint, evaluate and e2e all exit 0: 266 backend,
+  42 frontend tests, five Chromium flows; three detector datasets precision/recall/F1 1.0000.
+  Hosted master c4d1138 checks/e2e green (run 39238761092). Gitleaks full history:
+  18 commits, no leaks. Repository public. No env/outbox/statement files tracked.
+- User explicitly chose Gemini for live use: replace Claude with ONE Gemini REST adapter,
+  using existing httpx, preserving consent, read-only tools, verification and offline default.
+  Historical Claude decisions below are superseded only as to live provider. No live eval run.
+- Generate demo CSV and independent truth relative to application today, deterministic seed 42.
+  Feed the existing parser/background worker/detector/persistence/insights and alert planner.
+  Reuse the existing demo upload, including its visible as_of, until explicit removal/reload.
+  Never shift real data. Loading is refused when real uploads exist; real uploads are refused
+  while demo data exists. Scoped removal also defensively preserves any real-origin records.
+- Mark uploads with source/as_of and a snapshot of settings changed by demo defaults. Seed
+  budget only when absent; notification email only when absent. Restore defaults on removal
+  only if unchanged since loading, preserving subsequent user choices. Remove demo-linked
+  products only when no real charges remain, then regenerate recommendations/alerts.
+- ENVIRONMENT defaults development. Demo endpoints/seed and clock overrides are forbidden
+  in production; console notifier and adversarial FakeLLM are forbidden there too. Outside
+  development require a strong non-placeholder JWT secret and explicit CORS origin.
+- Theme preference light/dark/system is non-sensitive, guarded storage, applied before paint.
+  Reuse slate/teal design and existing Playwright fallback (Browser plugin unavailable).
+- Compose is a dev/demo deployment, not production guidance. SMTP remains at-least-once;
+  console atomic outbox is a dev demonstration. No screen-reader, real-bank or live-AI claim.
+- License: user selected MIT in the Phase 7 question. Per explicit phase instruction, no
+  LICENSE file is added in this phase; record the selection for the owner to apply afterward.
+
+## Phase 6 decisions — historical; provider superseded by Phase 7
 
 - Default FakeLLM is a deterministic tool-using policy, not fixture answers. One live adapter:
   Anthropic Claude Messages API via the already locked httpx client. LLM_PROVIDER=fake|anthropic,
