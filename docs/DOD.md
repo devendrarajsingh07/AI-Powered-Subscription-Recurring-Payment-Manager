@@ -1,18 +1,18 @@
 # Definition-of-Done evidence
 
-Release verification in progress. This file records measured results, not promises. Baseline before
+Local and hosted source verification completed. Release publication requires green CI on the tagged commit. This file records measured results, not promises. Baseline before
 Phase 7: 266 PostgreSQL tests, 42 frontend tests, five Chromium flows; hosted c4d1138 green.
-Final command/count/CI and fresh-clone evidence will be appended below after execution.
+Final command/count/CI and fresh-clone evidence are recorded below.
 
 | Master requirement / prohibition | Evidence | Status |
 | --- | --- | --- |
 | Compose starts, migration head correct, non-root processes | make dev; make verify; id/proc checks | Pass locally; API/web uid1000, PostgreSQL uid70 |
 | Seeded current demo; no direct fixture subscriptions/recommendations | make seed; test_demo real pipeline/idempotency | Pass; CSV → parser/worker → detector/DB/insights/alert plans |
-| Full register→data→review→chat→email→budget→delete demo | demo.spec.ts written-three-minute flow | Pass individually; full final run below |
+| Full register→data→review→chat→email→budget→delete demo | demo.spec.ts written-three-minute flow | Pass: fresh-clone full available-browser run below |
 | F1≥0.9 and honest precision/recall | make evaluate | Three fixture sets P/R/F1 1.0000; real-bank accuracy unmeasured |
-| Backend and per-user isolation | make test, test_api/test_chat/test_insights/test_demo | Real PostgreSQL only; final count below |
-| Frontend, typecheck, lint, build | Vitest/MSW, make lint, npm run build | Final results below |
-| Browser main flow | make e2e | Chromium plus Firefox/WebKit configured; execution below |
+| Backend and per-user isolation | make test, test_api/test_chat/test_insights/test_demo | Pass: 286 PostgreSQL tests |
+| Frontend, typecheck, lint, build | Vitest/MSW, make lint, npm run build | Pass: 46 frontend tests; lint/type/build/drift clean |
+| Browser main flow | make e2e | Local Chromium7/WebKit3 pass; Ubuntu CI13 pass including Firefox3; Windows native launch limitation documented |
 | ≥15 grounded chat known answers | test_chat_evals, make chat-eval | 18 independent expectations; default offline; live not run |
 | Verifier blocks invented numbers; never stream unverified text | test_grounding, adversarial FakeLLM/chat tests | Pass; figures only, prose associations not proven |
 | README setup/env/architecture/limitations and shareable handoff | README, ARCHITECTURE, PROJECT_INFO/history | Documented; fresh-clone verification below |
@@ -33,14 +33,14 @@ Final command/count/CI and fresh-clone evidence will be appended below after exe
 | No hardcoded keys/secrets/real statements | git ls-files + full-history Gitleaks | Baseline 18 commits clean; final scan below |
 | Async uploads with real progress, atomic writes | Worker API progress/failure/queue tests | Pass; single-process recovery, no durable queue |
 | Tests alongside code, no implementation-mirroring demo stubs | Detector/chat independent truth + network/UI/real DB flow | Pass; no canned financial figures in app |
-| Dependencies necessary and audited | requirements hash lock; pip-audit/npm audit | Python baseline findings remediated; final audits below |
+| Dependencies necessary and audited | requirements hash lock; pip-audit/npm audit | Python baseline findings remediated; repeat audits below |
 | No raw financial data carelessly logged or sent | caplog/LLM output/privacy tests; separate ignored outbox | Pass within application logging tests; retention limits documented |
 | Delete-my-data, chat removal/outbox purge, isolation | delete API tests; browser demo final deletion | Pass; exported/SMTP/provider copies cannot be recalled |
 | Persistent educational-use notice | Browser axe/main-flow and screenshots | Present in shell/auth/chat/mail; no regulated advice |
 | No simultaneous edits / OpenAPI single source of truth | Single agent; export/type drift checks | Pass; no parallel agents editing files |
 | Offline demo no API key/SMTP | FakeLLM + ConsoleNotifier, seed/demo.spec | Pass at runtime; initial install/clone still needs network or caches |
 | Production guardrails | test_demo production/JWT/CORS/adversarial/seed tests | Fail closed; Compose remains dev/demo, not production deployment |
-| Responsive/themes/states and accessibility | demo.spec all-page audit, QA matrix | Axe both themes360 and overflow360/768/1280 passed individually; human screen reader pending |
+| Responsive/themes/states and accessibility | demo.spec all-page audit, QA matrix | Axe both themes360 and overflow360/768/1280 pass in fresh-clone final run; human screen reader pending |
 | Secrets only env; explicit origin | startup guards; .env ignored; no VITE secrets | Pass; no default dev credential outside development |
 | License choice not made by agent | Owner selected MIT | Recorded; explicit instruction keeps LICENSE absent in this phase |
 | Optional real statements / live provider | Private checker; make chat-eval-live | Synthetic checker run; owner checks not run or claimed |
@@ -70,3 +70,81 @@ Final command/count/CI and fresh-clone evidence will be appended below after exe
 
 Human tasks remain: screen reader/navigation pass, private redacted statement comparison, optional
 live Gemini eval with owner's key/model, and owner application of the selected MIT license.
+
+## Fresh-clone verification — executed 2026-10-19
+
+Empty target `var/fresh-release`, cloned the public pushed repository at523ce47; later fast-forwarded
+to c85418b (same verified demo runtime plus auth/demo guard and focus fixes) and repeated up/seed/verify
+and the full available-browser suite. No original database was reused: COMPOSE_PROJECT_NAME=subtrack-fresh,
+new postgres/outbox volumes, WEB_PORT5273/API_PORT8100, WEB_ORIGIN/E2E_BASE_URL localhost5273. Explicit
+APP_TEST_AS_OF=2026-10-18 reproduces the written script, not an implicit change to normal user data.
+
+| Exact command/action, in order | Actual result |
+| --- | --- |
+| git clone https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager.git var/fresh-release | Exit0; empty checkout from pushed public origin |
+| Set-Location -LiteralPath var/fresh-release; Copy-Item .env.example .env | Exit0; ignored development-only configuration |
+| Set process env COMPOSE_PROJECT_NAME=subtrack-fresh, WEB_PORT=5273, API_PORT=8100, WEB_ORIGIN/E2E_BASE_URL=http://localhost:5273, APP_TEST_AS_OF=2026-10-18 | Isolated stack and explicit replay clock |
+| docker compose up --build --wait | Exit0; all3 services healthy, migrations0001–0006 applied to empty DB |
+| make seed | Exit0; dev login printed, real generated-CSV ingestion |
+| make seed (again) | Exit0; same upload/data, no duplicates |
+| make verify | Exit0; web/proxy/API all3 readiness checks pass |
+| npm.cmd ci --prefix frontend | Exit0; 387 packages, zero audit findings |
+| python scripts/run_e2e.py demo.spec.ts --project=chromium | Exit0;2 tests: exact demo and every-page axe/overflow; actual mail/purge |
+| make run-alerts AS_OF=2026-10-19 | Exit0; repeated event delivery sent0, no duplicates |
+| make outbox | Exit0; actual MIME files exported into ignored local directory |
+| make chat-eval | Exit0;1 integration test with18 independently checked known answers |
+| git pull --ff-only (to c85418b) | Exit0; no reset/discard; local screenshot evidence preserved |
+| docker compose up --build --wait; make verify; make seed | All exit0 on updated runtime |
+| python scripts/run_e2e.py --project=chromium --project=webkit | Exit0;10 passed in2.9min (Chromium7/WebKit3) |
+
+Equivalent README setup/build/test commands were also exercised in the primary checkout:
+make dev / verify / seed / test / lint / evaluate, OpenAPI/type generation, frontend npm ci/build/audit,
+three browser installs, CLI alert job/outbox export and the synthetic private-checker invocation.
+The optional owner-only live evaluation and private real-statement command are intentionally not executed.
+
+## Final local command results
+
+| Command | Actual result |
+| --- | --- |
+| make dev; make verify; make seed | Exit0, healthy stack and seeded development login |
+| make test | Exit0:286 backend,46 frontend, evaluation and OpenAPI/TS drift current |
+| make lint | Exit0: Ruff, ESLint, TypeScript |
+| make evaluate | Exit0: synthetic16/0/0, handwritten-bank3/0/0, handwritten-products5/0/0 TP/FP/FN; all P/R/F1=1.0000 |
+| make e2e (initial Windows all-project attempt) |9 passed/4 failed: Firefox3 native launch failures, WebKit1 focus restoration bug |
+| python scripts/run_e2e.py main.spec.ts --project=webkit (after focus fix) | Exit0:3 passed; no focus assertion removed |
+| fresh available-engine complete run | Exit0:10 passed; Firefox remains enabled in default suite and Linux CI |
+| npm run build; node scripts/measure_load.mjs | Exit0; production login and CSP/nosniff/frame/referrer headers pass, zero page errors; first measured DCL105ms, no SLA |
+| pip-audit -r requirements.lock --disable-pip in disposable Python3.12 container | No known vulnerabilities after remediation |
+| npm audit --audit-level=low | Zero vulnerabilities |
+| gitleaks git --redact . |24 commits reviewed, no unreviewed findings;3 historical synthetic fingerprints explicitly documented above |
+| git ls-files *.env *.eml *outbox* *private-statements* | Empty; no real statements/keys claimed or committed |
+
+One dependency deprecation warning remains: Starlette's TestClient/httpx bridge recommends a future
+httpx2 migration. Tests currently pass; no warnings were suppressed and no unnecessary second HTTP
+client was added merely to silence it.
+
+## Browser failures and corrections
+
+- WebKit pointer activation does not focus a button; explicitly focus the Review invoker before
+  opening the drawer. Escape returns focus across Chromium/WebKit; assertion retained.
+- Expanded Ubuntu suite initially hit the unchanged shared auth registration quota across engines:
+  runs39244585655 and39245147418 failed. Main-flow registration now asserts a real429's friendly
+  message, validates Retry-After, waits that exact server-directed interval and retries once.
+  No arbitrary failure retry, rate-limit increase, mocked registration or skipped assertion.
+- Windows Firefox157 cannot launch: SideBySide event names missing dependent assembly mozglue.
+  This is a local host limitation before application execution; Ubuntu CI is the release gate for it.
+
+## Hosted verification and publication policy
+
+[Run39246044919](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39246044919)
+SUCCEEDED for source commit6e3fd76794edbd560698c7bb24adf7be97d54ecb. Both checks and e2e green;
+actual e2e log:13 passed (Chromium7, Firefox3, WebKit3). The server-directed backoff was exercised
+in Firefox without raising rate limits. The final documentation/screenshot commit repeats hosted
+CI and is tagged only after it is green; check the v1.0.0 commit's associated GitHub run for that
+publication evidence. No tag denotes production readiness.
+
+Final repeat: npm audit0; pip-audit no known vulnerabilities; Gitleaks25-commit reviewed history
+has no unreviewed findings (exact3 synthetic exceptions retained); build main346.56KB/109.50KB gzip,
+charts389.93KB/114.22KB gzip, CSS24.93KB/6.25KB gzip; preview repeat DCL96ms with zero page errors
+and all controlled web security headers. Single machine samples establish no performance guarantee.
+

@@ -156,3 +156,7 @@ main-flow tests check the charge drawer and account-delete dialog. No axe rules 
 Prefer-reduced-motion styles remain in place. Full final browser counts/results are in DOD.
 Human to-do: screen-reader reading order, dynamic announcements, native-dialog keyboard tour,
 zoom200–400%, high-contrast OS mode and touch-device usability. Automated axe is not a manual pass.
+
+Final measured suites:286 PostgreSQL tests,46 frontend tests; available Windows Chromium7/WebKit3 pass.
+Ubuntu hosted run39246044919 passed all13 browser flows, including Firefox3. Windows Firefox native
+mozglue activation failure is documented, not skipped by the default suite. No screen reader claim.

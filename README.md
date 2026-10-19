@@ -1,5 +1,7 @@
 # SubTrack
 
+[![CI](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/workflows/ci.yml)
+
 Subscription and recurring payment management from uploaded or synthetic INR transactions.
 Deterministic code detects payments and computes every figure; the assistant uses read-only tools
 and a server-side figure verifier. **1.0.0 means demo-complete for this scope, not production-ready.**
@@ -175,6 +177,10 @@ use set LLM_PROVIDER=gemini, a Gemini LLM_API_KEY and an available LLM_MODEL in 
 then restart the API. LLM_BASE_URL defaults to Google's API. No key is shipped. The sole live adapter
 uses [Gemini REST function calling](https://ai.google.dev/gemini-api/docs/generate-content/function-calling)
 and preserves signed response parts. Tests use local HTTP only; live quality is **not measured** here.
+
+Upgrading a Phase6 checkout: replace its old LLM_BASE_URL with
+`https://generativelanguage.googleapis.com` before enabling live Gemini. Existing private .env files
+are not overwritten by a Git update. Keep the default fake mode until you supply your own key/model.
 
 Per-user consent defaults off and is checked before chat/category calls. The drawer discloses that
 redacted question/recent history, instructions/tool schemas and scoped merchant names/categories/

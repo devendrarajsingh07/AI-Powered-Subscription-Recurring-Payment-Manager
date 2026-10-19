@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 — demo scope (release verification in progress)
+## 1.0.0 — 2026-10-19 — demo scope
 
 - Phase 1: Compose, FastAPI/Vite scaffold, migration readiness, CI and locked Python dependencies.
 - Phase 2: Decimal normalization/detection, amount clustering, synthetic truth and handwritten evaluations.
