@@ -30,6 +30,7 @@ async function accessibility(page: Page) {
   expect(violations).toEqual([]);
 }
 async function register(page: Page) {
+  test.setTimeout(180_000); // Includes a real server-directed auth backoff across browser projects.
   const email = `ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.org`;
   await page.goto("/register");
   await accessibility(page);
@@ -40,7 +41,29 @@ async function register(page: Page) {
   await expect(page).toHaveTitle(/SubTrack/);
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
+  const submit = async () => {
+    const response = page.waitForResponse(
+      (value) =>
+        value.url().endsWith("/api/v1/auth/register") &&
+        value.request().method() === "POST",
+    );
+    await page.getByRole("button", { name: "Create account" }).click();
+    return response;
+  };
+  let response = await submit();
+  if (response.status() === 429) {
+    await expect(page.getByRole("alert")).toContainText(
+      "Please try again shortly",
+    );
+    const seconds = Number(response.headers()["retry-after"]);
+    expect(Number.isInteger(seconds) && seconds > 0 && seconds <= 60).toBe(
+      true,
+    );
+    // Respect the real limiter's Retry-After, never raise limits or retry arbitrary failures.
+    await page.waitForTimeout(seconds * 1000 + 100);
+    response = await submit();
+  }
+  expect(response.status()).toBe(201);
   await expect(
     page.getByRole("heading", { name: "Your recurring spend" }),
   ).toBeVisible();
