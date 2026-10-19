@@ -17,6 +17,8 @@ personal material into chat: redaction is not a general PII classifier. Categori
 the normalized unknown merchant and a fixed category schema/instructions, no financial records.
 Consent defaults off, is checked server-side before live calls, and can be withdrawn in the drawer.
 Withdrawal prevents new sends; it cannot recall data already processed by a provider.
+The Gemini upgrade revokes existing Claude-era consent in migration0007. A previous provider's
+approval is never silently reused for Google; users must opt in again after reading the new notice.
 
 Console emails are complete HTML/plaintext MIME files in the private Docker outbox volume,
 separated by user UUID. `make outbox` exports copies to ignored var/outbox; those exported copies

@@ -181,6 +181,8 @@ and preserves signed response parts. Tests use local HTTP only; live quality is 
 Upgrading a Phase6 checkout: replace its old LLM_BASE_URL with
 `https://generativelanguage.googleapis.com` before enabling live Gemini. Existing private .env files
 are not overwritten by a Git update. Keep the default fake mode until you supply your own key/model.
+Migration0007 revokes previous live-provider consent; a Claude-era opt-in does not authorize Gemini.
+Each user must explicitly consent again to the newly disclosed recipient.
 
 Per-user consent defaults off and is checked before chat/category calls. The drawer discloses that
 redacted question/recent history, instructions/tool schemas and scoped merchant names/categories/

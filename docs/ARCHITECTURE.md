@@ -90,6 +90,8 @@ or hard-coded demo answers. Gemini is the single live adapter, explicitly select
 in Phase 7, replacing Claude. REST streaming uses existing httpx, bounded retries/timeouts and
 preserves signed function-call parts between rounds. Local HTTP protocol tests do not establish
 live model quality; the live evaluation remains an owner task.
+Migration0007 resets prior live consent: the newly selected recipient needs a fresh per-user opt-in.
+Downgrading does not restore revoked consent automatically.
 
 Seven strict tools: list_subscriptions, spend_summary, upcoming_renewals, compare_to_budget,
 get_recommendations, subscription_detail, potential_savings. PostgreSQL read-only transactions

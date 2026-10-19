@@ -17,7 +17,7 @@ subtrack-demo@example.org / SubTrackDemo2026!. make seed is implemented and idem
 Run after .env copy: docker compose up --build --wait, then make seed. No external AI/SMTP at runtime;
 initial clone/images/packages require network or caches. See README and docs/DEMO.md.
 
-Current local results: 286 PostgreSQL tests, 46 frontend tests, eighteen independent chat questions;
+Current local results: 287 PostgreSQL tests, 46 frontend tests, eighteen independent chat questions;
 detector three fixture sets P/R/F1 1.0000. Chromium7 flows and WebKit3 flows passed. Firefox157
 cannot launch on this Windows host: native side-by-side assembly mozglue error; no app test ran in
 that engine locally. Default suite retains Firefox, and Ubuntu CI installs/runs all3 engines.
@@ -122,3 +122,8 @@ written-demo browser now also opens/closes charges, records music intent without
 and checks Sent in Settings, matching docs/DEMO.md clicks; local test passed in24.4s.
 No screen reader, real statement or live Gemini evaluation claimed. Current release publication
 still requires hosted green on the tagged commit. Optional checker never writes bytecode/results.
+
+Final privacy guard: migration0007 resets old Claude-era live consent so Gemini requires a fresh
+per-user opt-in. PostgreSQL upgrade0005→head and safe downgrade are tested with an opted-in user.
+make dev/verify/test/lint/evaluate after the guard all exit0:287 backend+46 frontend, drift current,
+P/R/F1=1.0000 on the3 fixture sets. Earlier286 entries are preserved historical measurements.
