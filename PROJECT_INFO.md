@@ -1,6 +1,129 @@
 # SubTrack — project information and coding-agent handoff
 
-Updated: 2026-10-18 (Asia/Calcutta).
+Updated: 2026-10-19 (Asia/Calcutta).
+
+## Phase 5 decisions (recorded before implementation)
+
+- Preparation: make dev / verify / test / lint / evaluate / e2e all exit 0 before feature changes:
+  161 PostgreSQL tests, 27 frontend tests, 3 browser flows, OpenAPI/types current, three detector
+  suites precision/recall/F1 1.0. Origin/master already exists and is pushed; hosted checks/e2e
+  passed in run 39102070149 for 046251a. The prompt's no-push assumption is stale.
+- Duplicate savings: retain the requested rule. For each active subscription-only music, streaming
+  or cloud group, retain the most expensive monthly-equivalent member and estimate the sum of all
+  others, using unrounded Decimal equivalents and rounding once. Fixed bills, dismissed/cancelled
+  products are excluded. Wording is advisory. Potential savings sums open duplicate estimates only.
+- Estimates: make estimated savings nullable; only duplicates have one. Promote this aggregate
+  column to NUMERIC(24,2) so many valid NUMERIC(12,2) products cannot overflow it. Other types show
+  No estimate. Price changes expose separately labelled percentage and extra monthly cost, never savings.
+- Identity/material change: unique user/type/subject key (category for duplicate groups, subscription
+  UUID otherwise). Facts hash covers relevant member IDs, categories, cadence, cent amounts, thresholds,
+  or price/last-use signals. Clock passage, confidence, unrelated purchases and wording alone are not
+  material changes. Persist decisions by facts hash: unchanged dismissed/accepted facts stay decided,
+  even after resolution and reappearance; materially different facts can open a new review on the
+  same row. Conditions disappearing retire the row as resolved without deleting its decision history.
+- Acceptance records review/cancellation intent and a timestamp on the recommendation; it never
+  changes subscription status. Only an explicit subscription action marks cancellation.
+- Alert identity: add a stable per-user event key: subscription UUID plus known renewal date, or
+  budget calendar month. Renewal schedule changes update the same unsent event, so changing lead time
+  cannot send a second email for that renewal. Preserve monthly budget uniqueness and DB ownership
+  constraints. Replace the schedule-based renewal uniqueness with cycle-based identity because a
+  mutable send date is not a stable delivery identity. Legacy records receive non-colliding keys.
+- Delivery: a PostgreSQL session advisory lock serializes whole job runs. Persist attempts and a retry
+  deadline before sending; revalidate under the user row lock before delivery. Console delivery uses
+  atomic publication of one MIME .eml per alert UUID; a retry after send-before-mark reuses the file.
+  Thus the dev outbox produces one artifact per event. SMTP is at-least-once with bounded retries:
+  a crash after SMTP acceptance but before DB confirmation can duplicate mail. Stable Message-ID helps
+  recipients deduplicate but is not an exactly-once SMTP guarantee; never claim otherwise.
+  Persist the delivery snapshot with each claim. Recover an atomically published console receipt
+  before re-planning, so an intervening preference/price/budget change cannot rewrite the already
+  produced email's snapshot or mislabel it skipped. If facts change between claim and I/O, defer
+  that attempt instead of sending a stale snapshot.
+- Renewal scope: subscriptions only, excluding fixed bills, uncertain stopped plans, cancelled and
+  dismissed plans. Use the persisted known next_expected; never invent another cycle when it is past.
+  New statement ingestion refreshes predictions. Budget scope reuses the existing all-recurring summary.
+- Missing explicit notification email is skipped, not silently redirected to the login email. The
+  existing GET fallback will be corrected and covered by tests. Disabled/no-longer-eligible unsent
+  events are skipped; sent snapshots and permanently failed events are immutable. Re-enabling or
+  changing explicit preferences may reactivate eligible skipped events, but never sent/failed events.
+- Privacy: full emails go only to a separate outbox, never application logs. Use a non-root-owned
+  Docker named volume at /var/subtrack/outbox; make outbox exports to git-ignored var/outbox for viewing.
+  Native defaults also use var/outbox. Per-user UUID directories support deletion of the dev copies.
+  SMTP inboxes and manually exported copies cannot be recalled. Logs contain IDs/counts only.
+- Scheduler: APScheduler daily CronTrigger in APP_TIMEZONE; configured hour/minute; enabled by default
+  in the API, no startup send, one API instance. CLI shares the exact job implementation and accepts
+  an explicit as_of; no HTTP job trigger. All money is Decimal, all recommendation text/templates
+  deterministic, and no application LLM calls exist in this phase.
+- UI: extend the existing Phase 4 slate/teal design reference and tokens, with Recommendations and
+  recent-alert visibility. Use the requested frontend builder/testing skills and React guidance.
+  No new generated visual assets or LLM design calls are needed for this existing-system extension.
+  Browser plugin is absent; use the existing Playwright workflow. Capture updated synthetic screens
+  and compare to the existing concept with a Phase 5 mismatch ledger.
+
+## Phase 5 final verification and handoff
+
+Delivered deterministic duplicate, high-cost, price-increase and user-signal-only usage reviews;
+scoped/paginated recommendation and alert APIs; server-computed savings; daily APScheduler and
+shared explicit-clock CLI; private atomic console outbox; SMTP transport; escaped multipart
+emails; retry/failure visibility; recommendation and recent-delivery UI. No LLM calls were added.
+Acceptance records intent without cancellation. Facts-based decisions survive regeneration;
+resolved recommendations preserve history. Sent alert payloads and delivery claims are reproducible.
+
+Migrations 0003_insights_alerts and 0004_delivery_snapshot add stable recommendation/event identity,
+nullable aggregate estimates, decision history, retry state and crash-recoverable delivery snapshots.
+0004 is additive because the real local stack had already applied 0003 before receipt recovery was
+completed. Upgrade/downgrade and model drift checks pass on disposable PostgreSQL databases.
+The existing Settings GET login-email fallback was removed: an unset notification email must
+remain unset, as required by the delivery contract. This is covered by API and missing-email tests.
+The price-change detection date now stays stable when the same price facts are re-detected.
+
+### Exact local verification commands (2026-10-19)
+
+| Command | Actual result |
+| --- | --- |
+| Preparation: make dev / make verify / make test / make lint / make evaluate / make e2e | Before changes: all exit 0; 161 backend, 27 frontend, three browser flows |
+| docker compose run --rm --no-deps api pytest -q tests/test_alerts.py tests/test_notifier.py tests/test_insights.py tests/test_insights_api.py tests/test_schema.py | 51 passed; one upstream Starlette/AnyIO deprecation warning |
+| make dev | Exit 0; rebuilt API/web, applied through 0004, db/api/web healthy |
+| make verify | Exit 0; web, direct readiness and proxied readiness all pass |
+| make test | Exit 0; 208 PostgreSQL tests, 35 Vitest tests, evaluator and OpenAPI/TypeScript drift checks pass |
+| make lint | Exit 0; Ruff, ESLint and TypeScript pass |
+| make evaluate | Exit 0; precision/recall/F1 1.0000 on all three suites (16/3/5 true positives, zero false positives/negatives) |
+| make e2e | Exit 0; four Chromium flows pass, including the new actual CLI/outbox renewal and budget flow |
+| docker compose run --rm --no-deps web npm run build | Exit 0; OpenAPI type drift, TypeScript and production Vite build pass |
+| docker compose run --rm --no-deps web npm audit --audit-level=low | Exit 0; zero vulnerabilities |
+
+Docker Desktop was stopped when this continuation began; it was started from its installed
+per-user location, then every final gate above ran against real PostgreSQL/Compose.
+The new end-to-end flow checks duplicate music saving against independent ground-truth arithmetic,
+acceptance with unchanged subscription statuses, one renewal .eml, rerun without duplication,
+one budget .eml after lowering the budget, rerun without duplication, and account/outbox deletion.
+The pure and integration tests cover 2/3-member groups, fixed-bill exclusions, thresholds, price
+extra cost, stale explicit last use, concurrent regeneration/jobs, retries, terminal errors,
+missing email, changed lead time, disabled alerts, expired renewals, monthly rollover and IST/UTC.
+Console crash recovery also covers settings changing and renewal expiring after publication.
+SMTP crash-after-acceptance test deliberately observes two deliveries with the same Message-ID:
+this proves the documented at-least-once limitation rather than hiding it with a mocked send.
+
+Screenshots under docs/screenshots include recommendations-desktop/dark/mobile and
+alert-deliveries, with existing main screens refreshed. The requested frontend builder and
+debugging skills were used, extending the existing concept. Browser plugin was unavailable;
+regular Playwright was used. See docs/design/QA.md for visual comparisons and accessibility evidence.
+
+### Current limits and next phase
+
+- Console guarantees one atomic outbox artifact per alert. SMTP cannot guarantee exactly-once
+  across a send/commit crash; retries are bounded, and terminal failures stay visible.
+- One supported API instance, in-process upload worker and daily scheduler; no distributed queue.
+  Retry deadlines are checked on the next daily or CLI job, not an independent frequent worker.
+- Known persisted future renewal dates only: the job does not invent another cycle from stale
+  statements. Ingest current data to refresh predictions. Fixed bills are excluded from renewals
+  and savings but included in budget totals.
+- Console outbox is a dev notifier, not external inbox delivery. Delete purges dev copies;
+  exported files and already delivered SMTP mail cannot be recalled.
+- No chat/LLM categorization/LLM phrasing yet (Phase 6); no demo loader or make seed (Phase 7).
+- Real-bank detection accuracy remains unmeasured. One upstream test deprecation warning remains.
+- Hosted CI publication/result is recorded below when the final commits are pushed.
+
+Phase 5 is complete locally. Stop before Phase 6; await the user's next instruction.
 
 ## Phase 4 preparation and decisions (before frontend implementation)
 
@@ -177,9 +300,9 @@ Phase 4 is complete. Stop here; do not begin Phase 5 without the user's next ins
 ## Read this first
 
 The user requested a complete, demo-ready application, with seven strictly sequential phases.
-**Phases 1–4 are implemented. Phase 4 is the current delivery; see its final verification below.**
+**Phases 1–5 are implemented. Phase 5 is current; see the final verification near the top.**
 The real frontend consumes the Phase 3 contract. No backend behavior or contract was changed in
-Phase 4. Stop after this phase; do not start recommendations, scheduler/email, chat or demo seeding
+Phase 5. Stop after this phase; do not start chat or demo seeding
 without the user's next instruction. The full seven-phase application remains incomplete.
 
 The workspace root itself is the `subtrack` repository; do not create a nested duplicate project.
@@ -371,7 +494,7 @@ clock via `generate_dataset(as_of=...)`; do not silently treat stale fixed-date 
 2. Start Docker Desktop if needed. Preserve the existing ignored `.env` (random local credentials).
 3. Run `make dev`, `make verify`, `make test`, `make lint`; `make evaluate` prints quality metrics.
    Without Make, use the equivalent commands in README. Refresh PATH in old Windows terminals.
-4. Phase 4 is delivered. Read its final results and known gaps below. Do not begin Phase 5 until
+4. Phase 5 is delivered. Read its final results and known gaps near the top. Do not begin Phase 6 until
    the user asks. Start that phase from the real existing API/client; do not redo earlier phases.
 5. Keep the repository runnable after each phase; run the full available suite and report a short status.
 

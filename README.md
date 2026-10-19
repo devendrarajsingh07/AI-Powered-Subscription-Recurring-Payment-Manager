@@ -1,9 +1,9 @@
 # SubTrack
 
 AI-powered subscription and recurring payment manager for uploaded or synthetic INR transactions.
-**Current delivery: Phase 4 frontend on the authenticated PostgreSQL backend.**
+**Current delivery: Phase 5 recommendations and renewal/budget notifications.**
 Register, upload a CSV, review detections, explore spending and manage your preferences in the UI.
-Recommendations, chat, email delivery and one-click demo seeding arrive in Phases 5–7.
+Review deterministic savings suggestions and inspect delivered alerts. Chat and one-click demo seeding arrive in Phases 6–7.
 See [PROJECT_INFO.md](PROJECT_INFO.md) for the agent handoff, specification, phase gates, and verification log.
 
 ## Prerequisites and startup
@@ -42,7 +42,7 @@ PostgreSQL is internal to Compose and persists in a named volume. API startup ru
 
 `make seed` is reserved for Phase 7 and currently exits with an explicit not-implemented error.
 Authentication, PostgreSQL persistence, background CSV uploads and business APIs are available.
-Recommendations, alerts/scheduler/email, chat and demo seeding are later phases.
+Recommendations, a daily scheduler, console outbox and optional SMTP delivery are available. Chat and demo seeding remain later phases.
 
 ## Frontend development and verification
 
@@ -66,7 +66,7 @@ make e2e
 
 On Linux, use `install --with-deps chromium` to install browser system dependencies. On Windows use
 `npm.cmd` when PowerShell blocks npm's script shim. The npm scripts invoke Node entrypoints directly
-to support workspace paths containing `&`. `make e2e` runs three Chromium flows against the real
+to support workspace paths containing `&`. `make e2e` runs four Chromium flows against the real
 Compose services, with fresh synthetic accounts; it does not mock the API. Set `E2E_BASE_URL` to
 test a different local stack. Test accounts are deleted by successful runs. Failed runs can leave
 synthetic accounts for investigation; remove them through Settings. Reports/traces are ignored and
@@ -146,8 +146,63 @@ jobs are marked failed at startup for safe re-upload. A durable job queue and mu
 rate limiting are not implemented. Per-user PostgreSQL locks serialize work and user decisions;
 another upload can still queue while detection runs. DB uniqueness handles concurrent duplicates.
 
-Settings and price-change signals persist, but no alerts, recommendation messages, scheduler,
-emails or LLM calls are generated in Phase 3. Generic merchant categories need user confirmation.
+Generic merchant categories need user confirmation. No LLM calls are made in Phase 5.
+Recommendation decisions and user category overrides survive re-upload and regeneration.
+
+## Recommendations and notifications
+
+`GET /api/v1/recommendations` supports status/type filters and pagination; PATCH accepts
+`{"action":"accept"}` or `{"action":"dismiss"}`. Acceptance records review intent and never
+changes subscription status. Only an explicit subscription cancellation does that. Disappearing
+conditions become `resolved`. Decisions persist for unchanged facts, including after reappearance;
+changed members, cent amounts, cadence, categories, thresholds or user signals can reopen review.
+
+Duplicate groups cover music, streaming and cloud subscriptions. Estimated monthly saving is the
+sum of every member except the most expensive, using Decimal and rounding once. Fixed bills,
+cancelled and dismissed plans are excluded. `GET /summary/savings` sums open duplicate estimates
+server-side. High-cost and price-increase suggestions have **no saving estimate**; price changes
+expose extra monthly cost separately. Possibly-unused suggestions require a user-provided old
+last-used date. All messages are advisory deterministic templates; payments never prove usage.
+
+Set an explicit notification email, enabled flag and lead time (1–30 days) in Settings. Blank
+email means skipped, even if the login email exists. `GET /alerts` and `/alerts/{id}` expose
+scoped delivery states and safe failure reasons. Settings shows the actual notifier mode.
+No endpoint triggers a job or sends email directly.
+
+```sh
+make run-alerts                       # Current date in APP_TIMEZONE
+make run-alerts AS_OF=2026-10-18       # Reproducible simulated clock for synthetic data
+make outbox                          # Export dev MIME files to ignored var/outbox/
+```
+
+For a demo, upload the sample CSV, configure a notification email and choose an explicit date
+three days before an eligible subscription's **known** next renewal. Run the job, inspect the
+Settings delivery panel and exported `.eml`, then run again: the event has one outbox artifact.
+Lower the budget below the API's monthly-equivalent total and run again for a budget email.
+Use only synthetic data and a console notifier for simulated historical dates.
+
+APScheduler runs daily at the configured local time; the CLI invokes the same job. A PostgreSQL
+advisory lock serializes overlapping runs. Renewal identity includes subscription and renewal date;
+lead-time changes update unsent schedules. Fixed bills, uncertain stopped plans and past renewals
+are excluded. The job uses known persisted dates; upload fresh statements to refresh predictions.
+Budget checks reuse all recurring spend (including fixed bills), with at most one sent event per
+user/calendar month in the application timezone. Cleared overages suppress unsent mail.
+
+ConsoleNotifier creates HTML/plaintext MIME emails, autoescaping untrusted merchant text. Atomic
+publication yields one `.eml` per alert UUID, including crash recovery before database confirmation.
+The persisted delivery snapshot preserves the original email when preferences later change.
+SMTP uses TLS options, validated recipients, bounded exponential retries and stable Message-ID.
+**SMTP is at-least-once:** a crash after server acceptance but before the database commit may
+produce another message. There is no exactly-once SMTP claim. Ordinary failures leave `sent_at`
+empty; retry exhaustion is terminal and visible. Retries run when the job next checks, not in a
+separate continuously polling queue. Application logs contain IDs/counts, never email bodies,
+addresses, financial amounts or transport exception details.
+
+The scheduler is in-process and supported with one API instance; this is not a distributed queue.
+Dev mail persists in Docker's `outbox_data` volume, isolated by user UUID. Account deletion purges
+those dev copies; previously exported files and delivered SMTP inbox copies cannot be recalled.
+Do not commit or share outbox files containing uploaded financial data. No chat, LLM phrasing,
+push delivery or demo-data endpoint is implemented in this phase.
 
 ## Local development without Docker
 
@@ -200,8 +255,16 @@ variables in your shell (or provide a backend `.env`, which is gitignored).
 | `APP_TIMEZONE` | Application clock timezone, default Asia/Kolkata; tests override the clock dependency |
 | `UPLOAD_WORKERS`, `UPLOAD_QUEUE_LIMIT` | Background workers / outstanding-job capacity, defaults 2 / 8 |
 | `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL` | Reserved for Phase 6; offline fake planned, live provider undecided |
-| `NOTIFIER_PROVIDER`, `SMTP_*` | Reserved for Phase 5; console and SMTP planned |
-| `ALERT_LEAD_DAYS`, `HIGH_COST_YEARLY_INR` | Reserved alert/recommendation defaults |
+| `HIGH_COST_YEARLY_INR`, `HIGH_COST_SHARE` | Advisory yearly threshold (12000), or share (0.35) above the median; strict greater-than comparisons |
+| `UNUSED_DAYS` | Review only user-marked last use older than this many days, default 60 |
+| `SCHEDULER_ENABLED` | Start daily scheduler with API, default true |
+| `ALERT_JOB_HOUR`, `ALERT_JOB_MINUTE` | Daily local job time in `APP_TIMEZONE`, default 09:00 |
+| `ALERT_MAX_ATTEMPTS`, `ALERT_RETRY_SECONDS` | Bounded attempts (3), exponential retry base (300 seconds), checked on the next job run |
+| `NOTIFIER_PROVIDER` | `console` (default private outbox) or `smtp` |
+| `OUTBOX_DIR` | Native default `var/outbox`; Docker image uses `/var/subtrack/outbox` on a named volume |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | SMTP server, port (587), sender; empty sender uses demo `subtrack@example.org` |
+| `SMTP_SECURITY`, `SMTP_TIMEOUT_SECONDS` | `starttls` (default), `tls`, or `none` for local tests; timeout 10 seconds |
+| `SMTP_USERNAME`, `SMTP_PASSWORD` | Optional SMTP authentication, environment only |
 
 All `VITE_*` variables are public: never put secrets in them. The example credentials are for local use.
 The development images are not a production deployment configuration.
@@ -215,11 +278,13 @@ flowchart LR
     API --> Rules[Deterministic ingestion / detection / aggregation]
     API --> Worker[Bounded background upload worker]
     Worker -->|Scoped atomic writes| DB
-    API -. Phase 5 .-> Jobs[APScheduler / Notifier]
+    API --> Jobs[APScheduler / shared CLI job]
+    Jobs -->|Scoped rules / advisory lock| DB
+    Jobs --> Notifier[Private console outbox / SMTP]
     API -. Phase 6 .-> Chat[Read-only user-scoped tools / LLMClient]
 ```
 
-Dashed components are planned. The LLM must never compute detection or spending figures.
+The dashed chat component is planned. The LLM must never compute detection or spending figures.
 Money must use Decimal and PostgreSQL NUMERIC, and model tools must derive identity from authentication.
 
 ## Verification and limitations
@@ -234,10 +299,10 @@ Ruff. Container tool caches now live under `/tmp`, so host-owned/read-only sourc
 The real Compose stack boots successfully and `make verify` passes through both API and web proxy.
 Docker Desktop, GNU Make, and Python 3.12 have been installed on the development machine;
 reopen terminals if their PATH predates installation. The handoff lists the installed paths.
-Phase 4: **161 backend tests** pass on real PostgreSQL 16, including all 114 baseline/housekeeping
-tests and 47 Phase 3 tests. The frontend has **27 unit/component tests** and **3 real-stack Playwright
-flows**, including browser axe checks at desktop/360px and in dark mode. `make dev`, `make verify`,
-`make test`, `make lint` and `make evaluate` all exit 0. The checked-in OpenAPI contract is current.
+Phase 5 verification counts and hosted CI evidence are recorded in
+[PROJECT_INFO.md](PROJECT_INFO.md). The suite runs against PostgreSQL 16, including migrations,
+concurrent regeneration/delivery, SMTP against a local test server, API isolation and deletion.
+Browser tests cover the real upload, recommendation acceptance, outbox delivery and budget flow.
 One upstream Starlette/AnyIO deprecation warning remains. Synthetic browser screenshots are
 committed under `docs/screenshots/`; the complete three-minute demo script remains Phase 7.
 
