@@ -5,6 +5,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+sys.dont_write_bytecode = True
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.services.detector import detect_recurring  # noqa: E402
 from app.services.ingestion import CsvValidationError, parse_csv  # noqa: E402
