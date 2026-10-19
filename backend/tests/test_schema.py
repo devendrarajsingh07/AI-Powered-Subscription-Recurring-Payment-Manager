@@ -53,6 +53,32 @@ def test_model_schema_has_no_drift_and_money_is_numeric(pg_engine):
                 assert column.type.precision == expected_precision and column.type.scale == 2
 
 
+def test_provider_migration_revokes_previous_recipient_consent(pg_admin):
+    name = "subtrack_consent_" + uuid.uuid4().hex
+    with pg_admin.connect() as connection:
+        connection.execute(text(f'CREATE DATABASE "{name}"'))
+    engine = create_engine(pg_admin.url.set(database=name), hide_parameters=True)
+    try:
+        with engine.begin() as connection:
+            config = alembic_config(connection)
+            command.upgrade(config, "0005_chat")
+            connection.execute(
+                text(
+                    "INSERT INTO users (id,email,password_hash,live_opt_in) "
+                    "VALUES (:id,:email,:hash,true)"
+                ),
+                {"id": uuid.uuid4(), "email": "consent@example.org", "hash": "unused-fixture"},
+            )
+            command.upgrade(config, "head")
+            assert connection.scalar(text("SELECT live_opt_in FROM users")) is False
+            command.downgrade(config, "0006_demo")
+            assert connection.scalar(text("SELECT live_opt_in FROM users")) is False
+    finally:
+        engine.dispose()
+        with pg_admin.connect() as connection:
+            connection.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+
+
 def test_budget_alert_null_subscription_dedupe_and_cascades(db):
     user = m.User(email="schema@example.org", password_hash="synthetic-unused-test-hash")
     db.add(user)

@@ -46,6 +46,8 @@ not performed. Owner selected MIT; explicit phase instruction leaves LICENSE abs
 - User explicitly chose Gemini for live use: replace Claude with ONE Gemini REST adapter,
   using existing httpx, preserving consent, read-only tools, verification and offline default.
   Historical Claude decisions below are superseded only as to live provider. No live eval run.
+  Before publication, revoke existing Claude-era live consent in a forward migration: a previous
+  provider's opt-in does not authorize Gemini. Users must explicitly consent to Gemini afterward.
 - Generate demo CSV and independent truth relative to application today, deterministic seed 42.
   Feed the existing parser/background worker/detector/persistence/insights and alert planner.
   Reuse the existing demo upload, including its visible as_of, until explicit removal/reload.
