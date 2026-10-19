@@ -32,6 +32,8 @@ export default function Categories() {
       <p className="notice-box">
         Your choice applies to this merchant’s detected products. Rent, loans,
         insurance and utilities are tracked as fixed bills.
+        Optional AI suggestions send only a normalized merchant name and require
+        live consent in the assistant. Offline mode makes no suggestion.
       </p>
       <section className="panel">
         {query.isPending ? (
@@ -110,8 +112,37 @@ function CategoryRow({ item }: { item: components["schemas"]["CategoryOut"] }) {
       <div>
         <strong>{label(item.merchant)}</strong>
         <small>
-          Current: {label(item.category)} · {item.source}
+          {item.source === "llm" ? "Unconfirmed AI suggestion" : "Current"}:{" "}
+          {label(item.category)} · {item.source}
         </small>
+        {item.category === "unknown" && !item.suggestion_attempted && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                const result = (
+                  await api.POST("/api/v1/categories/{category_id}/suggest", {
+                    params: { path: { category_id: item.id } },
+                  })
+                ).data!;
+                if (result.source === "llm") setCategory(result.category);
+                await refresh();
+              } catch (caught) {
+                setError(errorMessage(caught));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Request category suggestion
+          </button>
+        )}
+        {item.suggestion_attempted && item.category === "unknown" && (
+          <small>No suggestion available; choose a category manually.</small>
+        )}
       </div>
       <label>
         Category for {item.merchant}

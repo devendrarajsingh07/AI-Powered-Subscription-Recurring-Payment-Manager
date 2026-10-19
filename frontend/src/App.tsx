@@ -33,6 +33,7 @@ import { api } from "./api/client";
 import { clearSession, getSignOutNotice, useSession } from "./lib/session";
 import { ErrorState, Loading } from "./components/Common";
 import { Auth } from "./pages/Auth";
+import { ChatAssistant } from "./components/ChatAssistant";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const UploadPage = lazy(() => import("./pages/Upload"));
 const Subscriptions = lazy(() => import("./pages/Subscriptions"));
@@ -168,6 +169,7 @@ function Shell() {
           data.
         </footer>
       </main>
+      <ChatAssistant />
     </div>
   );
 }

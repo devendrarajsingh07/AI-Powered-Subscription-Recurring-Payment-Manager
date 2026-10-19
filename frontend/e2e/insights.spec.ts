@@ -1,3 +1,4 @@
+import { capture } from "./evidence";
 import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -83,9 +84,7 @@ async function accessibility(page: Page) {
       await (
         window as unknown as {
           axe: {
-            run: (
-              node: Document,
-            ) => Promise<{
+            run: (node: Document) => Promise<{
               violations: { id: string; nodes: { target: string[] }[] }[];
             }>;
           };
@@ -159,20 +158,20 @@ test("real insights, renewal and budget delivery are grounded and idempotent", a
     "/subscriptions?limit=100",
   );
   await accessibility(page);
-  await page.screenshot({
+  await capture(page, {
     path: path.join(pictures, "recommendations-desktop.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Use dark theme" }).click();
   await accessibility(page);
-  await page.screenshot({
+  await capture(page, {
     path: path.join(pictures, "recommendations-dark.png"),
     fullPage: true,
   });
   await page.getByRole("button", { name: "Use light theme" }).click();
   await page.setViewportSize({ width: 360, height: 800 });
   await accessibility(page);
-  await page.screenshot({
+  await capture(page, {
     path: path.join(pictures, "recommendations-mobile.png"),
     fullPage: true,
   });
@@ -259,7 +258,7 @@ test("real insights, renewal and budget delivery are grounded and idempotent", a
   await page.getByRole("button", { name: "Refresh alerts" }).click();
   await expect(page.getByText("Sent", { exact: true })).toHaveCount(2);
   await accessibility(page);
-  await page.screenshot({
+  await capture(page, {
     path: path.join(pictures, "alert-deliveries.png"),
     fullPage: true,
   });

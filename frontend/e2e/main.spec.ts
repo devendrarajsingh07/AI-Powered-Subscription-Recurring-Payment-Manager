@@ -1,3 +1,4 @@
+import { capture } from "./evidence";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -32,7 +33,7 @@ async function register(page: Page) {
   const email = `ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.org`;
   await page.goto("/register");
   await accessibility(page);
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "auth.png"),
     fullPage: true,
   });
@@ -110,7 +111,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const email = await register(page);
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "overview-empty.png"),
     fullPage: true,
   });
@@ -131,7 +132,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
   await expect(
     page.getByRole("heading", { name: "Check your column mapping" }),
   ).toBeVisible();
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "upload-mapping.png"),
     fullPage: true,
   });
@@ -176,7 +177,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
         })
         .first(),
     ).toBeVisible();
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "subscriptions.png"),
     fullPage: true,
   });
@@ -208,7 +209,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
   await expect(
     drawer.getByRole("status").filter({ hasText: "Changes saved." }),
   ).toBeVisible();
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "charge-drawer.png"),
     fullPage: false,
   });
@@ -250,20 +251,20 @@ test("real stack: register, login, import 16 products, review, budget and delete
       }),
     ).toContainText(formatMoney(point.total));
   await page.getByRole("button", { name: "Show charts" }).click();
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "dashboard-desktop.png"),
     fullPage: true,
   });
   await accessibility(page);
   await page.getByRole("button", { name: "Use dark theme" }).click();
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "dashboard-dark.png"),
     fullPage: true,
   });
   await accessibility(page);
   await page.getByRole("button", { name: "Use light theme" }).click();
   await page.setViewportSize({ width: 360, height: 800 });
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "dashboard-mobile.png"),
     fullPage: true,
   });
@@ -285,7 +286,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
   ).json()) as components["schemas"]["BudgetOut"];
   expect(budget.monthly_limit).toBe("2000.01");
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "settings.png"),
     fullPage: true,
   });
@@ -294,7 +295,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
     page.getByRole("heading", { name: "Renewals, on your radar" }),
   ).toBeVisible();
   await expect(page.getByText(/expected renewals/)).toBeVisible();
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "renewals.png"),
     fullPage: true,
   });
@@ -303,7 +304,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
     page.getByRole("heading", { name: "A little context helps" }),
   ).toBeVisible();
   await expect(page.locator(".panel .loading")).toHaveCount(0);
-  await page.screenshot({
+  await capture(page, {
     path: path.join(screenshots, "categories.png"),
     fullPage: true,
   });

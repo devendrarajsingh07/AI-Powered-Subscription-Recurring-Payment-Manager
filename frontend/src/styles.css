@@ -1343,6 +1343,107 @@ dialog form {
   font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
+.chat-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
+  box-shadow: 0 4px 20px #0002;
+}
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.chat-panel > .notice-box {
+  margin: 0;
+}
+.chat-disclosure {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.chat-disclosure summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.chat-disclosure p,
+.chat-panel > .muted {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.chat-toolbar,
+.chat-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chat-prompts button {
+  font-size: 11px;
+  padding: 8px 10px;
+}
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-message {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 0;
+  background: var(--panel);
+}
+.chat-message.user {
+  border-left: 3px solid var(--accent);
+}
+.chat-message strong {
+  font-size: 12px;
+}
+.chat-message small {
+  color: var(--muted);
+}
+.chat-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.chat-panel textarea {
+  resize: vertical;
+  width: 100%;
+  min-height: 85px;
+  padding: 12px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+}
+.chat-status {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chat-status p {
+  width: 100%;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .chat-launcher {
+    right: 12px;
+    bottom: 12px;
+  }
+  .chat-text {
+    font-size: 12px;
+  }
+}
 @media (max-width: 700px) {
   .savings-panel {
     align-items: flex-start;
@@ -1356,4 +1457,47 @@ dialog form {
   .recommendation-card .section-heading {
     align-items: flex-start;
   }
+}
+
+/* The conversation scrolls independently; keep the title and composer in view. */
+dialog.drawer:has(.chat-panel) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+dialog.drawer:has(.chat-panel) .dialog-header {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+.chat-panel {
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+}
+.chat-panel .chat-messages {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.chat-panel .chat-disclosure {
+  max-height: 35dvh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.chat-panel > form {
+  flex-shrink: 0;
+  margin: 0;
+}
+.chat-panel > form label {
+  gap: 5px;
+}
+.chat-panel .chat-message p {
+  margin: 6px 0;
+}
+.chat-panel .chat-message small {
+  font-size: 11px;
+}
+.chat-panel .chat-prompts {
+  flex-shrink: 0;
 }

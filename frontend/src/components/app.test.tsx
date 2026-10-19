@@ -484,6 +484,7 @@ test("unknown merchant categories require a deliberate choice and use the scoped
     category: "unknown",
     source: "rule",
     confirmed: false,
+    suggestion_attempted: false,
   };
   server.use(
     http.get("*/api/v1/categories/unconfirmed", () =>
