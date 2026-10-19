@@ -1,9 +1,10 @@
+from datetime import date
 from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, HttpUrl, SecretStr, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -39,8 +40,35 @@ class Settings(BaseSettings):
     smtp_password: SecretStr = SecretStr("")
     smtp_from: str = ""
     smtp_timeout_seconds: int = Field(default=10, ge=1, le=60)
+    llm_provider: Literal["fake", "anthropic"] = "fake"
+    llm_api_key: SecretStr = SecretStr("")
+    llm_model: str = ""
+    llm_base_url: HttpUrl = "https://api.anthropic.com"
+    llm_max_tokens: int = Field(default=1024, ge=64, le=4096)
+    llm_timeout_seconds: int = Field(default=20, ge=1, le=120)
+    llm_retries: int = Field(default=2, ge=0, le=3)
+    chat_timeout_seconds: int = Field(default=60, ge=1, le=180)
+    chat_history_window: int = Field(default=8, ge=0, le=20)
+    chat_minute_limit: int = Field(default=10, ge=1, le=100)
+    chat_daily_limit: int = Field(default=100, ge=1, le=1000)
+    app_test_as_of: str = ""
+
+    @model_validator(mode="after")
+    def live_configuration(self):
+        if self.app_test_as_of:
+            date.fromisoformat(self.app_test_as_of)
+        if self.llm_provider == "anthropic" and (
+            not self.llm_api_key.get_secret_value() or not self.llm_model.strip()
+        ):
+            raise ValueError("Live chat requires LLM_API_KEY and LLM_MODEL")
+        return self
 
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    try:
+        return Settings()
+    except ValidationError:
+        raise RuntimeError(
+            "Invalid configuration; check LLM_PROVIDER and live key/model settings"
+        ) from None

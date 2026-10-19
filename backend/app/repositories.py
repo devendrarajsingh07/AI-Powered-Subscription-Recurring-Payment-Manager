@@ -87,7 +87,7 @@ def category_cache(db, user_id, merchant, category, *, source, confirmed):
         )
     )
     if existing:
-        if source == "user" or existing.source != "user":
+        if source == "user" or (existing.source != "user" and not existing.suggestion_attempted):
             existing.category, existing.source, existing.confirmed = category, source, confirmed
         return existing
     return create_owned(

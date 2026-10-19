@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
@@ -15,10 +15,10 @@ from app.db import get_db
 from app.models import Alert, Budget, MerchantCategory, Recommendation, Subscription, Upload
 from app.services.alerts import generate as generate_alerts
 from app.services.categories import kind_for_category
-from app.services.detector import CADENCES
 from app.services.ingestion import MAX_BYTES, CsvValidationError, parse_csv, preview_csv
 from app.services.insights import potential_savings, regenerate
 from app.services.normalizer import safe_display
+from app.services.renewals import sub_out, upcoming
 from app.services.summary import summarize, trend
 from app.uploads import get_worker
 
@@ -53,24 +53,6 @@ def require_owned(db, user_id, model, object_id):
 def lock_user(db, user_id):
     if repo.get_user(db, user_id, lock=True) is None:
         fail(401, "unauthorized", "Invalid or expired credentials")
-
-
-def sub_out(record, *, as_of=None):
-    result = s.SubscriptionOut.model_validate(record)
-    if record.price_previous_amount is not None:
-        result.price_increase = s.PriceIncreaseOut(
-            previous_amount=record.price_previous_amount,
-            new_amount=record.price_new_amount,
-            detected_on=record.price_detected_on,
-        )
-    if as_of is not None:
-        interval = CADENCES[record.cadence][0]
-        initial = record.last_charge + timedelta(days=interval)
-        missed = max(0, ((as_of - initial).days + interval - 1) // interval)
-        result.next_expected = initial + timedelta(days=missed * interval)
-        result.missed_cycles = missed
-        result.possibly_cancelled = missed >= 2
-    return result
 
 
 @router.post("/auth/register", response_model=s.UserOut, status_code=201, tags=["auth"])
@@ -363,11 +345,7 @@ def renewals(
     offset: Offset = 0,
     as_of=Depends(today),
 ):
-    items = [sub_out(record, as_of=as_of) for record in repo.active_subscriptions(db, user.id)]
-    items = sorted(
-        (item for item in items if item.next_expected <= as_of + timedelta(days=days)),
-        key=lambda item: (item.next_expected, item.merchant, str(item.id)),
-    )
+    items = upcoming(db, user.id, days=days, as_of=as_of)
     return dict(items=items[offset : offset + limit], total=len(items), limit=limit, offset=offset)
 
 
@@ -536,8 +514,12 @@ def savings(user: CurrentUser, db: Db):
 def alerts(user: CurrentUser, db: Db, limit: Limit = 20, offset: Offset = 0):
     return dict(
         items=repo.list_owned(
-            db, user.id, Alert, limit=limit, offset=offset,
-            order_by=Alert.last_attempt_at.desc().nullslast()
+            db,
+            user.id,
+            Alert,
+            limit=limit,
+            offset=offset,
+            order_by=Alert.last_attempt_at.desc().nullslast(),
         ),
         total=repo.count_owned(db, user.id, Alert),
         limit=limit,

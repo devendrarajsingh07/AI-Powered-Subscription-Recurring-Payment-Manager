@@ -111,6 +111,10 @@ def generate_dataset(*, seed: int = 42, as_of: date = date(2026, 10, 18)):
                 "last_charge": dates[-1].isoformat(),
                 "possibly_cancelled": plan.stopped,
                 "price_increase": plan.price_increase,
+                "previous_amount": format(Decimal(plan.amount), ".2f")
+                if plan.price_increase
+                else None,
+                "new_amount": format(amounts[-1], ".2f") if plan.price_increase else None,
             }
         )
     # Independent irregular merchants and salary traps. No detector code is imported here.

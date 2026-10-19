@@ -301,6 +301,7 @@ class CategoryOut(Schema):
     category: Category
     source: Literal["rule", "llm", "user"]
     confirmed: bool
+    suggestion_attempted: bool = False
 
 
 class CategoryPatch(Schema):
@@ -428,3 +429,48 @@ class AlertOut(Schema):
     last_attempt_at: datetime | None
     next_attempt_at: datetime | None
     safe_failure_reason: str | None
+
+
+class ChatRequest(Schema):
+    message: str = Field(min_length=1, max_length=2000)
+    conversation_id: uuid.UUID | None = None
+
+
+class ChatConsent(Schema):
+    live_opt_in: StrictBool
+
+
+class ChatConfig(Schema):
+    mode: Literal["offline", "live"]
+    live_opt_in: bool
+    disclosure: str
+
+
+class ChatFinal(Schema):
+    answer: str
+    verified: bool
+    tools: list[str]
+    conversation_id: uuid.UUID
+
+
+class ChatStatus(Schema):
+    tool: str
+    message: str
+
+
+class ChatStreamError(Schema):
+    message: str
+
+
+class ChatHistory(Schema):
+    id: uuid.UUID
+    conversation_id: uuid.UUID
+    role: Literal["user", "assistant", "tool"]
+    content: str
+    verified: bool | None
+    tools: list[str]
+    created_at: datetime
+
+
+class ClearedHistory(Schema):
+    deleted: int

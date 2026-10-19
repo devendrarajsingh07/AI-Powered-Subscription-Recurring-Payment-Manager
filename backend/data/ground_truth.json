@@ -12,7 +12,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-01",
       "possibly_cancelled": false,
-      "price_increase": true
+      "price_increase": true,
+      "previous_amount": "199.00",
+      "new_amount": "219.00"
     },
     {
       "merchant": "spotify",
@@ -24,7 +26,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-05",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "youtube premium",
@@ -36,7 +40,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-08",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "apple",
@@ -48,7 +54,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-10",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "apple",
@@ -60,7 +68,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-13",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "google one",
@@ -72,7 +82,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-02",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "cultfit",
@@ -84,7 +96,9 @@
       "occurrences": 6,
       "last_charge": "2026-06-04",
       "possibly_cancelled": true,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "airtel",
@@ -96,7 +110,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-07",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "adobe",
@@ -108,7 +124,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-10",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "microsoft",
@@ -120,7 +138,9 @@
       "occurrences": 2,
       "last_charge": "2026-10-02",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "newspaper",
@@ -132,7 +152,9 @@
       "occurrences": 42,
       "last_charge": "2026-10-15",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "notion",
@@ -144,7 +166,9 @@
       "occurrences": 4,
       "last_charge": "2026-10-01",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "rent",
@@ -156,7 +180,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-10",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "loan emi",
@@ -168,7 +194,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-11",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "lic insurance",
@@ -180,7 +208,9 @@
       "occurrences": 2,
       "last_charge": "2026-10-02",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     },
     {
       "merchant": "electricity",
@@ -192,7 +222,9 @@
       "occurrences": 10,
       "last_charge": "2026-10-04",
       "possibly_cancelled": false,
-      "price_increase": false
+      "price_increase": false,
+      "previous_amount": null,
+      "new_amount": null
     }
   ],
   "expected_skipped_rows": 0,

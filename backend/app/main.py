@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
@@ -10,6 +11,7 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import uploads
+from app.api import chat as chat_routes  # noqa: F401 - registers routes on the shared router
 from app.api.routes import router
 from app.config import get_settings
 from app.db import get_db, get_engine
@@ -40,7 +42,7 @@ async def lifespan(app):
 
 app = FastAPI(
     title="SubTrack API",
-    version="0.5.0",
+    version="0.6.0",
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
     description="Educational use with uploaded or simulated INR data. "
@@ -55,6 +57,27 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 app.include_router(router)
+
+
+def documented_openapi():
+    if app.openapi_schema is None:
+        from app import schemas as s
+
+        document = get_openapi(
+            title=app.title, version=app.version, routes=app.routes, description=app.description
+        )
+        for model in (s.ChatFinal, s.ChatStatus, s.ChatStreamError):
+            document["components"]["schemas"][model.__name__] = model.model_json_schema()
+        document["paths"]["/api/v1/chat"]["post"]["x-sse-events"] = {
+            "status": {"$ref": "#/components/schemas/ChatStatus"},
+            "final": {"$ref": "#/components/schemas/ChatFinal"},
+            "error": {"$ref": "#/components/schemas/ChatStreamError"},
+        }
+        app.openapi_schema = document
+    return app.openapi_schema
+
+
+app.openapi = documented_openapi
 
 
 class Health(BaseModel):

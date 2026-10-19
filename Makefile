@@ -1,4 +1,4 @@
-.PHONY: dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox
+.PHONY: dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox chat-eval chat-eval-live
 dev:
 	docker compose up --build --wait
 down:
@@ -26,7 +26,13 @@ openapi:
 types:
 	docker compose run --rm --no-deps web npm run types
 e2e:
-	cd frontend && npm run e2e
+	python scripts/run_e2e.py
+
+chat-eval:
+	docker compose run --rm --no-deps api pytest -q -s tests/test_chat_evals.py
+
+chat-eval-live:
+	docker compose run --rm --no-deps -e SUBTRACK_LIVE_EVAL=1 api pytest -q -s tests/test_chat_evals.py
 run-alerts:
 	docker compose exec -T api python -m app.jobs run $(if $(AS_OF),--as-of $(AS_OF),)
 outbox:

@@ -16,6 +16,12 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | PUT | `/api/v1/budget` | JWT | Put Budget |
 | GET | `/api/v1/categories/unconfirmed` | JWT | Unconfirmed |
 | PATCH | `/api/v1/categories/{category_id}` | JWT | Patch Category |
+| POST | `/api/v1/categories/{category_id}/suggest` | JWT | Suggest Category |
+| POST | `/api/v1/chat` | JWT | Chat |
+| GET | `/api/v1/chat/config` | JWT | Chat Config |
+| PUT | `/api/v1/chat/config` | JWT | Chat Consent |
+| DELETE | `/api/v1/chat/history` | JWT | Delete History |
+| GET | `/api/v1/chat/history` | JWT | History |
 | GET | `/api/v1/health` | Public | Health |
 | GET | `/api/v1/health/ready` | Public | Ready |
 | DELETE | `/api/v1/me/data` | JWT | Delete My Data |

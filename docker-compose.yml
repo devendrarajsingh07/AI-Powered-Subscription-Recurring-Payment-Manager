@@ -19,6 +19,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      APP_TEST_AS_OF: ${APP_TEST_AS_OF:-}
     ports:
       - '127.0.0.1:${API_PORT:-8000}:8000'
     depends_on:

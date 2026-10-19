@@ -49,6 +49,7 @@ class User(Identity, Base):
     alert_lead_days: Mapped[int] = mapped_column(Integer, server_default="3")
     notification_email: Mapped[str | None] = mapped_column(String(254))
     alerts_enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    live_opt_in: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     __table_args__ = (CheckConstraint("alert_lead_days BETWEEN 1 AND 30", name="ck_alert_lead"),)
 
 
@@ -165,6 +166,7 @@ class MerchantCategory(Owned, Base):
     category: Mapped[str] = mapped_column(String(64))
     source: Mapped[str] = mapped_column(choices("category_source", "rule", "llm", "user"))
     confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    suggestion_attempted: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     __table_args__ = (UniqueConstraint("user_id", "merchant", name="uq_merchant_category"),)
 
 
@@ -264,3 +266,5 @@ class ChatMessage(Owned, Base):
     content: Mapped[str] = mapped_column(Text)
     tool_calls: Mapped[dict | list | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), default=uuid.uuid4)
+    verified: Mapped[bool | None] = mapped_column(Boolean)

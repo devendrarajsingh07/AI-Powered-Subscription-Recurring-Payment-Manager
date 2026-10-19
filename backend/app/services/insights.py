@@ -52,7 +52,7 @@ def rules(
     unused_days=60,
 ) -> list[Insight]:
     if not isinstance(yearly_threshold, Decimal) or not isinstance(share_threshold, Decimal):
-        raise TypeError('Rule thresholds must be Decimal')
+        raise TypeError("Rule thresholds must be Decimal")
     active = sorted(
         (s for s in inputs if s.status == "active" and s.kind == "subscription"), key=lambda s: s.id
     )

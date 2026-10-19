@@ -120,7 +120,7 @@ class ConsoleNotifier:
                 temporary.unlink(missing_ok=True)
 
     def delivered(self, user_id, alert_id):
-        file = self.user_directory(user_id) / (str(uuid.UUID(str(alert_id))) + '.eml')
+        file = self.user_directory(user_id) / (str(uuid.UUID(str(alert_id))) + ".eml")
         return not file.is_symlink() and file.is_file()
 
     def purge(self, user_id):
