@@ -16,7 +16,7 @@ from app.db import get_engine  # noqa: E402
 from app.services import demo  # noqa: E402
 from app.uploads import UploadWorker  # noqa: E402
 
-EMAIL = "subtrack-demo@example.org"
+EMAIL = auth.DEV_DEMO_EMAIL
 PASSWORD = "SubTrackDemo2026!"
 
 

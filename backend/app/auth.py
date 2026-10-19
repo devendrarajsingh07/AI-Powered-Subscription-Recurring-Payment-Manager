@@ -19,6 +19,7 @@ from app.db import get_db
 from app.models import User
 
 bearer = HTTPBearer(auto_error=False)
+DEV_DEMO_EMAIL = "subtrack-demo@example.org"
 
 
 def hash_password(password: str) -> str:
@@ -34,6 +35,8 @@ def dummy_hash() -> bytes:
 
 def credentials_user(db, email: str, password: str):
     user = db.scalar(select(User).where(User.email == email.strip().lower()))
+    if get_settings().environment != "development" and email.strip().lower() == DEV_DEMO_EMAIL:
+        user = None
     candidate = user.password_hash.encode() if user else dummy_hash()
     # bcrypt compares in constant time; missing accounts also perform a bcrypt check.
     try:
@@ -44,6 +47,10 @@ def credentials_user(db, email: str, password: str):
 
 
 def register_user(db, email: str, password: str):
+    if get_settings().environment != "development" and email.strip().lower() == DEV_DEMO_EMAIL:
+        raise HTTPException(
+            403, {"code": "demo_disabled", "message": "Development demo account is disabled"}
+        )
     user = User(email=email.strip().lower(), password_hash=hash_password(password))
     db.add(user)
     db.flush()
@@ -94,6 +101,8 @@ def get_current_user(
         raise unauthorized from None
     user = repo.get_user(db, user_id)
     if user is None:
+        raise unauthorized
+    if config.environment != "development" and user.email == DEV_DEMO_EMAIL:
         raise unauthorized
     return user
 

@@ -129,6 +129,22 @@ def test_seed_reuses_real_pipeline_and_is_idempotent(pg_engine, db):
     assert repo.count_owned(db, user.id, m.Upload) == 1
 
 
+def test_dev_demo_credential_and_existing_tokens_never_work_outside_dev(api_client, monkeypatch):
+    headers, _ = account(api_client, email="subtrack-demo@example.org")
+    monkeypatch.setattr(get_settings(), "environment", "production")
+    assert api_client.get("/api/v1/auth/me", headers=headers).status_code == 401
+    from test_api import PASSWORD
+
+    response = api_client.post(
+        "/api/v1/auth/login", json={"email": "subtrack-demo@example.org", "password": PASSWORD}
+    )
+    assert response.status_code == 401
+    response = api_client.post(
+        "/api/v1/auth/register", json={"email": "subtrack-demo@example.org", "password": PASSWORD}
+    )
+    assert response.status_code == 403
+
+
 def test_demo_disabled_and_rate_limited(api_client, monkeypatch):
     headers, _ = account(api_client)
     monkeypatch.setattr(get_settings(), "demo_enabled", False)
@@ -180,10 +196,12 @@ def test_production_valid_and_no_adversarial_or_seed(monkeypatch):
         seed()
     monkeypatch.setattr("app.jobs.get_settings", lambda: cfg)
     from app.jobs import run_jobs
+
     with pytest.raises(RuntimeError, match="simulated"):
         run_jobs(None, as_of=date(2026, 10, 18))
     monkeypatch.setattr("app.services.notifier.get_settings", lambda: cfg)
     from app.services.notifier import ConsoleNotifier, DeliveryError
+
     with pytest.raises(DeliveryError):
         ConsoleNotifier(cfg.outbox_dir).send(None)
 

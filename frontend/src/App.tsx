@@ -87,6 +87,18 @@ function Shell() {
       (await api.GET("/api/v1/auth/me", { signal })).data!,
     enabled: !!session,
   });
+  const uploads = useQuery({
+    queryKey: ["uploads", "demo"],
+    queryFn: async ({ signal }) =>
+      (
+        await api.GET("/api/v1/uploads", {
+          signal,
+          params: { query: { limit: 100 } },
+        })
+      ).data!,
+    enabled: !!session,
+  });
+  const demo = uploads.data?.items.find((item) => item.source === "demo");
   useEffect(() => {
     applyTheme(theme);
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
@@ -174,6 +186,12 @@ function Shell() {
         </div>
       </aside>
       <main id="content" tabIndex={-1}>
+        {demo && !["/", "/upload", "/settings"].includes(location.pathname) && (
+          <p className="notice-box">
+            <span className="badge">Demo data</span> Synthetic history as of{" "}
+            {demo.demo_as_of}.
+          </p>
+        )}
         {me.isError && (
           <ErrorState
             error={me.error}
