@@ -159,6 +159,7 @@ def production(**extra):
     return Settings(
         _env_file=None,
         environment="production",
+        app_test_as_of="",
         demo_enabled=False,
         notifier_provider="smtp",
         web_origin="https://subtrack.example.org",
@@ -174,6 +175,7 @@ def production(**extra):
 def test_production_guards(field, value):
     values = dict(
         environment="production",
+        app_test_as_of="",
         demo_enabled=False,
         notifier_provider="smtp",
         web_origin="https://subtrack.example.org",
