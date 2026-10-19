@@ -1,450 +1,293 @@
 # SubTrack
 
-AI-powered subscription and recurring payment manager for uploaded or synthetic INR transactions.
-**Current delivery: Phase 6 grounded chat and optional merchant-category suggestions.**
-Register, upload a CSV, review detections, explore spending and manage your preferences in the UI.
-Review deterministic savings suggestions and inspect delivered alerts. The offline assistant uses your data through read-only tools. One-click demo seeding remains Phase 7.
-See [PROJECT_INFO.md](PROJECT_INFO.md) for the agent handoff, specification, phase gates, and verification log.
+Subscription and recurring payment management from uploaded or synthetic INR transactions.
+Deterministic code detects payments and computes every figure; the assistant uses read-only tools
+and a server-side figure verifier. **1.0.0 means demo-complete for this scope, not production-ready.**
 
-## Prerequisites and startup
+![Synthetic dashboard](docs/screenshots/demo-dashboard.png)
 
-- Docker Engine/Desktop with Compose v2 supporting `up --wait`.
-- GNU Make (optional: use the equivalent Docker commands below).
-- Python 3.11+ for `scripts/verify_stack.py`.
+Register, preview/map/import CSVs, review subscriptions and fixed bills, track renewals and budget,
+review advisory savings, inspect dev emails and ask the offline assistant. A clock-relative demo
+loader makes the same real ingestion pipeline available without a statement. Gemini is the single
+optional live provider, replacing Claude at the owner's explicit request. No live eval was run.
 
-From the repository root:
+## Quick start — Windows, Linux and macOS
 
-```sh
-cp .env.example .env
-make dev
-make verify
-make test
-make lint
-```
+Prerequisites: Git, Docker Desktop/Engine running, Compose v2 with `up --wait`, and GNU Make.
+For host verification/browser tests also install Python 3.11+, Node.js 22+ and npm. Initial clone,
+image builds and package/browser installation need internet; the installed default demo runs without
+an external AI service, API key, bank connection or SMTP server. Air-gapped setup needs cached images
+and dependencies. Do not treat a first Docker build as an offline installation.
 
-PowerShell without Make:
+Clone this repository and enter its folder. On PowerShell, quote paths containing `&`:
 
 ```powershell
+git clone https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager.git
+Set-Location AI-Powered-Subscription-Recurring-Payment-Manager
 Copy-Item .env.example .env
+```
+
+On Linux/macOS use `cd AI-Powered-Subscription-Recurring-Payment-Manager` and `cp .env.example .env`.
+The copied credentials are **development-only**. After this preparation, two commands start the seeded demo:
+
+```sh
 docker compose up --build --wait
-python scripts/verify_stack.py
-docker compose run --rm --no-deps api pytest -q
-docker compose run --rm --no-deps api ruff check .
-docker compose run --rm --no-deps web npm test -- --run
-docker compose run --rm --no-deps web npm run lint
-docker compose run --rm --no-deps web npm run build
+make seed
 ```
 
-Web: [localhost:5173](http://localhost:5173). API docs: [localhost:8000/docs](http://localhost:8000/docs).
-The React app calls the real API through Vite's `/api` proxy.
-PostgreSQL is internal to Compose and persists in a named volume. API startup runs Alembic.
-`docker compose down` stops services without deleting database data.
+PowerShell without Make: the second command is `docker compose exec api python scripts/seed_demo.py`.
+Open [SubTrack](http://localhost:5173). Dev demo login: **subtrack-demo@example.org / SubTrackDemo2026!**.
+The seed command refuses non-development environments and never resets another account's password.
+Use Register for your own empty account and select **Load demo data** to follow the full demo.
+[API docs](http://localhost:8000/docs) and [OpenAPI JSON](backend/openapi/openapi.json) document the real API.
 
-`make seed` is reserved for Phase 7 and currently exits with an explicit not-implemented error.
-Authentication, PostgreSQL persistence, background CSV uploads and business APIs are available.
-Recommendations, a daily scheduler, console outbox and optional SMTP delivery are available. Grounded offline chat and opt-in Claude are available; demo seeding remains Phase 7.
+Normal demo data is generated relative to application today in APP_TIMEZONE. The badge shows its
+recorded date. Repeated loading is idempotent; remove and reload explicitly to refresh the clock.
+Demo and real uploads cannot mix in an account. Settings can remove demo data without deleting the
+account, or delete the account and all data after typing DELETE. Demo defaults set a missing budget
+100 INR below recurring spend and a missing notification address to demo@example.org; they are editable.
+No email is sent until the scheduled job or operator CLI checks due alerts.
 
-## Frontend development and verification
+## Three-minute tour and documentation
 
-Node.js 22+ and npm are required for local frontend development and browser tests. Compose includes
-the web runtime; a local npm install is only needed for local scripts and Playwright.
-
-```sh
-cd frontend
-npm ci
-npm run dev
-npm test -- --run
-npm run lint
-npm run typecheck
-npm run build
-npm audit --audit-level=low
-node node_modules/@playwright/test/cli.js install chromium
-cd ..
-make dev
-make e2e
-```
-
-On Linux, use `install --with-deps chromium` to install browser system dependencies. On Windows use
-`npm.cmd` when PowerShell blocks npm's script shim. The npm scripts invoke Node entrypoints directly
-to support workspace paths containing `&`. `make e2e` runs five Chromium flows against the real
-Compose services, with fresh synthetic accounts; it does not mock the API. Set `E2E_BASE_URL` to
-test a different local stack. Test accounts are deleted by successful runs. Failed runs can leave
-synthetic accounts for investigation; remove them through Settings. Reports/traces are ignored and
-must be treated as private because browser traces can contain short-lived test tokens.
-
-`make types` (or `cd frontend && npm run types`) generates `src/api/schema.ts` from
-`backend/openapi/openapi.json` with openapi-typescript. Do not edit generated types. `make test`
-checks both the backend OpenAPI export and TypeScript drift; the frontend build also checks drift.
-The thin openapi-fetch client uses these generated paths and schemas. In Compose the schema is
-mounted read-only at `/contract`; `SUBTRACK_SCHEMA` overrides its location for generation only.
-
-`VITE_API_BASE_URL` defaults to `/api/v1`; `VITE_API_PROXY_TARGET` is the server-only Vite proxy
-destination. Do not put secrets in `VITE_*` variables. Compose enables `VITE_USE_POLLING=true` for
-reliable source updates on Windows Docker bind mounts. Restart/rebuild after changing Vite config.
-
-Access tokens stay in memory with a per-tab sessionStorage fallback. Logout, expiry and protected
-401 responses clear the token and Query cache. This allows tab reloads but remains vulnerable to
-XSS; uploaded/server text is never rendered as HTML. No refresh token exists. Money is displayed
-from API decimal strings with Indian grouping. Charts use BigInt-based dimensionless coordinates;
-tooltips, legends and table alternatives retain exact API strings. The browser computes no totals,
-projections or savings. Amount sorting is performed by the API.
-
-The UI includes keyboard-operated native dialogs, visible focus, a skip link, dark/light tokens,
-and chart data-table alternatives. Vitest uses MSW responses typed from the generated contract;
-axe checks structural accessibility in jsdom and full browser checks cover contrast as well.
-Screenshots with synthetic data are in [docs/screenshots](docs/screenshots). Design decisions and
-verification evidence are recorded in [PROJECT_INFO.md](PROJECT_INFO.md).
-
-## Backend API and upload flow
-
-The complete contract is checked in at [openapi.json](backend/openapi/openapi.json), with a readable
-[endpoint summary](backend/openapi/SUMMARY.md). `make openapi` regenerates both from the application;
-`make test` checks they are current. Swagger UI is at `/docs`.
-
-1. Register with `POST /api/v1/auth/register`; log in with `POST /api/v1/auth/login`.
-2. Send `Authorization: Bearer <access_token>` for every business endpoint.
-3. `POST /api/v1/uploads/preview` with multipart `file` returns delimiter, detected date formats,
-   safe preview rows, suggested mapping and capped row warnings. It creates no database records.
-4. Confirm the mapping, then `POST /api/v1/uploads` with multipart `file` and `mapping`, a JSON
-   object encoded as a form string. Example mapping:
-   `{"date":"date","description":"description","amount":"amount","type":"type"}`.
-5. The upload returns **202 pending**. Poll `GET /api/v1/uploads/{id}` for `stage`, processed/total
-   rows, inserted/duplicate/malformed counts, and `done` or `failed`. Stages reflect real worker
-   activity: parsing, waiting for user lock, ingesting, detecting, done. Financial writes commit
-   atomically; a failed upload has no partial transaction/subscription/charge-link changes.
-6. Read `/subscriptions`, `/subscriptions/{id}`, `/summary?period=month|year`,
-   `/summary/trend?months=12` and `/renewals/upcoming?days=30`. Lists use limit/offset and totals.
-7. Use `PATCH /subscriptions/{id}` for confirmation/status/category/last-used decisions,
-   `GET/PUT /budget`, `GET/PUT /settings/alerts`, and the unconfirmed category routes.
-8. `DELETE /api/v1/me/data` permanently deletes the account and all owned records in one transaction.
-   The caller's tokens stop working; other users are unaffected.
-
-Money is always a decimal string (e.g. `"119.00"`), never a JSON float. Budget input must be a
-nonnegative decimal string with at most two decimal places. Summary totals project all active
-recurring products, with subscriptions and fixed bills shown separately. Weekly projection uses
-52 charges/year, quarterly 4, yearly 1; monthly equivalent is annual/12, rounded once at aggregation.
-Trend values are actual linked charges, including historical charges for subsequently cancelled
-products. No usage is inferred from payments. Overdue renewals roll forward and retain uncertainty.
-
-Only INR is accepted by upload endpoints in this phase, including FX amounts already converted to
-INR. Other currencies are explicitly rejected instead of added to INR totals. The pure detector
-keeps currency groups separate, but multi-currency business reporting is not implemented.
-
-CSV files are limited to 5 MB/50,000 parsed records. The HTTP multipart envelope has a further
-64 KiB allowance. Malformed-row warnings are capped at 100 while counts remain complete.
-Broken quoting retains preceding valid records and reports the unreadable remainder as one
-malformed record; subsequent rows cannot be safely recovered. Raw descriptions stay untouched
-in PostgreSQL; previews and charge responses neutralize spreadsheet formula prefixes.
-
-Passwords require 12+ characters, three character classes and at most 72 UTF-8 bytes. bcrypt hashes
-are stored, not passwords. JWT access tokens expire after 30 minutes by default and require the
-configured issuer/audience. Register/login use an in-memory per-client-address sliding-window limit,
-including malformed requests; login failures do not reveal account existence.
-
-The worker queue is bounded and in-process (single API process). Interrupted pending/processing
-jobs are marked failed at startup for safe re-upload. A durable job queue and multi-process/global
-rate limiting are not implemented. Per-user PostgreSQL locks serialize work and user decisions;
-another upload can still queue while detection runs. DB uniqueness handles concurrent duplicates.
-
-Generic merchant categories need user confirmation. No LLM calls are made in Phase 5.
-Recommendation decisions and user category overrides survive re-upload and regeneration.
-
-## Recommendations and notifications
-
-`GET /api/v1/recommendations` supports status/type filters and pagination; PATCH accepts
-`{"action":"accept"}` or `{"action":"dismiss"}`. Acceptance records review intent and never
-changes subscription status. Only an explicit subscription cancellation does that. Disappearing
-conditions become `resolved`. Decisions persist for unchanged facts, including after reappearance;
-changed members, cent amounts, cadence, categories, thresholds or user signals can reopen review.
-
-Duplicate groups cover music, streaming and cloud subscriptions. Estimated monthly saving is the
-sum of every member except the most expensive, using Decimal and rounding once. Fixed bills,
-cancelled and dismissed plans are excluded. `GET /summary/savings` sums open duplicate estimates
-server-side. High-cost and price-increase suggestions have **no saving estimate**; price changes
-expose extra monthly cost separately. Possibly-unused suggestions require a user-provided old
-last-used date. All messages are advisory deterministic templates; payments never prove usage.
-
-Set an explicit notification email, enabled flag and lead time (1–30 days) in Settings. Blank
-email means skipped, even if the login email exists. `GET /alerts` and `/alerts/{id}` expose
-scoped delivery states and safe failure reasons. Settings shows the actual notifier mode.
-No endpoint triggers a job or sends email directly.
-
-```sh
-make run-alerts                       # Current date in APP_TIMEZONE
-make run-alerts AS_OF=2026-10-18       # Reproducible simulated clock for synthetic data
-make outbox                          # Export dev MIME files to ignored var/outbox/
-```
-
-For a demo, upload the sample CSV, configure a notification email and choose an explicit date
-three days before an eligible subscription's **known** next renewal. Run the job, inspect the
-Settings delivery panel and exported `.eml`, then run again: the event has one outbox artifact.
-Lower the budget below the API's monthly-equivalent total and run again for a budget email.
-Use only synthetic data and a console notifier for simulated historical dates.
-
-APScheduler runs daily at the configured local time; the CLI invokes the same job. A PostgreSQL
-advisory lock serializes overlapping runs. Renewal identity includes subscription and renewal date;
-lead-time changes update unsent schedules. Fixed bills, uncertain stopped plans and past renewals
-are excluded. The job uses known persisted dates; upload fresh statements to refresh predictions.
-Budget checks reuse all recurring spend (including fixed bills), with at most one sent event per
-user/calendar month in the application timezone. Cleared overages suppress unsent mail.
-
-ConsoleNotifier creates HTML/plaintext MIME emails, autoescaping untrusted merchant text. Atomic
-publication yields one `.eml` per alert UUID, including crash recovery before database confirmation.
-The persisted delivery snapshot preserves the original email when preferences later change.
-SMTP uses TLS options, validated recipients, bounded exponential retries and stable Message-ID.
-**SMTP is at-least-once:** a crash after server acceptance but before the database commit may
-produce another message. There is no exactly-once SMTP claim. Ordinary failures leave `sent_at`
-empty; retry exhaustion is terminal and visible. Retries run when the job next checks, not in a
-separate continuously polling queue. Application logs contain IDs/counts, never email bodies,
-addresses, financial amounts or transport exception details.
-
-The scheduler is in-process and supported with one API instance; this is not a distributed queue.
-Dev mail persists in Docker's `outbox_data` volume, isolated by user UUID. Account deletion purges
-those dev copies; previously exported files and delivered SMTP inbox copies cannot be recalled.
-Do not commit or share outbox files containing uploaded financial data. No LLM phrasing of recommendations/emails, push delivery or demo-data endpoint is implemented.
-
-## Grounded chat and category suggestions
-
-Open **Ask SubTrack** from any signed-in page. The default is honestly labelled:
-“Offline demo assistant — answers come from your data using built-in rules; no external AI.”
-FakeLLM routes recognized questions to the same read-only tools as the live provider and templates
-actual returned values. It contains no fixture figures. Unrecognized requests say the information
-is unavailable. No network or API key is needed for the offline assistant.
-
-For live mode set `LLM_PROVIDER=anthropic`, `LLM_API_KEY` and an available `LLM_MODEL`, then restart
-the API. Unknown providers or missing live configuration fail startup with a safe error; there is
-no silent fallback. The only live adapter implements Claude's
-[Messages SSE protocol](https://platform.claude.com/docs/en/build-with-claude/streaming) with the
-already pinned httpx dependency. No second provider or additional SDK was introduced.
-
-Each user's live opt-in defaults **off**. The drawer discloses external sharing and requires an
-explicit checked consent before a live message. Users can withdraw consent. Claude receives the
-redacted question, bounded recent chat history, system/tool instructions and scoped tool results
-(subscription names, categories, amounts, dates and counts). Email addresses, token patterns,
-account IDs and raw transaction descriptions are excluded. Do not type private personal material
-into chat; automated redaction is not a general-purpose PII classifier. The server checks consent
-before every provider round. In offline mode no data leaves for an external AI.
-
-`POST /api/v1/chat` accepts only `message` (up to 2000 characters) and an optional owned
-`conversation_id`. Authenticated fetch reads SSE **status**, **final** and **error** events.
-Tool statuses stream live; ALL model text is buffered. There are no unverified token events.
-The final contains answer text, `verified`, consulted tool names and a conversation UUID.
-OpenAPI includes `x-sse-events` with the generated event schemas. The drawer shows data-only
-fallbacks clearly when verification fails, renders plain text, and supports Stop, history paging,
-clear history, Escape and focus restoration. No HTML or markdown execution is used.
-
-Seven strict tools: list_subscriptions, spend_summary, upcoming_renewals, compare_to_budget,
-get_recommendations, subscription_detail and potential_savings. Auth supplies identity; tools
-reject model user IDs/extra arguments. PostgreSQL read-only transactions enforce no writes.
-Lists cap at 30 items with truncation metadata; results cap at 60 KB. Untrusted merchant strings
-are bounded, control-cleaned and explicitly wrapped as data. Ambiguous merchants return products
-to choose from. Summary/insight/renewal functions are shared with the existing business API.
-Five tool rounds (at most seven calls each) precede a forced final response; total/per-call time
-limits, one in-flight turn, capped history and per-user request caps bound work. Caps are in-memory
-and reset on restart; this remains a single-instance development architecture.
-
-The server extracts currency/decimal figures, percentages, ISO/common numeric or written-month
-dates, numeric counts and English counts outside verbatim quoted merchant names. Indian grouping is normalized;
-relative today/tomorrow/yesterday dates use that turn's explicit tool clock. Values must match
-THIS turn's typed tool figures. User messages, old history and numeric merchant text cannot
-authorize a figure. Unsupported numeric notation is blocked, not guessed. On mismatch the model
-answer is withheld, `verified=false` is recorded and a deterministic data fallback is returned.
-The adversarial FakeLLM test proves a fabricated figure never reaches the stream.
-
-**Limit:** this verifies figure provenance, not semantic correctness. A model can associate a real
-value with the wrong merchant or make a wrong prose claim. English number-word parsing and date
-formats are bounded, not a universal natural-language proof; unsupported phrasing can cause safe
-false rejections. Review underlying subscriptions. The assistant has no action/SQL/write tools,
-provides no regulated financial advice, and never performs financial arithmetic.
-
-History stores successful user/assistant pairs atomically plus tool name, validated arguments,
-result size and digest (not raw tool output). Failed/cancelled turns store no partial pair.
-`GET /chat/history` is scoped/paginated; `DELETE /chat/history` clears the caller's history.
-Delete-my-data cascades chat rows. Logs contain IDs/counts, never messages or provider responses.
-`GET/PUT /chat/config` exposes provider mode, disclosure and per-user opt-in, never a key.
-
-In Categories, **Request category suggestion** is explicit. With live consent only the normalized
-merchant name and a fixed enumerated category schema leave the system. Valid suggestions are
-cached once per merchant/user with source llm and confirmed=false; subscriptions stay unchanged.
-A user choice always wins. Offline mode, opt-out, timeout or failure leave manual selection usable;
-failed attempts are cached to avoid repeated provider requests. Existing confirmed/rule-known
-merchants are not sent. Recommendations and alert emails keep deterministic wording.
-
-```sh
-make chat-eval           # 18 independent-expectation questions; default offline, real PostgreSQL
-make chat-eval-live      # Optional paid/network run; requires live env config, never run by CI
-make e2e                # Real Compose UI; temporarily freezes API clock to synthetic truth date
-```
-
-The live target prints pass/fail and verifier-block states for the same known-answer questions;
-it is **not run** in the recorded default verification. Regular tests force offline mode even
-when a developer has a live key configured; the live adapter is exercised against a local HTTP
-server only. `make e2e` uses `scripts/run_e2e.py` to set APP_TEST_AS_OF for the API and restores the
-normal clock in finally. Use it on a local synthetic test stack; leave this variable empty in
-normal operation. Test fixtures remain fixed as of 2026-10-18. No live network calls run in CI.
-
-## Local development without Docker
-
-The reproducible runtime is Linux/Python 3.12 in Docker. A local PostgreSQL 16 instance is required
-for migrations and tests, and the test role must have CREATEDB permission for isolated test databases.
-On Linux/Python 3.12 install the hash lock; native Windows contributors should use Docker (the lock
-includes Linux uvloop). `requirements.in` is the source for regenerating platform-specific locks.
-
-```sh
-python -m venv .venv
-# Activate the venv for your operating system.
-python -m pip install --require-hashes -r backend/requirements.lock
-cd backend
-python -m pytest -q
-ruff check .
-# Export DATABASE_URL and JWT_SECRET (32+ random characters) before running:
-alembic upgrade head
-uvicorn app.main:app --reload
-```
-
-In a second terminal:
-
-```sh
-cd frontend
-npm ci
-npm test -- --run
-npm run lint
-npm run build
-npm run dev
-```
-
-Without `VITE_API_PROXY_TARGET`, Vite proxies to `http://localhost:8000` for local development.
-The root `.env` is used by Compose; when launching directly from `backend`, export environment
-variables in your shell (or provide a backend `.env`, which is gitignored).
-
-## Configuration
-
-| Variable | Purpose |
-| --- | --- |
-| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Compose database initialization |
-| `DATABASE_URL` | SQLAlchemy connection URL using psycopg; match database credentials |
-| `WEB_ORIGIN` | Single allowed browser origin; update if web port changes |
-| `API_PORT`, `WEB_PORT` | Localhost-only published ports |
-| `VITE_API_BASE_URL` | Browser API prefix, defaults to `/api/v1` |
-| `VITE_API_PROXY_TARGET` | Server-side proxy target; `api:8000` in Compose, localhost directly |
-| `JWT_SECRET` | Required HS256 signing secret, at least 32 random characters |
-| `JWT_ACCESS_MINUTES`, `JWT_ISSUER`, `JWT_AUDIENCE` | Access token expiry (default 30 minutes), issuer/audience |
-| `BCRYPT_ROUNDS` | bcrypt cost, default 12; tests override to 4 in isolated test settings |
-| `AUTH_REGISTER_LIMIT`, `AUTH_LOGIN_LIMIT`, `AUTH_WINDOW_SECONDS` | Per-IP auth limits, defaults 5/10 per 60 seconds |
-| `APP_TIMEZONE` | Application clock timezone, default Asia/Kolkata; tests override the clock dependency |
-| `UPLOAD_WORKERS`, `UPLOAD_QUEUE_LIMIT` | Background workers / outstanding-job capacity, defaults 2 / 8 |
-| `LLM_PROVIDER` | `fake` (offline default) or `anthropic` (only live adapter) |
-| `LLM_API_KEY`, `LLM_MODEL` | Live Claude credentials/model ID; both required in live mode, environment only |
-| `LLM_BASE_URL` | Claude API origin, defaults to `https://api.anthropic.com`; local HTTP tests inject a loopback server |
-| `LLM_MAX_TOKENS` | Maximum provider output tokens per call, default 1024 |
-| `LLM_TIMEOUT_SECONDS`, `LLM_RETRIES` | Per-call time limit (20 seconds), transient-only retry count (2) |
-| `CHAT_TIMEOUT_SECONDS`, `CHAT_HISTORY_WINDOW` | Whole-turn budget (60 seconds), recent history messages (8) |
-| `CHAT_MINUTE_LIMIT`, `CHAT_DAILY_LIMIT` | Per-user process-local caps: 10/minute, 100/rolling 24 hours |
-| `APP_TEST_AS_OF` | Empty normally; explicit ISO date for synthetic browser tests only |
-| `HIGH_COST_YEARLY_INR`, `HIGH_COST_SHARE` | Advisory yearly threshold (12000), or share (0.35) above the median; strict greater-than comparisons |
-| `UNUSED_DAYS` | Review only user-marked last use older than this many days, default 60 |
-| `SCHEDULER_ENABLED` | Start daily scheduler with API, default true |
-| `ALERT_JOB_HOUR`, `ALERT_JOB_MINUTE` | Daily local job time in `APP_TIMEZONE`, default 09:00 |
-| `ALERT_MAX_ATTEMPTS`, `ALERT_RETRY_SECONDS` | Bounded attempts (3), exponential retry base (300 seconds), checked on the next job run |
-| `NOTIFIER_PROVIDER` | `console` (default private outbox) or `smtp` |
-| `OUTBOX_DIR` | Native default `var/outbox`; Docker image uses `/var/subtrack/outbox` on a named volume |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | SMTP server, port (587), sender; empty sender uses demo `subtrack@example.org` |
-| `SMTP_SECURITY`, `SMTP_TIMEOUT_SECONDS` | `starttls` (default), `tls`, or `none` for local tests; timeout 10 seconds |
-| `SMTP_USERNAME`, `SMTP_PASSWORD` | Optional SMTP authentication, environment only |
-
-All `VITE_*` variables are public: never put secrets in them. The example credentials are for local use.
-The development images are not a production deployment configuration.
-
-## Architecture
+- [Timed demo script, measured values and fallback](docs/DEMO.md)
+- [Architecture, detection, delivery, verifier and limitations](docs/ARCHITECTURE.md)
+- [Privacy, disclosure and deletion](docs/PRIVACY.md)
+- [Definition-of-Done evidence and honest gaps](docs/DOD.md)
+- [Agent handoff/current state](PROJECT_INFO.md), [historical phases](docs/history/PHASES_1_5.md)
+- [UI QA/state matrix](docs/design/QA.md), [changelog](CHANGELOG.md)
 
 ```mermaid
 flowchart LR
-    Browser[React / Vite] -->|API proxy| API[FastAPI]
-    API -->|SQLAlchemy + Alembic| DB[(PostgreSQL 16)]
-    API --> Rules[Deterministic ingestion / detection / aggregation]
-    API --> Worker[Bounded background upload worker]
-    Worker -->|Scoped atomic writes| DB
-    API --> Jobs[APScheduler / shared CLI job]
-    Jobs -->|Scoped rules / advisory lock| DB
-    Jobs --> Notifier[Private console outbox / SMTP]
-    API --> Chat[Read-only tools / verifier / consent]
-    Chat -->|Opt-in only| Claude[Claude Messages API]
-    Chat --> Offline[Offline tool-using rules]
+  Browser[React browser] -->|JWT and generated types| API[FastAPI]
+  CSV[CSV or relative demo CSV] --> Preview[Map and validate]
+  Preview --> Worker[Background ingestion and deterministic detection]
+  Worker --> DB[(PostgreSQL 16 / Alembic)]
+  API --> DB
+  DB --> Math[Decimal summaries and recommendations]
+  Math --> API
+  DB --> Job[Daily job / operator CLI]
+  Job --> Mail[Atomic dev outbox / SMTP]
+  API --> Tools[Scoped read-only chat tools]
+  Tools --> Model[Offline policy / opted-in Gemini]
+  Model --> Verify[Buffer and verify figures]
+  Verify -->|SSE final| Browser
 ```
 
-Chat passes all answer figures through a server-side verifier before sending answer text. The LLM must never compute detection or spending figures.
-Money must use Decimal and PostgreSQL NUMERIC, and model tools must derive identity from authentication.
+## Commands and tests
 
-## Verification and limitations
+| Command | Purpose |
+| --- | --- |
+| make dev / make down | Build/start healthy dev stack / stop without deleting volumes |
+| make verify | Web, API proxy and migration-head readiness |
+| make seed | Dev-only idempotent synthetic account and real ingestion |
+| make test | Real PostgreSQL pytest, detector evaluation, OpenAPI check, Vitest and TS drift |
+| make lint | Ruff, ESLint and TypeScript |
+| make evaluate | Precision/recall/F1 on synthetic and handwritten fixtures |
+| make e2e | Real-stack Chromium seven flows plus Firefox/WebKit three main flows each |
+| make openapi / make types | Export contract / regenerate TypeScript types |
+| make chat-eval | Eighteen independent known-answer questions, offline default |
+| make chat-eval-live | Owner-only opt-in live Gemini evaluation; excluded from CI |
+| make run-alerts AS_OF=YYYY-MM-DD | Same daily job with an explicit simulated date |
+| make outbox | Export private dev MIME copies into ignored var/outbox |
+| make sample | Regenerate committed synthetic fixtures (not needed for demos) |
 
-The CI workflow installs dependencies, runs backend/frontend checks, boots all three services,
-and verifies web delivery plus database-backed readiness both directly and through the web proxy.
-The repository is published to GitHub with `origin/master` tracking configured. Hosted results are
-available in [GitHub Actions](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions).
-The first hosted run passed the real browser flow but exposed a Linux cache-permissions issue in
-Ruff. Container tool caches now live under `/tmp`, so host-owned/read-only source mounts are supported.
-
-The real Compose stack boots successfully and `make verify` passes through both API and web proxy.
-Docker Desktop, GNU Make, and Python 3.12 have been installed on the development machine;
-reopen terminals if their PATH predates installation. The handoff lists the installed paths.
-Current verification counts and hosted CI evidence are recorded in
-[PROJECT_INFO.md](PROJECT_INFO.md). The suite runs against PostgreSQL 16, including migrations,
-concurrent regeneration/delivery, SMTP against a local test server, API isolation and deletion.
-Browser tests cover the real upload, recommendation acceptance, outbox delivery and budget flow.
-One upstream Starlette/AnyIO deprecation warning remains. Synthetic browser screenshots are
-committed under `docs/screenshots/`; the complete three-minute demo script remains Phase 7.
-
-## Detection and evaluation
+Host browser setup and production bundle check:
 
 ```sh
-make sample      # Regenerate reproducible synthetic CSV and independent labels
-make evaluate    # Precision/recall/F1 and a nonzero exit on quality regression
-make test        # Backend, evaluation, and frontend tests
+cd frontend
+npm ci
+node node_modules/@playwright/test/cli.js install chromium firefox webkit
+npm run build
+npm audit --audit-level=low
+cd ..
+make e2e
 ```
 
-Equivalent commands from `backend`: `python scripts/gen_sample_data.py` and
-`python scripts/evaluate_detector.py --json-output data/evaluation_report.json`.
+On Linux CI install browsers with `--with-deps`. Windows can use `npm.cmd` when PowerShell blocks
+its shim. Scripts invoke Node directly to support ampersands in directory names. Playwright uses
+real Compose PostgreSQL/API, never mocked happy paths; MSW is used only for typed component tests.
+The wrapper explicitly fixes the **test** clock to committed ground truth, then restores the normal
+clock in a finally block. Pass arguments with `python scripts/run_e2e.py demo.spec.ts --project=chromium`.
+Failed browser runs can leave synthetic accounts; successful flows delete their accounts/outbox.
+Reports/traces are ignored because they can contain short-lived tokens. Do not publish private traces.
 
-| Dataset | TP | FP | FN | Precision | Recall | F1 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Synthetic seed 42, 399 transactions | 16 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
-| Handwritten Withdrawal/Deposit export | 3 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
-| Handwritten Debit/Credit export | 5 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
+The API's `/api/v1/openapi.json` is checked in with an endpoint summary under backend/openapi.
+`make types` uses openapi-typescript; never hand-edit src/api/schema.ts. Build/test fail on drift.
+Money stays decimal strings with Indian grouping; charts only derive dimensionless BigInt coordinates.
+Tokens use memory/sessionStorage, clear on logout/401/expiry, and never appear in URLs/logs.
+Theme light/dark/system is a non-sensitive guarded localStorage preference applied before paint.
+Browser axe covers every page in both themes at 360px; 360/768/1280 overflow checks are automated.
+A real screen-reader pass remains a human task.
 
-Metrics count recurring products, including separately labelled fixed bills. Synthetic truth
-contains 12 subscription products and 4 fixed bills. Handwritten fixtures are independently
-authored bank-shaped samples, not real customer statements. Twenty additional random seeds and
-month-boundary/leap-day histories pass in pytest. These results do not establish real-bank accuracy.
-An initial Notion alias mismatch was identified and fixed before the reported run.
+## API and limits
 
-Normalization removes rails, references, city/noise tokens and punctuation, applies aliases,
-and preserves raw descriptions. The detector groups debits by normalized merchant and currency,
-classifies median intervals (7±1, 30±4, 91±6, 365±10 days), requires >=70% regular intervals and
-population amount CV <=15%. Minimum evidence: 3 charges, or 2 for yearly plans. It tries a coherent
-full history first to retain price changes, then tests amount clusters for overlapping products.
-All money, statistics, and confidence use Decimal. Confidence blends 50% regularity, 30% amount
-stability, and 20% evidence count, with a yearly confidence reduction.
+All business routes are under `/api/v1`, protected by JWT. Auth: register/login/me; uploads:
+preview, submit, list/detail; subscriptions: filters/sort/page/detail/patch; summary/trend/savings;
+renewals/upcoming; budget; settings/alerts; category confirmation/suggestion; recommendations;
+alerts; chat/config/history; demo/load and demo/data; DELETE me/data. See the checked-in contract
+for exact fields and examples. Login errors do not enumerate users. Passwords require 12+ characters,
+three character classes, at most 72 UTF-8 bytes. Auth/chat/demo requests are rate-limited.
 
-Renewals use nominal intervals and roll forward to the explicit `as_of` date. Two missed cycles
-set `possibly_cancelled`; they never change a user's subscription status automatically. Latest
-amount >prior median by >5% yields a price-increase signal. Unknown categories require confirmation.
-No LLM is called by detection or parsing. CSV limits, mapping, malformed-row reporting, raw-value
-preservation, safe display and database upload idempotency are tested against PostgreSQL.
+CSV supports simple amount/type or separate debit/credit layouts, inferred delimiter/date formats,
+confirmed mapping, 5 MB and 50,000-row limits. INR only. Raw descriptions are stored untouched;
+previews/charges are formula-safe text. Bad rows yield safe warnings/counts. Broken quoting preserves
+preceding rows and treats the unreadable remainder as one malformed record. Upload returns 202;
+poll its persisted stage/counters. Financial writes are atomic and DB-deduplicated across concurrent
+uploads; the worker/scheduler/limiters support one API instance, not a distributed deployment.
 
-Known limitations: nominal intervals approximate calendar billing dates; first-two-token unknown
-merchant grouping can merge unrelated merchants; near-identical product prices may be inseparable;
-large price changes can exceed the stability threshold; many missing charges can lower regularity
-below threshold; non-Latin merchant descriptions need a later normalization fallback. Unknown-merchant
-category suggestions are explicit opt-in requests; they remain unconfirmed and do not change
-subscription categories until the user accepts them. Offline mode makes no category suggestion.
-Fixtures are fixed as of
-2026-10-18; generator `--as-of` and detector's explicit clock support reproducible newer demos.
+Normalizer strips rails/noise/references and applies aliases. Cadence tolerance is 7±1 /30±4 /
+91±6 /365±10 days; regularity ≥0.7, amount CV ≤0.15; three charges or two yearly. Amount clusters
+separate products when possible. User confirmations/cancellations/categories survive re-detection.
+Missed cycles are uncertainty only. Rent/loan/insurance/utilities are fixed bills, excluded from savings.
+Measured F1 is on synthetic and handwritten fixtures, **not an accuracy claim for real statements**.
 
-## Privacy
+Duplicates estimate all but the most expensive overlapping music/streaming/cloud plan. High-cost
+and price-increase items have no savings estimate; extra cost is labelled separately. Possibly-unused
+requires user-reported last use. Accept records review intent and never changes subscription status.
+All explanations/emails are deterministic advisory templates, not financial advice.
 
-This project is for demo/educational use. Use only synthetic fixtures in this repository.
-Use local synthetic CSVs to exercise the upload API. Do not add personal statements, API keys, `.env`,
-or database dumps to version control. Settings includes typed confirmation for complete account/data
-deletion and shows the returned deletion counts after logout. Request/worker logs omit raw descriptions, amounts, credentials and SQL
-bind values; Uvicorn access logs are disabled to avoid logging user-controlled query strings.
+## Alerts and private outbox
 
+Daily local-time scheduler and `make run-alerts` share a PostgreSQL-locked job. Subscriptions only
+for renewal emails, excluding fixed bills, stopped uncertainty and past dates; one budget alert per
+user/calendar month including all recurring bills. Blank recipient means skipped. The console notifier
+(default) creates HTML/plaintext .eml files in the Docker outbox_data volume under user UUID folders;
+`make outbox` exports them to ignored var/outbox for your mail viewer. They never go to app logs.
+Account deletion purges private dev copies; exported files/delivered emails cannot be recalled.
+
+Console atomic file publication recovers send-before-commit crashes without a second artifact.
+SMTP supports TLS/timeouts/bounded retry and safe terminal failure visibility. **SMTP remains
+at-least-once** across acceptance/commit crashes. No exactly-once inbox delivery claim is made.
+Settings shows notifier mode and recent alerts; no unauthenticated job-trigger endpoint exists.
+
+## Offline and live Gemini
+
+Default LLM_PROVIDER=fake uses a deterministic tool-using policy, with no hard-coded figures or
+network. It handles recognized questions and says when information is unavailable. For optional live
+use set LLM_PROVIDER=gemini, a Gemini LLM_API_KEY and an available LLM_MODEL in your private .env,
+then restart the API. LLM_BASE_URL defaults to Google's API. No key is shipped. The sole live adapter
+uses [Gemini REST function calling](https://ai.google.dev/gemini-api/docs/generate-content/function-calling)
+and preserves signed response parts. Tests use local HTTP only; live quality is **not measured** here.
+
+Per-user consent defaults off and is checked before chat/category calls. The drawer discloses that
+redacted question/recent history, instructions/tool schemas and scoped merchant names/categories/
+amounts/dates/counts leave for Gemini. No raw descriptions, email, account IDs or tokens are sent.
+Do not type personal material: redaction is not a complete PII filter. Categorization sends only a
+normalized merchant plus fixed category schema; suggestions remain unconfirmed until the user acts.
+
+Seven strict read-only tools cannot accept a user ID. PostgreSQL read-only transactions enforce no
+writes. Five-round cap, timeout/cancellation, one in-flight turn and minute/day caps bound work.
+SSE streams tool status then a buffered final; unverified model tokens never reach the browser.
+The verifier normalizes amounts/percentages/dates/counts against this turn's typed tool results.
+Unverifiable figures become a marked deterministic fallback. This checks **figure provenance, not
+prose truth or associations**. Chat history can be cleared and cascades on account deletion.
+Recommendations and emails are never LLM-phrased. `make chat-eval-live` sends synthetic data only,
+explicitly opts its test user in, prints a question pass/fail table and verifier blocks, and is not CI.
+The owner supplies a key/model; **we did not run it**. Near misses must be blocked, not accepted
+merely to improve an evaluation score.
+
+## Security checks and deployment boundary
+
+Python dependencies are transitively pinned with hashes in requirements.lock; Docker/CI enforce it.
+Audit the lock with `pip-audit -r backend/requirements.lock --disable-pip` in an environment containing
+pip-audit; npm audit is above. Full-history Gitleaks: `gitleaks git --redact .`. See DOD for actual runs.
+Neither .env nor statements, outbox, keys or browser traces belong in Git. Use private-statements/
+(ignored) or files outside the checkout. No license file is chosen/added by this phase; MIT selection
+is recorded for the owner in the handoff.
+
+API/web run as non-root; PostgreSQL's entrypoint drops to its postgres user. Health checks include
+migration-head readiness. Web and data API responses set nosniff, no-referrer, frame denial and CSP.
+Swagger's CDN-based page is exempt from the data API's deny-all CSP. Vite requires inline dev scripts/
+styles and websocket connections; production must use a built static server with a stricter policy.
+ENVIRONMENT=production refuses test clocks, demo loading and console notifier; outside development
+weak/default JWT and implicit/wildcard CORS are rejected. Demo seeding is development-only and
+adversarial FakeLLM is test-only. These guards do not turn Compose into a production deployment.
+Production needs TLS, secrets management, backups/monitoring, durable jobs/limits and security review.
+
+## Optional private statement check
+
+Do not upload a real statement to an agent or commit it. On your machine only, use a redacted export
+outside Git or in ignored private-statements, with the locked backend environment installed:
+
+```sh
+python backend/scripts/check_statement.py /absolute/private/redacted.csv --as-of YYYY-MM-DD
+```
+
+It prints detections/counts only to your terminal, uses no database/LLM/network, and writes nothing.
+Compare against your known plans and report precision/recall yourself. The script was exercised with
+a committed handwritten synthetic fixture only; your real-bank accuracy remains unmeasured.
+
+## Troubleshooting
+
+- Docker connection failure: start Docker Desktop/Engine and wait until healthy before make dev.
+- Windows PATH: restart the terminal after installing Make/Docker/Node; refresh machine+user PATH
+  if the current terminal predates installation. PowerShell may require npm.cmd.
+- Ampersands/spaces: quote absolute paths with `Set-Location -LiteralPath 'C:/path with & characters'`.
+  Use repository scripts instead of building shell command strings from user data.
+- Bind mounts not updating: VITE_USE_POLLING=true is enabled in Compose; rebuild after Vite config changes.
+- Port conflict: set API_PORT/WEB_PORT and explicit WEB_ORIGIN consistently; set E2E_BASE_URL for tests.
+- Failed/interrupted upload: inspect safe progress message, retry real uploads; for a failed demo,
+  remove demo data in Settings then load again. No half-written financial data is committed.
+- Stale demo dates: badge shows generation date. Remove/reload explicitly; never shift uploaded history.
+- Missing dev mail: check recipient/enabled/lead time and planned send_on in Settings, then run the
+  job at that explicit date. Renewals already past or possibly stopped are deliberately skipped.
+- Schema mismatch: run make dev to apply Alembic head, then make verify. Never use create_all.
+
+## Environment reference
+
+Values below reflect .env.example; restart after changes. SMTP and live Gemini are optional.
+
+| Variable | Example/default |
+| --- | --- |
+| `ENVIRONMENT` | `development` |
+| `DEMO_ENABLED` | `true` |
+| `POSTGRES_DB` | `subtrack` |
+| `POSTGRES_USER` | `subtrack` |
+| `POSTGRES_PASSWORD` | `Private; see development-only example` |
+| `DATABASE_URL` | `postgresql+psycopg://subtrack:subtrack_local_only@db:5432/subtrack` |
+| `JWT_SECRET` | `Private; see development-only example` |
+| `JWT_ACCESS_MINUTES` | `30` |
+| `JWT_ISSUER` | `subtrack` |
+| `JWT_AUDIENCE` | `subtrack-web` |
+| `BCRYPT_ROUNDS` | `12` |
+| `AUTH_REGISTER_LIMIT` | `5` |
+| `AUTH_LOGIN_LIMIT` | `10` |
+| `AUTH_WINDOW_SECONDS` | `60` |
+| `APP_TIMEZONE` | `Asia/Kolkata` |
+| `UPLOAD_WORKERS` | `2` |
+| `UPLOAD_QUEUE_LIMIT` | `8` |
+| `WEB_ORIGIN` | `http://localhost:5173` |
+| `VITE_API_BASE_URL` | `/api/v1` |
+| `VITE_API_PROXY_TARGET` | `http://api:8000` |
+| `VITE_USE_POLLING` | `true` |
+| `API_PORT` | `8000` |
+| `WEB_PORT` | `5173` |
+| `LLM_PROVIDER` | `fake` |
+| `LLM_API_KEY` | `Private; see development-only example` |
+| `LLM_MODEL` | `(empty)` |
+| `LLM_BASE_URL` | `https://generativelanguage.googleapis.com` |
+| `LLM_MAX_TOKENS` | `1024` |
+| `LLM_TIMEOUT_SECONDS` | `20` |
+| `LLM_RETRIES` | `2` |
+| `CHAT_TIMEOUT_SECONDS` | `60` |
+| `CHAT_HISTORY_WINDOW` | `8` |
+| `CHAT_MINUTE_LIMIT` | `10` |
+| `CHAT_DAILY_LIMIT` | `100` |
+| `APP_TEST_AS_OF` | `(empty)` |
+| `NOTIFIER_PROVIDER` | `console` |
+| `SCHEDULER_ENABLED` | `true` |
+| `ALERT_JOB_HOUR` | `9` |
+| `ALERT_JOB_MINUTE` | `0` |
+| `ALERT_MAX_ATTEMPTS` | `3` |
+| `ALERT_RETRY_SECONDS` | `300` |
+| `SMTP_HOST` | `(empty)` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USERNAME` | `(empty)` |
+| `SMTP_PASSWORD` | `Private; see development-only example` |
+| `SMTP_FROM` | `(empty)` |
+| `SMTP_SECURITY` | `starttls` |
+| `SMTP_TIMEOUT_SECONDS` | `10` |
+| `HIGH_COST_YEARLY_INR` | `12000` |
+| `HIGH_COST_SHARE` | `0.35` |
+| `UNUSED_DAYS` | `60` |

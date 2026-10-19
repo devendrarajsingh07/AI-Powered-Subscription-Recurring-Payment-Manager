@@ -103,3 +103,56 @@ clear history and structural accessibility. The full frontend suite has 42 tests
 
 See PROJECT_INFO.md for final backend/evaluation/CI evidence and verifier limitations. This is a
 figure-provenance guarantee, not a claim that all natural-language prose is correct.
+
+## Phase 7 release polish
+
+Browser plugin not available; regular Playwright is the requested fallback. Flow under test:
+register → clock-relative demo ingestion → review → grounded chat → actual mail artifacts → deletion.
+Screenshot evidence: demo-dashboard.png and release-chat-{light,dark}-360.png, synthetic only.
+
+| Reference comparison | Rendered evidence / outcome |
+| --- | --- |
+| Existing slate/teal concept and shell | Preserved typography, sidebar, panel radii and spacing; no redesign/new visual system. |
+| Dashboard hierarchy | Real import progress is dismissible after success, leaving API KPI figures and charts visible. |
+| Navigation and theme reachability | Sidebar scrolls when short viewport cannot fit settings/user/theme controls; system/light/dark preference is guarded and applied before paint. |
+| Mobile drawer | At360, title/close, offline disclosure, wrapped prompts and composer remain visible; conversation scrolls independently. |
+| Honest data provenance | Demo badge carries explicit generation date; fixed bills, possible stopped/price notices and no-estimate recommendations remain distinct. |
+| Charts | API values retained in tooltip and table alternatives; palette uses theme tokens, labels accompany colors. |
+| Focus/errors | Skip link, route title/status announcement and main focus; native dialog Escape/return focus; auth/budget/preferences/delete errors associated with forms. |
+
+### State checklist
+
+Every row is implemented; automated unit/network/browser coverage is described in the last column.
+An empty form is an initial state, not a successful response.
+
+| View/action | Loading / empty | Error / success | Evidence |
+| --- | --- | --- | --- |
+| Login/register | Submitting disabled; blank labelled form | Generic credentials/429/server feedback; redirect | app.test and main e2e |
+| Overview summaries/charts | Loading panels; upload/demo invitation | Retry panels; exact API KPI/legend/table values | component and demo e2e |
+| Demo load | Checking availability, preparing, real row/stage polling | Safe failure/retry/removal path; completed counters and dismiss action | demo.test, test_demo, demo e2e |
+| Demo removal | Confirmation, disabled removing action | Safe error in dialog; removed status, account retained | demo.test, test_demo, browser audit |
+| Upload preview/mapping | File initial state, busy preview/import | Safe invalid CSV/row warnings; editable mapping and results | app.test, bank/malformed e2e |
+| Upload progress | Pending/processing, persisted counters | Failed safe reason; done counts with unreadable-remainder warning | app.test and PostgreSQL progress tests |
+| Upload history | Loading; no uploads | Retry error; paginated history | Upload component and real API |
+| Subscriptions filters/page | Loading; no matches | Retry; sort/filter/page server responses | app.test and main e2e |
+| Charge drawer/PATCH | Loading and disabled saving; no charges | Safe failure/rollback; server-confirmed notices/status | component, API and main e2e |
+| Renewals | Loading; no upcoming items | Retry; dates and uncertainty labels | real browser and shared API tests |
+| Categories/suggestion | Loading; all reviewed | Retry/manual fallback; unconfirmed suggestion/user confirmation | component/API/main e2e |
+| Recommendations | Loading; no recommendations/filter matches | Safe action errors; accepted/dismissed server response, no estimate | insights.test and real insights e2e |
+| Savings panel | Loading; no open estimates | Safe retry; server total | insights.test and demo e2e |
+| Budget/preferences | Loading/current or no budget; saving | Associated errors; saved live status | API/component/demo e2e |
+| Recent alerts | Loading; no delivery history | Safe failure reason/retry; actual sent/skipped/retrying | insights component/API/e2e |
+| Chat config/history/turn | Disclosure/empty prompts, loading/status, Stop | Safe network/429/provider error; verified/fallback/tool sources | seven component tests, injection and chat e2e |
+| Chat consent/clear | Disabled consent-dependent send/clearing | Safe error; consent saved/history cleared | typed MSW/API/e2e |
+| Delete account | Typed gating and deleting | Safe retained dialog on failure; counts and logged-out receipt | component/API/e2e |
+| Session expiry | Protected redirect | Clear sign-in message; reauth returns intended route | component/API auth tests |
+| 404/global boundary | Explicit page or loading fallback | Plain-language reload/back action; never blank/raw error | page audit and boundary component |
+
+### Automated scope and manual tasks
+
+demo.spec audits login/register and all eight protected/404 pages with browser axe in both themes
+at360px, plus chat and remove-demo dialog; all routes also check overflow at768/1280. Existing
+main-flow tests check the charge drawer and account-delete dialog. No axe rules were suppressed.
+Prefer-reduced-motion styles remain in place. Full final browser counts/results are in DOD.
+Human to-do: screen-reader reading order, dynamic announcements, native-dialog keyboard tour,
+zoom200–400%, high-contrast OS mode and touch-device usability. Automated axe is not a manual pass.
