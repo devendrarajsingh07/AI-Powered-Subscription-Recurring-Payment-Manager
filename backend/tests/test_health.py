@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 
+from app.config import get_settings
 from app.db import get_db
 from app.main import app
 
@@ -38,9 +39,10 @@ def test_readiness_does_not_hide_database_outage(client):
 
 
 def test_cors_only_allows_configured_origin(client):
-    good = client.get("/api/v1/health", headers={"Origin": "http://localhost:5173"})
+    origin = get_settings().web_origin
+    good = client.get("/api/v1/health", headers={"Origin": origin})
     bad = client.get("/api/v1/health", headers={"Origin": "https://untrusted.example"})
-    assert good.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert good.headers["access-control-allow-origin"] == origin
     assert "access-control-allow-origin" not in bad.headers
 
 
