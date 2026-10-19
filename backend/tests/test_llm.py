@@ -9,7 +9,7 @@ import pytest
 
 from app.config import get_settings
 from app.services.llm import LLMError
-from app.services.llm.anthropic import AnthropicClient
+from app.services.llm.gemini import GeminiClient
 
 
 @contextmanager
@@ -47,33 +47,26 @@ def server(responses):
 
 
 def tokens(text="Safe answer"):
-    return [
-        dict(type="content_block_start", index=0, content_block={"type": "text", "text": ""}),
-        dict(type="content_block_delta", index=0, delta={"type": "text_delta", "text": text}),
-        dict(type="content_block_stop", index=0),
-        dict(type="message_stop"),
-    ]
+    return [{"candidates": [{"content": {"parts": [{"text": text}]}, "finishReason": "STOP"}]}]
 
 
 def tool(name="suggest_category", args='{"category":"software"}'):
     return [
-        dict(
-            type="content_block_start",
-            index=0,
-            content_block={"type": "tool_use", "id": "test-call", "name": name, "input": {}},
-        ),
-        dict(
-            type="content_block_delta",
-            index=0,
-            delta={"type": "input_json_delta", "partial_json": args[:8]},
-        ),
-        dict(
-            type="content_block_delta",
-            index=0,
-            delta={"type": "input_json_delta", "partial_json": args[8:]},
-        ),
-        dict(type="content_block_stop", index=0),
-        dict(type="message_stop"),
+        {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [
+                            {
+                                "functionCall": {"name": name, "args": json.loads(args)},
+                                "thoughtSignature": "local-signature",
+                            }
+                        ]
+                    },
+                    "finishReason": "STOP",
+                }
+            ]
+        }
     ]
 
 
@@ -87,7 +80,7 @@ def client(url):
             "llm_timeout_seconds": 2,
         }
     )
-    return AnthropicClient(cfg, base_url=url)
+    return GeminiClient(cfg, base_url=url)
 
 
 def test_live_adapter_real_local_http_stream_and_transient_retries(caplog):
@@ -103,8 +96,8 @@ def test_live_adapter_real_local_http_stream_and_transient_retries(caplog):
 
         result = asyncio.run(run())
         assert result[0].text == "Safe answer"
-        assert len(requests) == 2 and requests[0]["stream"] is True
-        assert requests[0]["max_tokens"] == get_settings().llm_max_tokens
+        assert len(requests) == 2 and "contents" in requests[0]
+        assert requests[0]["generationConfig"]["maxOutputTokens"] == get_settings().llm_max_tokens
     assert "test-key-not-real" not in caplog.text
 
 
@@ -117,6 +110,62 @@ def test_live_adapter_auth_errors_not_retried_or_leaked():
         with pytest.raises(LLMError) as error:
             asyncio.run(run())
         assert len(requests) == 1 and "SECRET" not in str(error.value)
+
+
+def test_gemini_preserves_signed_function_parts_and_real_tool_response():
+    with server(
+        [
+            (200, tool(name="spend_summary", args='{"period":"month"}')),
+            (200, tokens("Monthly spend: ₹123.45")),
+        ]
+    ) as (url, requests):
+        sender = client(url)
+
+        async def run():
+            events = [
+                event
+                async for event in sender.stream(
+                    system="system", messages=[{"role": "user", "content": "spend"}], tools=[]
+                )
+            ]
+            call = events[0].call
+            messages = [
+                {"role": "user", "content": "spend"},
+                {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": call.id,
+                            "name": call.name,
+                            "input": call.arguments,
+                        }
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": call.id,
+                            "content": '{"monthly_total":"123.45"}',
+                        }
+                    ],
+                },
+            ]
+            return [
+                event
+                async for event in sender.stream(
+                    system="system", messages=messages, tools=[], force_final=True
+                )
+            ]
+
+        events = asyncio.run(run())
+        assert events[0].text == "Monthly spend: ₹123.45"
+        assert requests[1]["contents"][1]["parts"][0]["thoughtSignature"] == "local-signature"
+        assert requests[1]["contents"][2]["parts"][0]["functionResponse"]["response"] == {
+            "monthly_total": "123.45"
+        }
 
 
 def test_live_adapter_per_call_timeout_closes_local_stream():
@@ -150,17 +199,22 @@ def test_categorization_body_is_merchant_only_and_schema_constrained(arguments, 
     with server([(200, tool(args=arguments))]) as (url, requests):
         assert asyncio.run(client(url).categorize("mystery merchant")) == expected
         body = requests[0]
-        assert body["messages"] == [
-            {"role": "user", "content": json.dumps({"merchant": "mystery merchant"})}
+        assert body["contents"] == [
+            {"role": "user", "parts": [{"text": json.dumps({"merchant": "mystery merchant"})}]}
         ]
         assert "amount" not in json.dumps(body) and "date" not in json.dumps(body)
         assert "user_id" not in json.dumps(body)
-        assert body["tools"][0]["input_schema"]["additionalProperties"] is False
+        assert (
+            body["tools"][0]["functionDeclarations"][0]["parametersJsonSchema"][
+                "additionalProperties"
+            ]
+            is False
+        )
 
 
 @pytest.mark.parametrize(
     "provider,key,model",
-    [("unknown", "", ""), ("anthropic", "", "model"), ("anthropic", "secret-key", "")],
+    [("unknown", "", ""), ("gemini", "", "model"), ("gemini", "secret-key", "")],
 )
 def test_invalid_live_config_has_safe_startup_error(monkeypatch, provider, key, model):
     monkeypatch.setenv("LLM_PROVIDER", provider)

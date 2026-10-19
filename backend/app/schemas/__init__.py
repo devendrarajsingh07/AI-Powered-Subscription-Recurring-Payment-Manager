@@ -162,6 +162,8 @@ class Preview(Schema):
 
 
 class UploadOut(Schema):
+    source: Literal["upload", "demo"] = "upload"
+    demo_as_of: date | None = None
     model_config = ConfigDict(
         extra="forbid",
         from_attributes=True,

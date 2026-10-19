@@ -42,7 +42,7 @@ async def lifespan(app):
 
 app = FastAPI(
     title="SubTrack API",
-    version="0.6.0",
+    version="1.0.0",
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
     description="Educational use with uploaded or simulated INR data. "

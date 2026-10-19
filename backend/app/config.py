@@ -10,6 +10,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    environment: Literal["development", "test", "production"] = "development"
+    demo_enabled: bool = True
     database_url: str = "postgresql+psycopg://subtrack@localhost:5432/subtrack"
     web_origin: str = "http://localhost:5173"
     jwt_secret: SecretStr = SecretStr("")
@@ -40,10 +42,10 @@ class Settings(BaseSettings):
     smtp_password: SecretStr = SecretStr("")
     smtp_from: str = ""
     smtp_timeout_seconds: int = Field(default=10, ge=1, le=60)
-    llm_provider: Literal["fake", "anthropic"] = "fake"
+    llm_provider: Literal["fake", "gemini"] = "fake"
     llm_api_key: SecretStr = SecretStr("")
     llm_model: str = ""
-    llm_base_url: HttpUrl = "https://api.anthropic.com"
+    llm_base_url: HttpUrl = "https://generativelanguage.googleapis.com"
     llm_max_tokens: int = Field(default=1024, ge=64, le=4096)
     llm_timeout_seconds: int = Field(default=20, ge=1, le=120)
     llm_retries: int = Field(default=2, ge=0, le=3)
@@ -53,11 +55,34 @@ class Settings(BaseSettings):
     chat_daily_limit: int = Field(default=100, ge=1, le=1000)
     app_test_as_of: str = ""
 
+    @model_validator(mode="before")
+    @classmethod
+    def demo_default(cls, values):
+        if isinstance(values, dict) and values.get("environment") == "production":
+            values = dict(values)
+            values.setdefault("demo_enabled", False)
+        return values
+
     @model_validator(mode="after")
     def live_configuration(self):
         if self.app_test_as_of:
             date.fromisoformat(self.app_test_as_of)
-        if self.llm_provider == "anthropic" and (
+        if self.environment != "development":
+            secret = self.jwt_secret.get_secret_value()
+            if (
+                len(secret) < 40
+                or len(set(secret)) < 16
+                or any(
+                    word in secret.lower() for word in ("replace", "default", "secret", "example")
+                )
+            ):
+                raise ValueError("A strong non-default JWT_SECRET is required")
+            if "web_origin" not in self.model_fields_set or "*" in self.web_origin:
+                raise ValueError("An explicit WEB_ORIGIN is required")
+        if self.environment == "production":
+            if self.demo_enabled or self.app_test_as_of or self.notifier_provider == "console":
+                raise ValueError("Production forbids demo data, test clocks and console notifier")
+        if self.llm_provider == "gemini" and (
             not self.llm_api_key.get_secret_value() or not self.llm_model.strip()
         ):
             raise ValueError("Live chat requires LLM_API_KEY and LLM_MODEL")
@@ -70,5 +95,6 @@ def get_settings() -> Settings:
         return Settings()
     except ValidationError:
         raise RuntimeError(
-            "Invalid configuration; check LLM_PROVIDER and live key/model settings"
+            "Invalid configuration; check environment safety, JWT, CORS "
+            "and LLM_PROVIDER/key/model settings"
         ) from None

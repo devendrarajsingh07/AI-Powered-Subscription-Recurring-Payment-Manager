@@ -43,6 +43,8 @@ def business_date(now, zone):
 
 def run_jobs(engine, *, as_of=None, now=None, notifier=None):
     cfg = get_settings()
+    if cfg.environment == "production" and (as_of is not None or now is not None):
+        raise RuntimeError("Production forbids simulated alert clocks")
     now = now or (
         datetime.combine(as_of, time(9), ZoneInfo(cfg.app_timezone)).astimezone(timezone.utc)
         if as_of

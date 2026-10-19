@@ -202,8 +202,8 @@ def test_eighteen_known_answers_after_real_upload(api_client, monkeypatch):
     monkeypatch.setattr(get_settings(), "chat_minute_limit", 100)
     headers, _ = account(api_client)
     if os.environ.get("SUBTRACK_LIVE_EVAL") == "1":
-        assert get_settings().llm_provider == "anthropic", (
-            "Live eval requires the Anthropic provider"
+        assert get_settings().llm_provider == "gemini", (
+            "Live eval requires the Gemini provider"
         )
         api_client.put("/api/v1/chat/config", headers=headers, json={"live_opt_in": True})
     load(api_client, headers)

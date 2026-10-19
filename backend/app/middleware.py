@@ -67,6 +67,22 @@ class SafetyMiddleware:
             nonlocal started
             if message["type"] == "http.response.start":
                 started = True
+                headers = list(message.get("headers", []))
+                headers.extend(
+                    [
+                        (b"x-content-type-options", b"nosniff"),
+                        (b"referrer-policy", b"no-referrer"),
+                        (b"x-frame-options", b"DENY"),
+                    ]
+                )
+                if scope["path"] not in ("/docs", "/redoc"):
+                    headers.append(
+                        (
+                            b"content-security-policy",
+                            b"default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+                        )
+                    )
+                message = dict(message, headers=headers)
             await send(message)
 
         try:

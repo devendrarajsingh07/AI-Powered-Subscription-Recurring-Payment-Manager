@@ -173,7 +173,7 @@ def test_chat_rate_limits(api_client, monkeypatch, limit):
 def test_live_consent_required_and_config_has_no_secret(api_client, monkeypatch):
     headers, _ = account(api_client)
     cfg = get_settings()
-    monkeypatch.setattr(cfg, "llm_provider", "anthropic")
+    monkeypatch.setattr(cfg, "llm_provider", "gemini")
     app.dependency_overrides[get_client] = lambda: FakeLLM()
     assert api_client.get("/api/v1/chat/config", headers=headers).json()["live_opt_in"] is False
     assert (
@@ -188,7 +188,7 @@ def test_live_consent_required_and_config_has_no_secret(api_client, monkeypatch)
     )
     assert answer(api_client, headers, "monthly total")[0]["verified"]
     body = api_client.get("/api/v1/chat/config", headers=headers).text
-    assert "llm_api_key" not in body and "Live Claude" in body
+    assert "llm_api_key" not in body and "Live Gemini" in body
 
 
 def test_categorization_is_once_unconfirmed_and_user_choice_wins(api_client, db):
@@ -392,7 +392,7 @@ def test_categorization_optout_and_failure_degrade_without_repeat(api_client, db
     row = repo.category_cache(db, uid, "mystery", "unknown", source="rule", confirmed=False)
     db.commit()
     endpoint = "/api/v1/categories/" + str(row.id) + "/suggest"
-    monkeypatch.setattr(get_settings(), "llm_provider", "anthropic")
+    monkeypatch.setattr(get_settings(), "llm_provider", "gemini")
     assert api_client.post(endpoint, headers=headers).status_code == 400
     assert sender.calls == 0
     api_client.put("/api/v1/chat/config", headers=headers, json={"live_opt_in": True})

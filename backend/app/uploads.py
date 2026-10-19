@@ -105,6 +105,9 @@ class UploadWorker:
                 self._progress(user_id, upload_id, stage="detecting")
                 detected = repo.redetect(db, user_id, as_of=as_of)
                 regenerate(db, user_id, as_of=as_of)
+                from app.services.demo import finalize
+
+                finalize(db, user_id, upload_id, as_of=as_of)
                 repo.update_upload(
                     db,
                     user_id,

@@ -22,6 +22,8 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | PUT | `/api/v1/chat/config` | JWT | Chat Consent |
 | DELETE | `/api/v1/chat/history` | JWT | Delete History |
 | GET | `/api/v1/chat/history` | JWT | History |
+| DELETE | `/api/v1/demo/data` | JWT | Remove Demo |
+| POST | `/api/v1/demo/load` | JWT | Load Demo |
 | GET | `/api/v1/health` | Public | Health |
 | GET | `/api/v1/health/ready` | Public | Ready |
 | DELETE | `/api/v1/me/data` | JWT | Delete My Data |

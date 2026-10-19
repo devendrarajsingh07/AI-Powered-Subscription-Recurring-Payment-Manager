@@ -17,3 +17,8 @@ test-results/
 var/
 .DS_Store
 
+
+private-statements/
+*.eml
+.env.*
+!.env.example

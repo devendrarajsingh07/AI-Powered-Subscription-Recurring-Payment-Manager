@@ -38,6 +38,6 @@ def get_client():
     cfg = get_settings()
     if cfg.llm_provider == "fake":
         return FakeLLM()
-    from app.services.llm.anthropic import AnthropicClient
+    from app.services.llm.gemini import GeminiClient
 
-    return AnthropicClient(cfg)
+    return GeminiClient(cfg)

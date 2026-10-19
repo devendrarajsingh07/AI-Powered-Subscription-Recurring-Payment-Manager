@@ -55,6 +55,9 @@ class User(Identity, Base):
 
 class Upload(Owned, Base):
     __tablename__ = "uploads"
+    source: Mapped[str] = mapped_column(String(16), server_default="upload")
+    demo_as_of: Mapped[date | None] = mapped_column(Date)
+    demo_defaults: Mapped[dict | None] = mapped_column(JSONB)
     filename: Mapped[str] = mapped_column(String(255))
     row_count: Mapped[int] = mapped_column(Integer, server_default="0")
     status: Mapped[str] = mapped_column(

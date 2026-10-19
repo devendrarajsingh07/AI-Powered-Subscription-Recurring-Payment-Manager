@@ -176,6 +176,14 @@ async def upload(
     from starlette.concurrency import run_in_threadpool
 
     parsed = await run_in_threadpool(validate_csv, data, selected)
+    repo.lock_ingestion(db, user.id)
+    if repo.count_owned(db, user.id, Upload, Upload.source == "demo"):
+        db.rollback()
+        fail(
+            409,
+            "remove_demo_first",
+            "Remove demo data in Settings before importing a real statement",
+        )
     if worker is None or not worker.reserve():
         fail(429, "upload_queue_full", "Upload queue is full; retry after current uploads finish")
     try:
@@ -222,6 +230,52 @@ def uploads(user: CurrentUser, db: Db, limit: Limit = 20, offset: Offset = 0):
 @router.get("/uploads/{upload_id}", response_model=s.UploadOut, tags=["uploads"])
 def upload_detail(upload_id: uuid.UUID, user: CurrentUser, db: Db):
     return require_owned(db, user.id, Upload, upload_id)
+
+
+@router.post("/demo/load", response_model=s.UploadOut, status_code=202, tags=["demo"])
+def load_demo(
+    user: CurrentUser, db: Db, request: Request, worker=Depends(get_worker), as_of=Depends(today)
+):
+    """Load clock-relative synthetic CSV into an empty account; reuse existing demo unchanged."""
+    from fastapi.responses import JSONResponse
+    from starlette.background import BackgroundTask
+
+    from app.services import demo
+
+    demo.ensure_enabled()
+    auth.limiter.check(request, "demo:" + str(user.id))
+    record, created = demo.prepare(db, user.id, as_of=as_of)
+    if not created:
+        return record
+    if worker is None or not worker.reserve():
+        db.rollback()
+        fail(429, "upload_queue_full", "Upload queue is full; try again shortly")
+    try:
+        data, _ = demo.dataset(as_of)
+        validate_csv(data, demo.MAPPING)
+        db.commit()
+        result = s.UploadOut.model_validate(record)
+    except Exception:
+        db.rollback()
+        worker.release()
+        raise
+    return JSONResponse(
+        status_code=202,
+        content=result.model_dump(mode="json"),
+        background=BackgroundTask(
+            worker.submit, user.id, record.id, data, demo.MAPPING, as_of=as_of
+        ),
+    )
+
+
+@router.delete("/demo/data", response_model=s.DeleteResult, tags=["demo"])
+def remove_demo(user: CurrentUser, db: Db, as_of=Depends(today)):
+    """Remove only demo-origin data and unchanged demo defaults; preserve the account."""
+    from app.services.demo import remove
+
+    counts = remove(db, user.id, as_of=as_of)
+    db.commit()
+    return dict(deleted=counts)
 
 
 @router.get("/subscriptions", response_model=s.Page[s.SubscriptionOut], tags=["subscriptions"])

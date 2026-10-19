@@ -4,7 +4,7 @@ import uuid
 from collections import defaultdict
 from hashlib import sha256
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,12 @@ from app.services.normalizer import normalize_merchant
 def get_user(db: Session, user_id: uuid.UUID, *, lock: bool = False):
     query = select(m.User).where(m.User.id == user_id)
     return db.scalar(query.with_for_update(key_share=True) if lock else query)
+
+
+def lock_ingestion(db, user_id):
+    """Serialize submission policy, independently of the longer detection row lock."""
+    key = int.from_bytes(sha256(str(user_id).encode()).digest()[:8], "big", signed=True)
+    db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": key})
 
 
 def get_owned(db, user_id, model, object_id):

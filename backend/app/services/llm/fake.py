@@ -63,6 +63,9 @@ def compose(data):
 
 class FakeLLM:
     def __init__(self, *, fabricate=False):
+        from app.config import get_settings
+        if fabricate and get_settings().environment == "production":
+            raise RuntimeError("Adversarial FakeLLM is test-only")
         self.fabricate = fabricate
 
     async def categorize(self, merchant):

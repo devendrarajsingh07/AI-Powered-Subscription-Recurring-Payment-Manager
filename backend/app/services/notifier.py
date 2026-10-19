@@ -90,6 +90,8 @@ class ConsoleNotifier:
         return target
 
     def send(self, mail: Mail):
+        if get_settings().environment == "production":
+            raise DeliveryError(permanent=True)
         address(mail.recipient)
         folder = self.user_directory(mail.user_id)
         final = folder / (str(uuid.UUID(str(mail.alert_id))) + ".eml")
