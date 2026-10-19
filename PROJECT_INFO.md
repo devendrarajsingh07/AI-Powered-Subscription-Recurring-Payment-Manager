@@ -4,7 +4,7 @@ Updated 2026-10-19. Workspace root is the repository; do not create a nested sub
 
 ## Current state
 
-Phases 1–6 delivered locally; Phase 7 remains out of scope. Hosted Phase 6 publication is recorded below.
+Phases 1–6 delivered and hosted CI verified. Phase 7 remains out of scope.
 React/Vite/TypeScript/Tailwind/Recharts/TanStack Query/Router; FastAPI/SQLAlchemy/Alembic;
 PostgreSQL 16; Decimal money and decimal-string API values. No create_all or SQLite.
 Run: make dev, make verify, make test, make lint, make evaluate, make e2e.
@@ -120,6 +120,24 @@ Real-bank detection accuracy remains unmeasured. Live eval is not part of CI or 
 APP_TEST_AS_OF is empty normally; make e2e temporarily sets/restores it on the local synthetic stack.
 Stop before Phase 7. No demo-data endpoint or make seed has been implemented.
 Optional live evaluation: NOT RUN; no live key is required or used by default.
+
+## Phase 6 publication and hosted CI
+
+Pushed logical commits to origin/master:
+- 90cf67f — read-only tools, figure verification, consent/history/rate controls, Claude/FakeLLM,
+  categorization and independent known-answer/security/orchestration tests.
+- 816f83d — accessible chat drawer, generated contract, typed network tests and five-flow
+  browser coverage; bounded Windows screenshot publication retries retain all assertions.
+- 9159a8a — current-state handoff, preserved historical logs, README and synthetic screenshots.
+
+[Hosted run 39238271984](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39238271984)
+passed both checks and e2e for 9159a8a9c5387f4f3eeac0360c89b1f1a463f3a1. The Linux jobs include
+real Compose/PostgreSQL tests and the five browser flows. The final documentation-only follow-up
+records this immutable success; it changes no verified application code. Working tree was clean
+at publication. .env, .venv, var/outbox and .eml tracked-file checks are empty; public repository
+contains synthetic statements/screenshots only. No live-provider evaluation was run.
+
+Phase 6 definition of done is met. Stop here before Phase 7.
 
 ## Earlier phase decisions and verification (historical)
 
