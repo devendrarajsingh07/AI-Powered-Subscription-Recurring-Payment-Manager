@@ -17,6 +17,7 @@ import {
 } from "../components/Common";
 import { formatMoney } from "../lib/money";
 import { SpendCharts } from "../components/SpendCharts";
+import { SavingsPanel } from "../components/SavingsPanel";
 export default function Dashboard() {
   const summary = useSummary();
   const trend = useTrend();
@@ -128,16 +129,7 @@ export default function Dashboard() {
           <RenewalRows items={renewals.data.items} />
         )}
       </section>
-      <section className="panel coming-soon">
-        <span className="badge">Coming soon</span>
-        <div>
-          <h2>Savings insights</h2>
-          <p className="muted">
-            Recommendations arrive in a later release. No savings estimate is
-            available yet.
-          </p>
-        </div>
-      </section>
+      <SavingsPanel />
       {summary.data?.active_count === 0 && (
         <Empty>
           Start with your own statement or the synthetic sample CSV included in

@@ -227,6 +227,7 @@ select:focus {
   color: var(--muted);
 }
 .sidebar {
+  overflow-y: auto;
   position: fixed;
   width: 232px;
   inset: 0 auto 0 0;
@@ -1264,5 +1265,95 @@ dialog form {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+.recommendation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.recommendation-card {
+  border-top: 1px solid var(--border);
+  padding: 24px 0 5px;
+}
+.recommendation-card .section-heading {
+  margin-bottom: 15px;
+}
+.recommendation-card h2 {
+  margin-top: 8px;
+  font-size: 20px;
+}
+.recommendation-card > p {
+  max-width: 850px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+.recommendation-estimate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: center;
+  margin: 20px 0;
+  font-size: 12px;
+}
+.recommendation-estimate > div {
+  border-left: 3px solid var(--warning);
+  padding-left: 14px;
+}
+.recommendation-estimate strong {
+  color: var(--accent);
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+}
+.recommendation-estimate > div strong {
+  display: block;
+  color: var(--text);
+}
+.recommendation-members {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 24px;
+}
+.recommendation-members li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.recommendation-members li span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.savings-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.savings-panel p {
+  max-width: 640px;
+  font-size: 12px;
+  margin: 8px 0 10px;
+}
+.savings-value {
+  font-size: 27px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+@media (max-width: 700px) {
+  .savings-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .recommendation-members li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .recommendation-card .section-heading {
+    align-items: flex-start;
   }
 }

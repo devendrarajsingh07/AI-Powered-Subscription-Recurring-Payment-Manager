@@ -53,6 +53,9 @@ export function useRefresh() {
         "renewals",
         "categories",
         "uploads",
+        "recommendations",
+        "savings",
+        "alerts",
       ].map((key) => client.invalidateQueries({ queryKey: [key] })),
     );
   }, [client]);

@@ -72,7 +72,8 @@ export function Dialog({
     dialog.showModal();
     return () => {
       dialog.close();
-      previous?.focus();
+      if (previous?.isConnected) previous.focus();
+      else document.querySelector<HTMLElement>("#content")?.focus();
     };
   }, []);
   return (

@@ -67,7 +67,9 @@ export default function Subscriptions() {
   const [params, setParams] = useSearchParams();
   const filters = filtersFromSearch(params);
   const query = useSubscriptions(filters);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(() =>
+    params.get("review"),
+  );
   function filter(key: string, value: string) {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
@@ -272,7 +274,15 @@ export default function Subscriptions() {
         )}
       </section>
       {selected && (
-        <ChargeDrawer id={selected} onClose={() => setSelected(null)} />
+        <ChargeDrawer
+          id={selected}
+          onClose={() => {
+            setSelected(null);
+            const next = new URLSearchParams(params);
+            next.delete("review");
+            setParams(next, { replace: true });
+          }}
+        />
       )}
     </>
   );

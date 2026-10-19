@@ -20,7 +20,16 @@ import { clearSession, saveSession } from "../lib/session";
 import { api } from "../api/client";
 import { App } from "../App";
 import Categories from "../pages/Categories";
-const server = setupServer();
+const server = setupServer(
+  http.get("*/api/v1/alerts", () =>
+    HttpResponse.json({
+      items: [],
+      total: 0,
+      limit: 10,
+      offset: 0,
+    } satisfies components["schemas"]["Page_AlertOut_"]),
+  ),
+);
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
   server.resetHandlers();
@@ -401,7 +410,9 @@ test("delete receipt survives protected-route redirect and cache is cleared", as
         lead_time_days: 3,
         enabled: true,
         notification_email: null,
-      } satisfies components["schemas"]["AlertSettings"]),
+        delivery_mode: "console",
+        delivery_notice: "Development mode: private outbox.",
+      } satisfies components["schemas"]["AlertSettingsOut"]),
     ),
     http.delete("*/api/v1/me/data", () =>
       HttpResponse.json({

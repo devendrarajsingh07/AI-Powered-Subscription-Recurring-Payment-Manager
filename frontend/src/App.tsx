@@ -20,6 +20,7 @@ import {
   CalendarDays,
   CreditCard,
   House,
+  Lightbulb,
   LogOut,
   Menu,
   Moon,
@@ -38,6 +39,7 @@ const Subscriptions = lazy(() => import("./pages/Subscriptions"));
 const Renewals = lazy(() => import("./pages/Renewals"));
 const Categories = lazy(() => import("./pages/Categories"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
+const Recommendations = lazy(() => import("./pages/Recommendations"));
 export class ErrorBoundary extends Component<
   { children: ReactNode },
   { failed: boolean }
@@ -65,6 +67,7 @@ const navigation = [
   ["/upload", "Upload statement", Upload],
   ["/subscriptions", "Subscriptions", CreditCard],
   ["/renewals", "Renewals", CalendarDays],
+  ["/recommendations", "Recommendations", Lightbulb],
   ["/categories", "Categories", Tags],
   ["/settings", "Settings", Settings],
 ] as const;
@@ -211,6 +214,7 @@ export function App() {
           <Route path="upload" element={<UploadPage />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="renewals" element={<Renewals />} />
+          <Route path="recommendations" element={<Recommendations />} />
           <Route path="categories" element={<Categories />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route

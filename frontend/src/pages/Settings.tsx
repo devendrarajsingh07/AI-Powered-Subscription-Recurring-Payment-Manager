@@ -5,7 +5,10 @@ import type { components } from "../api/schema";
 import { Dialog, ErrorState, Heading, Loading } from "../components/Common";
 import { clearSession } from "../lib/session";
 import { formatMoney } from "../lib/money";
+import { RecentAlerts } from "../components/RecentAlerts";
+import { useRefresh } from "../hooks/data";
 export default function SettingsPage() {
+  const refresh = useRefresh();
   const budget = useQuery({
     queryKey: ["budget"],
     queryFn: async ({ signal }) =>
@@ -43,16 +46,13 @@ export default function SettingsPage() {
               initial={budget.data.monthly_limit}
               saved={() => {
                 void budget.refetch();
+                void refresh();
               }}
             />
           )}
         </section>
         <section className="panel">
           <h2>Renewal preferences</h2>
-          <p className="notice-box">
-            Preferences are saved now. Email delivery and budget alerts arrive
-            in a later release; no alerts are being sent.
-          </p>
           {alerts.isPending ? (
             <Loading />
           ) : alerts.isError ? (
@@ -63,15 +63,21 @@ export default function SettingsPage() {
               }}
             />
           ) : (
-            <AlertForm initial={alerts.data} />
+            <>
+              <p className="notice-box">{alerts.data.delivery_notice}</p>
+              <AlertForm initial={alerts.data} />
+            </>
           )}
         </section>
       </div>
+      <RecentAlerts />
       <section className="panel danger-zone">
         <h2>Your data, your control</h2>
         <p>
           Delete your account and all uploaded transactions, detected payments,
-          preferences and stored data. This cannot be undone.
+          preferences and private development-outbox copies. Delivered inbox
+          emails and manually exported copies cannot be recalled. This cannot be
+          undone.
         </p>
         <button className="danger" onClick={() => setDeleting(true)}>
           Delete my data
@@ -152,6 +158,7 @@ function AlertForm({
 }: {
   initial: components["schemas"]["AlertSettings"];
 }) {
+  const refresh = useRefresh();
   const [days, setDays] = useState(String(initial.lead_time_days));
   const [email, setEmail] = useState(initial.notification_email || "");
   const [enabled, setEnabled] = useState(initial.enabled);
@@ -173,7 +180,10 @@ function AlertForm({
               enabled,
             },
           });
-          setMessage("Preferences saved. Email delivery is not available yet.");
+          await refresh();
+          setMessage(
+            "Preferences saved. Due alerts are checked by the daily job.",
+          );
         } catch (caught) {
           setError(errorMessage(caught));
         } finally {
@@ -201,13 +211,14 @@ function AlertForm({
           onChange={(event) => setEmail(event.target.value)}
         />
       </label>
+      <small>If blank, alerts are recorded as skipped. Your sign-in email is not used automatically.</small>
       <label className="checkbox">
         <input
           type="checkbox"
           checked={enabled}
           onChange={(event) => setEnabled(event.target.checked)}
         />
-        Enable alerts when delivery becomes available
+        Enable renewal and budget alerts
       </label>
       <button className="primary" disabled={busy}>
         {busy ? "Saving…" : "Save preferences"}
