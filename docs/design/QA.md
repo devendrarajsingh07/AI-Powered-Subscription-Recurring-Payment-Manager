@@ -70,3 +70,36 @@ The Phase 5 browser flow produced actual multipart HTML/plaintext .eml files thr
 verified stable artifacts on repeated CLI runs, and verified private copies disappear on deletion.
 Real SMTP is tested against a local aiosmtpd server, including the documented crash ambiguity;
 no external inbox delivery is claimed. Full commands and hosted CI are in PROJECT_INFO.md.
+
+## Phase 6 extension — grounded assistant
+
+The flow under test is: register → upload sample and a synthetic hostile merchant → open chat →
+ask this-week renewals → compare every displayed date/charge amount to the real API → inspect
+persisted history → ask injection requests → clear history → delete the account and chat rows.
+Browser plugin not available; regular Playwright Chromium used, as in the earlier phases.
+The API clock is fixed to the committed truth date during make e2e and restored afterward.
+
+The original subtrack-concept.png and the latest chat-desktop, chat-dark and chat-mobile screenshots
+were opened with view_image and compared. This extends the existing system, with no new ImageGen
+asset needed. All screenshots and uploaded fixtures are synthetic.
+
+| Reference / interaction point | Final result |
+| --- | --- |
+| Slate/teal hierarchy | Existing shell and panel tokens retained; chat is a 600px edge drawer, full-width at 360px. |
+| Headings and boundaries | Clear title/close action, disclosure, conversation, prompts and composer. Native modal semantics preserve focus and Escape. |
+| Light/dark contrast | Uses existing text/panel/accent variables; full browser axe passed in both themes. |
+| Honest state | Offline rule-based label stays visible; external sharing is explicit and live consent defaults off. Unverified answers have a separate fallback notice. |
+| Conversation readability | Merchant, charge and renewal date are templated from actual tool output; no repeated JSON field prefixes in normal offline renewal replies. Tool sources remain visible below answers. |
+| Scroll and mobile controls | Title and composer remain in view; the conversation scrolls independently with keyboard focus. Prompt buttons wrap and the 360px document has no horizontal overflow. |
+| Plain-text safety | Hostile strings remain text. No HTML/markdown execution, console message content or browser financial math. |
+
+The first full-page screenshot exposed page/dialog scrolling that hid the composer; fixed by
+scrolling only the conversation and capturing the real viewport. Browser axe then found the
+new scrollable region needed tabIndex; fixed rather than suppressing the rule. Final desktop,
+dark and mobile axe checks pass, as do focus restoration and Escape. Phase 6 browser listeners
+report no page errors or console errors/warnings. Seven typed MSW component tests cover consent,
+stream/status/Stop, rate-limit and provider error feedback, fallback notices, hostile plain text,
+clear history and structural accessibility. The full frontend suite has 42 tests.
+
+See PROJECT_INFO.md for final backend/evaluation/CI evidence and verifier limitations. This is a
+figure-provenance guarantee, not a claim that all natural-language prose is correct.

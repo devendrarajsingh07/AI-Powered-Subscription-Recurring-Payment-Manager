@@ -1,9 +1,9 @@
 # SubTrack
 
 AI-powered subscription and recurring payment manager for uploaded or synthetic INR transactions.
-**Current delivery: Phase 5 recommendations and renewal/budget notifications.**
+**Current delivery: Phase 6 grounded chat and optional merchant-category suggestions.**
 Register, upload a CSV, review detections, explore spending and manage your preferences in the UI.
-Review deterministic savings suggestions and inspect delivered alerts. Chat and one-click demo seeding arrive in Phases 6–7.
+Review deterministic savings suggestions and inspect delivered alerts. The offline assistant uses your data through read-only tools. One-click demo seeding remains Phase 7.
 See [PROJECT_INFO.md](PROJECT_INFO.md) for the agent handoff, specification, phase gates, and verification log.
 
 ## Prerequisites and startup
@@ -42,7 +42,7 @@ PostgreSQL is internal to Compose and persists in a named volume. API startup ru
 
 `make seed` is reserved for Phase 7 and currently exits with an explicit not-implemented error.
 Authentication, PostgreSQL persistence, background CSV uploads and business APIs are available.
-Recommendations, a daily scheduler, console outbox and optional SMTP delivery are available. Chat and demo seeding remain later phases.
+Recommendations, a daily scheduler, console outbox and optional SMTP delivery are available. Grounded offline chat and opt-in Claude are available; demo seeding remains Phase 7.
 
 ## Frontend development and verification
 
@@ -66,7 +66,7 @@ make e2e
 
 On Linux, use `install --with-deps chromium` to install browser system dependencies. On Windows use
 `npm.cmd` when PowerShell blocks npm's script shim. The npm scripts invoke Node entrypoints directly
-to support workspace paths containing `&`. `make e2e` runs four Chromium flows against the real
+to support workspace paths containing `&`. `make e2e` runs five Chromium flows against the real
 Compose services, with fresh synthetic accounts; it does not mock the API. Set `E2E_BASE_URL` to
 test a different local stack. Test accounts are deleted by successful runs. Failed runs can leave
 synthetic accounts for investigation; remove them through Settings. Reports/traces are ignored and
@@ -201,8 +201,87 @@ addresses, financial amounts or transport exception details.
 The scheduler is in-process and supported with one API instance; this is not a distributed queue.
 Dev mail persists in Docker's `outbox_data` volume, isolated by user UUID. Account deletion purges
 those dev copies; previously exported files and delivered SMTP inbox copies cannot be recalled.
-Do not commit or share outbox files containing uploaded financial data. No chat, LLM phrasing,
-push delivery or demo-data endpoint is implemented in this phase.
+Do not commit or share outbox files containing uploaded financial data. No LLM phrasing of recommendations/emails, push delivery or demo-data endpoint is implemented.
+
+## Grounded chat and category suggestions
+
+Open **Ask SubTrack** from any signed-in page. The default is honestly labelled:
+“Offline demo assistant — answers come from your data using built-in rules; no external AI.”
+FakeLLM routes recognized questions to the same read-only tools as the live provider and templates
+actual returned values. It contains no fixture figures. Unrecognized requests say the information
+is unavailable. No network or API key is needed for the offline assistant.
+
+For live mode set `LLM_PROVIDER=anthropic`, `LLM_API_KEY` and an available `LLM_MODEL`, then restart
+the API. Unknown providers or missing live configuration fail startup with a safe error; there is
+no silent fallback. The only live adapter implements Claude's
+[Messages SSE protocol](https://platform.claude.com/docs/en/build-with-claude/streaming) with the
+already pinned httpx dependency. No second provider or additional SDK was introduced.
+
+Each user's live opt-in defaults **off**. The drawer discloses external sharing and requires an
+explicit checked consent before a live message. Users can withdraw consent. Claude receives the
+redacted question, bounded recent chat history, system/tool instructions and scoped tool results
+(subscription names, categories, amounts, dates and counts). Email addresses, token patterns,
+account IDs and raw transaction descriptions are excluded. Do not type private personal material
+into chat; automated redaction is not a general-purpose PII classifier. The server checks consent
+before every provider round. In offline mode no data leaves for an external AI.
+
+`POST /api/v1/chat` accepts only `message` (up to 2000 characters) and an optional owned
+`conversation_id`. Authenticated fetch reads SSE **status**, **final** and **error** events.
+Tool statuses stream live; ALL model text is buffered. There are no unverified token events.
+The final contains answer text, `verified`, consulted tool names and a conversation UUID.
+OpenAPI includes `x-sse-events` with the generated event schemas. The drawer shows data-only
+fallbacks clearly when verification fails, renders plain text, and supports Stop, history paging,
+clear history, Escape and focus restoration. No HTML or markdown execution is used.
+
+Seven strict tools: list_subscriptions, spend_summary, upcoming_renewals, compare_to_budget,
+get_recommendations, subscription_detail and potential_savings. Auth supplies identity; tools
+reject model user IDs/extra arguments. PostgreSQL read-only transactions enforce no writes.
+Lists cap at 30 items with truncation metadata; results cap at 60 KB. Untrusted merchant strings
+are bounded, control-cleaned and explicitly wrapped as data. Ambiguous merchants return products
+to choose from. Summary/insight/renewal functions are shared with the existing business API.
+Five tool rounds (at most seven calls each) precede a forced final response; total/per-call time
+limits, one in-flight turn, capped history and per-user request caps bound work. Caps are in-memory
+and reset on restart; this remains a single-instance development architecture.
+
+The server extracts currency/decimal figures, percentages, ISO/common numeric or written-month
+dates, numeric counts and English counts outside verbatim quoted merchant names. Indian grouping is normalized;
+relative today/tomorrow/yesterday dates use that turn's explicit tool clock. Values must match
+THIS turn's typed tool figures. User messages, old history and numeric merchant text cannot
+authorize a figure. Unsupported numeric notation is blocked, not guessed. On mismatch the model
+answer is withheld, `verified=false` is recorded and a deterministic data fallback is returned.
+The adversarial FakeLLM test proves a fabricated figure never reaches the stream.
+
+**Limit:** this verifies figure provenance, not semantic correctness. A model can associate a real
+value with the wrong merchant or make a wrong prose claim. English number-word parsing and date
+formats are bounded, not a universal natural-language proof; unsupported phrasing can cause safe
+false rejections. Review underlying subscriptions. The assistant has no action/SQL/write tools,
+provides no regulated financial advice, and never performs financial arithmetic.
+
+History stores successful user/assistant pairs atomically plus tool name, validated arguments,
+result size and digest (not raw tool output). Failed/cancelled turns store no partial pair.
+`GET /chat/history` is scoped/paginated; `DELETE /chat/history` clears the caller's history.
+Delete-my-data cascades chat rows. Logs contain IDs/counts, never messages or provider responses.
+`GET/PUT /chat/config` exposes provider mode, disclosure and per-user opt-in, never a key.
+
+In Categories, **Request category suggestion** is explicit. With live consent only the normalized
+merchant name and a fixed enumerated category schema leave the system. Valid suggestions are
+cached once per merchant/user with source llm and confirmed=false; subscriptions stay unchanged.
+A user choice always wins. Offline mode, opt-out, timeout or failure leave manual selection usable;
+failed attempts are cached to avoid repeated provider requests. Existing confirmed/rule-known
+merchants are not sent. Recommendations and alert emails keep deterministic wording.
+
+```sh
+make chat-eval           # 18 independent-expectation questions; default offline, real PostgreSQL
+make chat-eval-live      # Optional paid/network run; requires live env config, never run by CI
+make e2e                # Real Compose UI; temporarily freezes API clock to synthetic truth date
+```
+
+The live target prints pass/fail and verifier-block states for the same known-answer questions;
+it is **not run** in the recorded default verification. Regular tests force offline mode even
+when a developer has a live key configured; the live adapter is exercised against a local HTTP
+server only. `make e2e` uses `scripts/run_e2e.py` to set APP_TEST_AS_OF for the API and restores the
+normal clock in finally. Use it on a local synthetic test stack; leave this variable empty in
+normal operation. Test fixtures remain fixed as of 2026-10-18. No live network calls run in CI.
 
 ## Local development without Docker
 
@@ -254,7 +333,14 @@ variables in your shell (or provide a backend `.env`, which is gitignored).
 | `AUTH_REGISTER_LIMIT`, `AUTH_LOGIN_LIMIT`, `AUTH_WINDOW_SECONDS` | Per-IP auth limits, defaults 5/10 per 60 seconds |
 | `APP_TIMEZONE` | Application clock timezone, default Asia/Kolkata; tests override the clock dependency |
 | `UPLOAD_WORKERS`, `UPLOAD_QUEUE_LIMIT` | Background workers / outstanding-job capacity, defaults 2 / 8 |
-| `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL` | Reserved for Phase 6; offline fake planned, live provider undecided |
+| `LLM_PROVIDER` | `fake` (offline default) or `anthropic` (only live adapter) |
+| `LLM_API_KEY`, `LLM_MODEL` | Live Claude credentials/model ID; both required in live mode, environment only |
+| `LLM_BASE_URL` | Claude API origin, defaults to `https://api.anthropic.com`; local HTTP tests inject a loopback server |
+| `LLM_MAX_TOKENS` | Maximum provider output tokens per call, default 1024 |
+| `LLM_TIMEOUT_SECONDS`, `LLM_RETRIES` | Per-call time limit (20 seconds), transient-only retry count (2) |
+| `CHAT_TIMEOUT_SECONDS`, `CHAT_HISTORY_WINDOW` | Whole-turn budget (60 seconds), recent history messages (8) |
+| `CHAT_MINUTE_LIMIT`, `CHAT_DAILY_LIMIT` | Per-user process-local caps: 10/minute, 100/rolling 24 hours |
+| `APP_TEST_AS_OF` | Empty normally; explicit ISO date for synthetic browser tests only |
 | `HIGH_COST_YEARLY_INR`, `HIGH_COST_SHARE` | Advisory yearly threshold (12000), or share (0.35) above the median; strict greater-than comparisons |
 | `UNUSED_DAYS` | Review only user-marked last use older than this many days, default 60 |
 | `SCHEDULER_ENABLED` | Start daily scheduler with API, default true |
@@ -281,10 +367,12 @@ flowchart LR
     API --> Jobs[APScheduler / shared CLI job]
     Jobs -->|Scoped rules / advisory lock| DB
     Jobs --> Notifier[Private console outbox / SMTP]
-    API -. Phase 6 .-> Chat[Read-only user-scoped tools / LLMClient]
+    API --> Chat[Read-only tools / verifier / consent]
+    Chat -->|Opt-in only| Claude[Claude Messages API]
+    Chat --> Offline[Offline tool-using rules]
 ```
 
-The dashed chat component is planned. The LLM must never compute detection or spending figures.
+Chat passes all answer figures through a server-side verifier before sending answer text. The LLM must never compute detection or spending figures.
 Money must use Decimal and PostgreSQL NUMERIC, and model tools must derive identity from authentication.
 
 ## Verification and limitations
@@ -299,7 +387,7 @@ Ruff. Container tool caches now live under `/tmp`, so host-owned/read-only sourc
 The real Compose stack boots successfully and `make verify` passes through both API and web proxy.
 Docker Desktop, GNU Make, and Python 3.12 have been installed on the development machine;
 reopen terminals if their PATH predates installation. The handoff lists the installed paths.
-Phase 5 verification counts and hosted CI evidence are recorded in
+Current verification counts and hosted CI evidence are recorded in
 [PROJECT_INFO.md](PROJECT_INFO.md). The suite runs against PostgreSQL 16, including migrations,
 concurrent regeneration/delivery, SMTP against a local test server, API isolation and deletion.
 Browser tests cover the real upload, recommendation acceptance, outbox delivery and budget flow.
@@ -347,7 +435,8 @@ Known limitations: nominal intervals approximate calendar billing dates; first-t
 merchant grouping can merge unrelated merchants; near-identical product prices may be inseparable;
 large price changes can exceed the stability threshold; many missing charges can lower regularity
 below threshold; non-Latin merchant descriptions need a later normalization fallback. Unknown-merchant
-LLM categorization is not wired; user category confirmation is available through the API.
+category suggestions are explicit opt-in requests; they remain unconfirmed and do not change
+subscription categories until the user accepts them. Offline mode makes no category suggestion.
 Fixtures are fixed as of
 2026-10-18; generator `--as-of` and detector's explicit clock support reproducible newer demos.
 
