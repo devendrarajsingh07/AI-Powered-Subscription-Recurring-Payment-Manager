@@ -86,6 +86,7 @@ The price-change detection date now stays stable when the same price facts are r
 | make verify | Exit 0; web, direct readiness and proxied readiness all pass |
 | make test | Exit 0; 208 PostgreSQL tests, 35 Vitest tests, evaluator and OpenAPI/TypeScript drift checks pass |
 | make lint | Exit 0; Ruff, ESLint and TypeScript pass |
+| make outbox | Exit 0; exported the private dev volume into ignored var/outbox |
 | make evaluate | Exit 0; precision/recall/F1 1.0000 on all three suites (16/3/5 true positives, zero false positives/negatives) |
 | make e2e | Exit 0; four Chromium flows pass, including the new actual CLI/outbox renewal and budget flow |
 | docker compose run --rm --no-deps web npm run build | Exit 0; OpenAPI type drift, TypeScript and production Vite build pass |
@@ -121,9 +122,24 @@ regular Playwright was used. See docs/design/QA.md for visual comparisons and ac
   exported files and already delivered SMTP mail cannot be recalled.
 - No chat/LLM categorization/LLM phrasing yet (Phase 6); no demo loader or make seed (Phase 7).
 - Real-bank detection accuracy remains unmeasured. One upstream test deprecation warning remains.
-- Hosted CI publication/result is recorded below when the final commits are pushed.
+- Hosted CI is verified: both checks and e2e passed for ad115ad, including the Linux Compose,
+  PostgreSQL, migration, frontend, drift and actual CLI/notifier browser flows. The final docs-only
+  follow-up records this immutable evidence; it does not change the verified application code.
 
-Phase 5 is complete locally. Stop before Phase 6; await the user's next instruction.
+### Publication and hosted CI
+
+Pushed logical commits to origin/master:
+- 7a096fb — deterministic insight rules, migrations, scoped APIs and recoverable notifier jobs.
+- 880495b — recommendation/savings/delivery UI, generated types and real-stack browser test.
+- ad115ad — README, decisions, final local results and synthetic browser screenshots.
+
+[Hosted run 39197059184](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39197059184)
+completed successfully for ad115adb8e6a21f53d7aae1371852810de3bfa67. Both jobs, checks and e2e,
+are success. This supersedes all historical no-remote/CI-unverified notes from earlier phases.
+The application changes are committed and pushed. `.env`, `.venv` and `var/outbox` are ignored;
+none is tracked. No real statements, recipient outbox emails or credentials were committed.
+
+Phase 5 is complete. Stop before Phase 6; await the user's next instruction.
 
 ## Phase 4 preparation and decisions (before frontend implementation)
 
@@ -301,8 +317,8 @@ Phase 4 is complete. Stop here; do not begin Phase 5 without the user's next ins
 
 The user requested a complete, demo-ready application, with seven strictly sequential phases.
 **Phases 1–5 are implemented. Phase 5 is current; see the final verification near the top.**
-The real frontend consumes the Phase 3 contract. No backend behavior or contract was changed in
-Phase 5. Stop after this phase; do not start chat or demo seeding
+The real frontend consumes the checked-in contract, extended with Phase 5 recommendations,
+savings and alert delivery schemas. Stop after this phase; do not start chat or demo seeding
 without the user's next instruction. The full seven-phase application remains incomplete.
 
 The workspace root itself is the `subtrack` repository; do not create a nested duplicate project.
