@@ -112,3 +112,11 @@ commit/check association on GitHub is the final publication evidence; never tag 
 Latest production-build check: main346.56KB (109.50KB gzip), charts389.93KB (114.22KB gzip),
 CSS24.93KB (6.25KB gzip); preview DCL96ms in repeat single local sample, headers/zero errors pass.
 Final audits repeated: npm0, pip no known vulnerabilities; Gitleaks25 commits no unreviewed findings.
+
+Isolated checkout repeated full make verify/test/lint/evaluate through8ae8845: all exit0,
+286 backend+46 frontend, both drift checks, F1=1 across all3 fixture sets. Corrected test-only
+assumptions about CORS5173 and inherited replay clocks; production guards remain strict. The
+written-demo browser now also opens/closes charges, records music intent without cancellation,
+and checks Sent in Settings, matching docs/DEMO.md clicks; local test passed in24.4s.
+No screen reader, real statement or live Gemini evaluation claimed. Current release publication
+still requires hosted green on the tagged commit. Optional checker never writes bytecode/results.

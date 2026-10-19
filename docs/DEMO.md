@@ -42,8 +42,9 @@ network/package caches; this installed demo needs no AI key, bank connection or 
    possible price increase ₹199.00 → ₹219.00. **Say:** “These are reviewable detections, not certainty.”
 
 4. **1:00–1:15 — Recommendation.** Open Recommendations. Locate the music overlap between Apple
-   and Spotify, estimated monthly saving ₹119.00. Accept records review intent only; it never changes
-   the subscription status. **Say:** “You may want to review overlap; this is not advice to cancel.”
+   and Spotify, estimated monthly saving ₹119.00. Select **Record review intent** and read the
+   confirmation that subscription statuses are unchanged. **Say:** “You may want to review overlap;
+   this is not advice to cancel.”
 
 5. **1:15–1:40 — Ask a grounded question.** Select **Ask SubTrack**, then **What renews this week?**
    and **Send question**. Tool status appears, followed by newspaper, ₹49.00 and 2026-10-22, with

@@ -148,3 +148,23 @@ has no unreviewed findings (exact3 synthetic exceptions retained); build main346
 charts389.93KB/114.22KB gzip, CSS24.93KB/6.25KB gzip; preview repeat DCL96ms with zero page errors
 and all controlled web security headers. Single machine samples establish no performance guarantee.
 
+## Final isolated-stack replay and fixture corrections
+
+Fast-forwarded the isolated checkout to8ae8845, rebuilt both images, and ran make verify/test/lint/
+evaluate at ports5273/8100 with the explicit18Oct clock: **all exit0**,286 PostgreSQL tests,
+46 frontend tests, both contract drift checks, Ruff/ESLint/TypeScript and all3 detector datasets.
+Before correction, this additional configuration exposed test-fixture assumptions: a legacy CORS
+test hardcoded5173, and the valid-production fixture inherited the intentionally forbidden test
+clock. The CORS test now checks the configured origin; valid-production inputs explicitly clear
+the clock, while each invalid-guard case still asserts rejection. No application guard was weakened.
+The failed isolated run (285 passed/1 failed) and its safe production rejection were investigated,
+not discarded or reported as green. The corrected26 safety/health cases also passed independently.
+
+The final written-demo test additionally opens/closes the real Spotify charges drawer, records
+music review intent and proves statuses unchanged, and reloads Settings to see Sent in the UI.
+It passed locally in24.4s and keeps the same13-flow hosted suite. The private checker disables
+bytecode writes before app imports; synthetic CLI smoke still reports3 detections/3 malformed rows.
+ESLint9 and a transitive encoding package emitted npm deprecation notices; npm audit remains0.
+These existing development-tool maintenance notices are documented, not security findings or
+suppressed warnings. No major tooling migration was added in this release scope.
+

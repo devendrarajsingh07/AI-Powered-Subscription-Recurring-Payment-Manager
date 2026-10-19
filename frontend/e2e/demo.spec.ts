@@ -156,6 +156,18 @@ test("written three-minute demo: register, load, review, grounded chat, emails, 
   expect(products.items.map((s) => s.merchant).sort()).toEqual(
     truth.patterns.map((p) => p.merchant).sort(),
   );
+  await page
+    .getByRole("button", { name: "Review spotify", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("heading", { name: "Underlying charges" }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("button", { name: "Review spotify", exact: true }),
+  ).toBeFocused();
   await page.goto("/recommendations");
   const recs = await read<components["schemas"]["Page_RecommendationOut_"]>(
     page,
@@ -178,6 +190,21 @@ test("written three-minute demo: register, load, review, grounded chat, emails, 
       .getByText(formatMoney(music.est_monthly_saving!), { exact: true })
       .first(),
   ).toBeVisible();
+  await page
+    .getByRole("article", { name: "Music overlap" })
+    .getByRole("button", { name: "Record review intent" })
+    .click();
+  await expect(
+    page.getByText(
+      "Review or cancellation intent recorded. Subscription statuses are unchanged.",
+    ),
+  ).toBeVisible();
+  const afterReview = await read<
+    components["schemas"]["Page_SubscriptionOut_"]
+  >(page, "/subscriptions?limit=100");
+  expect(afterReview.items.map((item) => [item.id, item.status])).toEqual(
+    products.items.map((item) => [item.id, item.status]),
+  );
   await page.getByRole("button", { name: "Ask SubTrack" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "What renews this week?" }).click();
@@ -216,6 +243,8 @@ test("written three-minute demo: register, load, review, grounded chat, emails, 
   const first = outbox(me.id);
   expect(first.some((m) => m.kind === "renewal" && m.notice)).toBe(true);
   expect(first.some((m) => m.kind === "budget")).toBe(false);
+  await page.reload();
+  await expect(page.getByText("Sent", { exact: true }).first()).toBeVisible();
   job(alertDay);
   expect(outbox(me.id)).toEqual(first);
   await page.getByLabel("Monthly limit (₹)").fill("1.00");
