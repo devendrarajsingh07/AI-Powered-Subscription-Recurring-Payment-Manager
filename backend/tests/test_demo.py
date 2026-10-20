@@ -178,6 +178,7 @@ def test_production_guards(field, value):
         environment="production",
         app_test_as_of="",
         demo_enabled=False,
+        registration_mode="closed",
         notifier_provider="smtp",
         web_origin="https://subtrack.example.org",
         jwt_secret=secrets.token_urlsafe(48),

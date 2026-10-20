@@ -115,7 +115,8 @@ def test_revoke_cannot_target_other_issuer(api_client, db):
         revoke_invite(db, uuid.UUID(second["id"]), row.id)
 
 
-def test_production_defaults_closed_and_rejects_open():
+def test_production_defaults_closed_and_rejects_open(monkeypatch):
+    monkeypatch.delenv("REGISTRATION_MODE", raising=False)
     values = dict(
         _env_file=None,
         environment="production",
@@ -125,7 +126,7 @@ def test_production_defaults_closed_and_rejects_open():
         web_origin="https://web.example.org",
         jwt_secret=secrets.token_urlsafe(48),
     )
-    assert Settings(**values, registration_mode="closed").registration_mode == "closed"
+    assert Settings(**values).registration_mode == "closed"
     with pytest.raises(ValidationError):
         Settings(**values, registration_mode="open")
 
