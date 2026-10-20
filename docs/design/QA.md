@@ -170,4 +170,3 @@ all-page axe light/dark360 and responsive768/1280 checks. Native Windows Firefox
 blocked; all three engines stay enabled for Ubuntu CI. Human screen-reader pass remains pending.
 An earlier redundant run lost upload state during Vite reconnect while types were regenerated;
 edits and final browser checks were serialized. No assertion/time limit was weakened.
-

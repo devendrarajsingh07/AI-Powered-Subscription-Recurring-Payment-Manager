@@ -10,7 +10,7 @@ Release/tag CI passed, including all 13 browser flows on Ubuntu:
 https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39368517177
 
 The owner supplied a combined Phases 7/7.5/8 prompt. Additional Part 1 Gemini requirements
-are implemented and locally verified; hosted CI on the addendum must pass before Part 2. After Part 2, stop before Part 3
+are complete: both hosted jobs passed on 4b36e5a. Part 2 may now begin. After Part 2, stop before Part 3
 and request the Vercel/domain/container-host/managed-PostgreSQL/email/paid-Gemini prerequisites.
 Do not invent accounts or deploy/invite real users automatically.
 
@@ -32,7 +32,7 @@ make e2e Windows:10 passed,3 failed; Firefox157 native launch fails before app e
 The redundant available-engine baseline rerun had9 pass/1 fail: mapping preview state was lost
 during a Vite reconnect while generated types were being written. Subsequent edits and browser
 checks were serialized. Stable final addendum run:10/10 Chromium/WebKit flows pass. No browser
-is removed and no assertions weakened. Ubuntu release checks/e2e passed; addendum CI pending.
+is removed and no assertions weakened. Ubuntu release and addendum checks/e2e passed.
 
 Codex Process Jobs refused win32 as unsupported, so normal command execution is used. A local
 Firefox repair copied the exact manifest embedded in its mozglue DLL to a sidecar. Launch still
@@ -88,7 +88,7 @@ History preserving decisions/results/failures:
 - [Phase7 release](docs/history/PHASE_7.md)
 
 Priority: correct numbers > data safety > working demo > polish > extra features.
-Part 2 is pending. Part 3 requires the external-prerequisite handoff after Part 2.
+Part 2 implementation is starting. Part 3 requires the external-prerequisite handoff after Part 2.
 
 ## Part 1 addendum verification — 2026-10-20
 
@@ -102,12 +102,50 @@ First make lint/build failed because the generated response type required provid
 MSW fixture. Added explicit fake/gemini fixture providers. Repeated make lint, npm --prefix frontend
 run build, npm --prefix frontend test -- --run all exit0 (46 tests). No source changes during the
 stable browser verification: python scripts/run_e2e.py --project=chromium --project=webkit exit0,
-10 passed (Chromium7/WebKit3). Hosted all-browser result must be recorded before Part 2.
+10 passed (Chromium7/WebKit3). Hosted addendum checks/e2e passed on 4b36e5a; run39372903888:
+https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39372903888
 
 npm --prefix frontend audit --audit-level=low:0 vulnerabilities. pip-audit against requirements.lock
 in disposable Python3.12 container: no known vulnerabilities. Gitleaks full32-commit history: no
-unreviewed findings, retaining only the3 exact historical synthetic-test exceptions. Post-commit scan
-must include the addendum. No .env/private statements/eml/LICENSE tracked; .env.example only.
+unreviewed findings, retaining only the3 exact historical synthetic-test exceptions. Post-commit scan covered33 commits including the addendum with no unreviewed findings. No .env/private statements/eml/LICENSE tracked; .env.example only.
 Production bundle: main346.56KB/109.50KB gzip; lazy charts389.93KB/114.22KB gzip, unchanged.
 One existing Starlette TestClient deprecation warning remains. No live Gemini, real-bank or human
 screen-reader claim. Do not move v1.0.0; this is an additive post-release correction.
+
+## Phase 7.5 decisions — recorded before implementation
+
+- Local extraction only, never LLM/cloud OCR. Use pdfminer.six for positioned text (MIT), pypdf
+  for decryption (BSD-3-Clause), Pillow for normalization (MIT-CMU), ReportLab for synthetic fixtures
+  (BSD). Current PyPI metadata checked before dependency selection:20260107/6.21.1/13.0.0/5.0.1
+  respectively. Check actual installed/transitive licenses after locking. No AGPL dependency.
+  Tesseract CLI (Apache2) and poppler CLI (GPL2) run as separate local programs, not linked libraries.
+- Python dependencies get explicit pins and hashed requirements.lock. OCR English only. No phone
+  photo/handwriting support claim; clean English scans/screenshots approximately200dpi+ are target.
+- PDF/image previews become user-scoped PostgreSQL jobs with30-minute row-text TTL. Keep tiny
+  content-free daily usage counters separately so cancellation/expiry cannot bypass quotas.
+  Purge row payloads on confirm/cancel/expiry; deletion cascades. Confirm metadata/upload pointer
+  may remain until TTL for idempotent reconfirmation; it contains no extracted row text.
+- Original bytes/password are never stored in DB, logs or request URLs. Extraction runs in a
+  subprocess with a private temporary directory, inherited per-process Linux address-space/CPU
+  limits, bounded wall time and child-group termination. Remove temp files in finally. Environment
+  excludes DB/provider credentials. This is NOT a hardened sandbox; Phase8 needs a separate
+  no-network worker container/cgroup limits. No extraction code makes network calls.
+- Intakes check magic/extension agreement, PDF10MB/30pages and image10MB/25MP before decoding;
+  CSV stays5MB/50k rows. No arbitrary executable or filename interpolation; argument lists only.
+- Reconstruct positioned table/list rows, retaining page/confidence and warnings. Join wrapped
+  descriptions; remove repeated structural headings. Existing ingestion date/money parser owns
+  validation: virtual CSV converts Dr/Cr suffixes into type, preserves Indian-grouped money for
+  Decimal parsing, and retains raw descriptions. No second financial aggregation implementation.
+- Reconcile Decimal running balances/opening/closing/totals and flag breaks plus neighbors. OCR
+  always needs explicit review, even if balances reconcile: high confidence cannot prove a digit.
+  Text-only rows also receive a review requirement. Conservative flagging is deliberate; report
+  flag rate AND exact field accuracy, rather than presenting zero silent errors as OCR accuracy.
+- Strict edits validate every value server-side. Flagged unverified rows are excluded and counted.
+  UI disables import until flagged rows are verified, corrected or deleted; a clearly labelled
+  bulk acknowledgment is allowed only as an explicit user review action. No auto-confirmed OCR.
+- Review uses only a browser object URL for the original local copy, revoked on cleanup. Accessible
+  inputs, flags filter, pagination and no client money calculations. Use existing query/API tokens.
+- Corpus is synthetic only, generated from committed sample transactions with independent labels.
+  Clean text-PDF exact field quality gate>=99%; silent-error gate=0 on every variant. Report OCR
+  variants/errors/rejections honestly, including conservative review rate. No real-bank accuracy claim.
+- No Phase8 work until this phase's tests/evaluation/audits/CI pass. Then stop for external accounts.
