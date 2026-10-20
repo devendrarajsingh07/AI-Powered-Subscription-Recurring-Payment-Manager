@@ -71,6 +71,7 @@ def isolated_app(pg_engine, monkeypatch):
         monkeypatch.setenv("LLM_API_KEY", "")
         monkeypatch.setenv("LLM_MODEL", "")
     get_settings.cache_clear()
+    monkeypatch.setattr(limiter, "engine", pg_engine)
     limiter.clear()
     from app.services.chat import gate
 

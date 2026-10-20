@@ -92,6 +92,7 @@ class Register(Schema):
     )
     email: EmailStr
     password: SecretStr = Field(min_length=12, max_length=72)
+    invite_code: SecretStr | None = Field(default=None, min_length=32, max_length=128)
 
     @field_validator("email", mode="before")
     @classmethod

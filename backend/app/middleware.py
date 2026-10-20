@@ -11,6 +11,14 @@ from app.auth import limiter
 
 logger = logging.getLogger("subtrack.api")
 MAX_MULTIPART_BYTES = 5 * 1024 * 1024 + 64 * 1024
+EARLY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+    "Strict-Transport-Security": "max-age=15552000",
+    "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+    "Cache-Control": "no-store",
+}
 
 
 class SafetyMiddleware:
@@ -30,7 +38,9 @@ class SafetyMiddleware:
                 limiter.check(Request(scope), scope["path"].rsplit("/", 1)[-1])
             except HTTPException as exc:
                 response = JSONResponse(
-                    status_code=exc.status_code, content={"error": exc.detail}, headers=exc.headers
+                    status_code=exc.status_code,
+                    content={"error": exc.detail},
+                    headers={**EARLY_HEADERS, **(exc.headers or {})},
                 )
                 return await response(scope, receive, send)
         if scope["method"] == "POST" and scope["path"] in (
@@ -52,6 +62,7 @@ class SafetyMiddleware:
                 if total > maximum:
                     response = JSONResponse(
                         status_code=413,
+                        headers=EARLY_HEADERS,
                         content={
                             "error": {
                                 "code": "file_too_large",
@@ -83,6 +94,7 @@ class SafetyMiddleware:
                         (b"x-content-type-options", b"nosniff"),
                         (b"referrer-policy", b"no-referrer"),
                         (b"x-frame-options", b"DENY"),
+                        (b"strict-transport-security", b"max-age=15552000"),
                     ]
                 )
                 if scope["path"].startswith("/api/v1/") and not any(

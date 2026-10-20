@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     auth_register_limit: int = Field(default=5, ge=1, le=1000)
     auth_login_limit: int = Field(default=10, ge=1, le=1000)
     auth_window_seconds: int = Field(default=60, ge=1)
+    registration_mode: Literal["open", "invite", "closed"] = "open"
     app_timezone: str = "Asia/Kolkata"
     upload_workers: int = Field(default=2, ge=1, le=4)
     upload_queue_limit: int = Field(default=8, ge=1, le=32)
@@ -70,6 +71,7 @@ class Settings(BaseSettings):
         if isinstance(values, dict) and values.get("environment") == "production":
             values = dict(values)
             values.setdefault("demo_enabled", False)
+            values.setdefault("registration_mode", "closed")
         return values
 
     @model_validator(mode="after")
@@ -89,6 +91,8 @@ class Settings(BaseSettings):
             if "web_origin" not in self.model_fields_set or "*" in self.web_origin:
                 raise ValueError("An explicit WEB_ORIGIN is required")
         if self.environment == "production":
+            if self.registration_mode == "open":
+                raise ValueError("Production forbids open registration")
             if self.demo_enabled or self.app_test_as_of or self.notifier_provider == "console":
                 raise ValueError("Production forbids demo data, test clocks and console notifier")
         if self.llm_provider == "gemini" and (

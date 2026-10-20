@@ -21,6 +21,11 @@ from app.migrations import database_at_head
 
 @asynccontextmanager
 async def lifespan(app):
+    if get_settings().environment == "production":
+        raise RuntimeError(
+            "Private beta launch is blocked: verified email, revocable cookie sessions, "
+            "durable workers and operational launch gates are not complete"
+        )
     if len(get_settings().jwt_secret.get_secret_value()) < 32:
         raise RuntimeError("JWT_SECRET must contain at least 32 characters")
     instance = None

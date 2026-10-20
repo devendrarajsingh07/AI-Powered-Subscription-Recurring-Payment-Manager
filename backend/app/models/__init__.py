@@ -304,3 +304,38 @@ class ChatMessage(Owned, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     conversation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), default=uuid.uuid4)
     verified: Mapped[bool | None] = mapped_column(Boolean)
+
+
+class RegistrationInvite(Owned, Base):
+    """Owned by the issuing account. Only the operator CLI can create/revoke invites."""
+
+    __tablename__ = "registration_invites"
+    token_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    email_digest: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SecurityEvent(Identity, Base):
+    """No free-form metadata: never persist credentials, IPs or financial content here."""
+
+    __tablename__ = "security_events"
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class RateLimitBucket(Identity, Base):
+    """Shared fixed windows. Anonymous IP buckets have no user; keys are HMAC digests."""
+
+    __tablename__ = "rate_limit_buckets"
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    key_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    count: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

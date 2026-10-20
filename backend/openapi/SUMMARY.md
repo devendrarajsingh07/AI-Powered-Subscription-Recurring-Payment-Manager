@@ -27,6 +27,7 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | GET | `/api/v1/health` | Public | Health |
 | GET | `/api/v1/health/ready` | Public | Ready |
 | DELETE | `/api/v1/me/data` | JWT | Delete My Data |
+| GET | `/api/v1/me/export` | JWT | Export Data |
 | GET | `/api/v1/recommendations` | JWT | Recommendations |
 | PATCH | `/api/v1/recommendations/{recommendation_id}` | JWT | Patch Recommendation |
 | GET | `/api/v1/renewals/upcoming` | JWT | Renewals |

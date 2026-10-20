@@ -4,12 +4,14 @@ from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import SecretStr
 from sqlalchemy.exc import IntegrityError
 
 from app import auth
 from app import repositories as repo
 from app import schemas as s
+from app.account_security import audit, consume_invite
 from app.clock import today
 from app.config import get_settings
 from app.db import get_db
@@ -59,7 +61,11 @@ def lock_user(db, user_id):
 @router.post("/auth/register", response_model=s.UserOut, status_code=201, tags=["auth"])
 def register(body: s.Register, request: Request, db: Db):
     try:
+        consume_invite(
+            db, str(body.email), body.invite_code.get_secret_value() if body.invite_code else None
+        )
         user = auth.register_user(db, str(body.email).lower(), body.password.get_secret_value())
+        audit(db, user.id, "registered")
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -71,7 +77,11 @@ def register(body: s.Register, request: Request, db: Db):
 def login(body: s.Login, request: Request, db: Db):
     user = auth.credentials_user(db, str(body.email).lower(), body.password.get_secret_value())
     if user is None:
+        audit(db, None, "login_failed")
+        db.commit()
         fail(401, "invalid_credentials", "Invalid email or password")
+    audit(db, user.id, "login")
+    db.commit()
     return s.Token(
         access_token=auth.issue_token(user.id), expires_in=get_settings().jwt_access_minutes * 60
     )
@@ -80,6 +90,34 @@ def login(body: s.Login, request: Request, db: Db):
 @router.get("/auth/me", response_model=s.UserOut, tags=["auth"])
 def me(user: CurrentUser):
     return user
+
+
+@router.get(
+    "/me/export",
+    tags=["privacy"],
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Download the caller's JSON data; authentication secrets are excluded.",
+            "content": {"application/json": {"schema": {"type": "object"}}},
+        }
+    },
+)
+def export_data(user: CurrentUser, db: Db, request: Request):
+    from app.account_export import export_records
+
+    auth.limiter.check(request, "export:" + str(user.id))
+    user_id, engine = user.id, db.get_bind()
+    audit(db, user_id, "export")
+    db.commit()
+    return StreamingResponse(
+        export_records(engine, user_id),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": 'attachment; filename="subtrack-data.json"',
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 async def read_file(file: UploadFile, *, limit=MAX_BYTES, label="CSV") -> bytes:
@@ -130,7 +168,8 @@ async def preview(
     filename = file.filename or "upload.csv"
     statement = filename.lower().endswith((".pdf", ".jpg", ".jpeg", ".png"))
     data = await read_file(
-        file, limit=get_settings().statement_max_mb * 1024 * 1024 if statement else MAX_BYTES,
+        file,
+        limit=get_settings().statement_max_mb * 1024 * 1024 if statement else MAX_BYTES,
         label="PDF/image" if statement else "CSV",
     )
     if statement or data.startswith((b"%PDF-", b"\xff\xd8\xff", b"\x89PNG")):

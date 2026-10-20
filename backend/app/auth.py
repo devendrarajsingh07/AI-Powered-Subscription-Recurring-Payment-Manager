@@ -1,15 +1,12 @@
 """Credential operations are the sole pre-auth database lookup exception (users only)."""
 
 import uuid
-from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
-from threading import Lock
-from time import monotonic
 
 import bcrypt
 import jwt
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 
@@ -17,6 +14,7 @@ from app import repositories as repo
 from app.config import get_settings
 from app.db import get_db
 from app.models import User
+from app.rate_limits import AuthLimiter
 
 bearer = HTTPBearer(auto_error=False)
 DEV_DEMO_EMAIL = "subtrack-demo@example.org"
@@ -105,43 +103,6 @@ def get_current_user(
     if config.environment != "development" and user.email == DEV_DEMO_EMAIL:
         raise unauthorized
     return user
-
-
-class AuthLimiter:
-    def __init__(self):
-        self.events = defaultdict(deque)
-        self.lock = Lock()
-
-    def clear(self):
-        with self.lock:
-            self.events.clear()
-
-    def check(self, request: Request, action: str):
-        config = get_settings()
-        maximum = config.auth_register_limit if action == "register" else config.auth_login_limit
-        key = (request.client.host if request.client else "unknown", action)
-        now = monotonic()
-        with self.lock:
-            expired = [
-                item
-                for item, values in self.events.items()
-                if not values or values[-1] <= now - config.auth_window_seconds
-            ]
-            for item in expired:
-                del self.events[item]
-            # Bound memory independently of incoming, potentially attacker-controlled addresses.
-            if key not in self.events and len(self.events) >= 10000:
-                raise HTTPException(429, {"code": "rate_limited", "message": "Try again later"})
-            window = self.events[key]
-            while window and window[0] <= now - config.auth_window_seconds:
-                window.popleft()
-            if len(window) >= maximum:
-                raise HTTPException(
-                    429,
-                    {"code": "rate_limited", "message": "Try again later"},
-                    headers={"Retry-After": str(config.auth_window_seconds)},
-                )
-            window.append(now)
 
 
 limiter = AuthLimiter()

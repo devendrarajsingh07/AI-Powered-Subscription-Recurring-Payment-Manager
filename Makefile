@@ -44,3 +44,7 @@ outbox:
 	python -c "from pathlib import Path; Path('var/outbox').mkdir(parents=True, exist_ok=True)"
 	docker compose cp api:/var/subtrack/outbox/. var/outbox
 
+# Operator CLI only; use ARGS='create --issuer UUID --email synthetic@example.org'.
+invite:
+	docker compose exec -T api python -m app.invites $(ARGS)
+
