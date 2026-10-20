@@ -1,4 +1,4 @@
-.PHONY: dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox chat-eval chat-eval-live
+.PHONY: dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox chat-eval chat-eval-live evaluate-extraction extraction-fixtures
 dev:
 	docker compose up --build --wait
 down:
@@ -6,6 +6,7 @@ down:
 test:
 	docker compose run --rm --no-deps api pytest -q
 	docker compose run --rm --no-deps api python scripts/evaluate_detector.py
+	docker compose run --rm --no-deps api python scripts/evaluate_extraction.py
 	docker compose run --rm --no-deps api python scripts/export_openapi.py --check
 	docker compose run --rm --no-deps web npm test -- --run
 	docker compose run --rm --no-deps web npm run types:check
@@ -21,6 +22,10 @@ sample:
 	docker compose run --rm --no-deps api python scripts/gen_sample_data.py
 evaluate:
 	docker compose run --rm --no-deps api python scripts/evaluate_detector.py
+evaluate-extraction:
+	docker compose run --rm --no-deps api python scripts/evaluate_extraction.py
+extraction-fixtures:
+	docker compose run --rm --no-deps api python scripts/gen_statement_fixtures.py
 openapi:
 	docker compose run --rm --no-deps api python scripts/export_openapi.py
 types:

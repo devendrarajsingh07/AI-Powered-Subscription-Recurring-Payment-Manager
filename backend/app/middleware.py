@@ -4,6 +4,7 @@ import logging
 
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
+from starlette.formparsers import MultiPartParser
 from starlette.requests import Request
 
 from app.auth import limiter
@@ -15,6 +16,8 @@ MAX_MULTIPART_BYTES = 5 * 1024 * 1024 + 64 * 1024
 class SafetyMiddleware:
     def __init__(self, app):
         self.app = app
+        # Bodies are bounded before parsing; keep originals/passwords out of framework spool files.
+        MultiPartParser.spool_max_size = 10 * 1024 * 1024 + 64 * 1024
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -36,18 +39,25 @@ class SafetyMiddleware:
         ):
             # Bound even chunked bodies before multipart can spool arbitrary data to disk.
             chunks, total = [], 0
+            maximum = (
+                10 * 1024 * 1024 + 64 * 1024
+                if scope["path"].endswith("/preview")
+                else MAX_MULTIPART_BYTES
+            )
             while True:
                 message = await receive()
                 if message["type"] == "http.disconnect":
                     return
                 total += len(message.get("body", b""))
-                if total > MAX_MULTIPART_BYTES:
+                if total > maximum:
                     response = JSONResponse(
                         status_code=413,
                         content={
                             "error": {
                                 "code": "file_too_large",
-                                "message": "CSV exceeds the 5 MB upload limit",
+                                "message": "Statement exceeds the preview upload limit"
+                                if maximum != MAX_MULTIPART_BYTES
+                                else "CSV exceeds the 5 MB upload limit",
                             }
                         },
                     )
@@ -75,6 +85,10 @@ class SafetyMiddleware:
                         (b"x-frame-options", b"DENY"),
                     ]
                 )
+                if scope["path"].startswith("/api/v1/") and not any(
+                    name.lower() == b"cache-control" for name, _ in headers
+                ):
+                    headers.append((b"cache-control", b"no-store"))
                 if scope["path"] not in ("/docs", "/redoc"):
                     headers.append(
                         (

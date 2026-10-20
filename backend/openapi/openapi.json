@@ -202,6 +202,14 @@
             "contentMediaType": "application/octet-stream",
             "title": "File",
             "type": "string"
+          },
+          "password": {
+            "default": "",
+            "format": "password",
+            "maxLength": 256,
+            "title": "Password",
+            "type": "string",
+            "writeOnly": true
           }
         },
         "required": [
@@ -212,20 +220,48 @@
       },
       "Body_upload_api_v1_uploads_post": {
         "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
+          "edits": {
+            "default": "[]",
+            "maxLength": 5242880,
+            "title": "Edits",
             "type": "string"
           },
+          "file": {
+            "anyOf": [
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
           "mapping": {
-            "title": "Mapping",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapping"
+          },
+          "preview_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Id"
           }
         },
-        "required": [
-          "file",
-          "mapping"
-        ],
         "title": "Body_upload_api_v1_uploads_post",
         "type": "object"
       },
@@ -739,6 +775,108 @@
           "error"
         ],
         "title": "ErrorEnvelope",
+        "type": "object"
+      },
+      "ExtractedRow": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "examples": [
+                  "199.00"
+                ],
+                "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "balance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "description": {
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "field_confidence": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Field Confidence",
+            "type": "object"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "debit",
+                  "credit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          }
+        },
+        "required": [
+          "index",
+          "date",
+          "description",
+          "amount",
+          "type",
+          "page",
+          "confidence",
+          "flags",
+          "balance"
+        ],
+        "title": "ExtractedRow",
         "type": "object"
       },
       "Health": {
@@ -1294,6 +1432,59 @@
         "title": "RecommendationPatch",
         "type": "object"
       },
+      "Reconciliation": {
+        "additionalProperties": false,
+        "properties": {
+          "balance_checks": {
+            "title": "Balance Checks",
+            "type": "integer"
+          },
+          "closing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closing"
+          },
+          "opening": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening"
+          },
+          "status": {
+            "enum": [
+              "matched",
+              "mismatch",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_checks": {
+            "title": "Total Checks",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "status",
+          "balance_checks",
+          "total_checks",
+          "opening",
+          "closing"
+        ],
+        "title": "Reconciliation",
+        "type": "object"
+      },
       "Register": {
         "additionalProperties": false,
         "example": {
@@ -1320,6 +1511,91 @@
           "password"
         ],
         "title": "Register",
+        "type": "object"
+      },
+      "RowEdit": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "examples": [
+                  "199.00"
+                ],
+                "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Amount"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Date"
+          },
+          "delete": {
+            "default": false,
+            "title": "Delete",
+            "type": "boolean"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "index": {
+            "maximum": 4999,
+            "minimum": 0,
+            "title": "Index",
+            "type": "integer"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "debit",
+                  "credit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Type"
+          },
+          "verified": {
+            "default": false,
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "index"
+        ],
+        "title": "RowEdit",
         "type": "object"
       },
       "RowWarning": {
@@ -1360,6 +1636,167 @@
           "potential_savings"
         ],
         "title": "SavingsOut",
+        "type": "object"
+      },
+      "StatementPreviewOut": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "processed_pages": {
+            "title": "Processed Pages",
+            "type": "integer"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StatementResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_type": {
+            "enum": [
+              "pdf_text",
+              "pdf_ocr",
+              "image_ocr"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "processing",
+              "ready",
+              "failed",
+              "cancelled",
+              "confirmed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total_pages": {
+            "title": "Total Pages",
+            "type": "integer"
+          },
+          "upload_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Id"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "status",
+          "stage",
+          "source_type",
+          "processed_pages",
+          "total_pages",
+          "expires_at",
+          "error_code",
+          "error_message",
+          "result",
+          "upload_id"
+        ],
+        "title": "StatementPreviewOut",
+        "type": "object"
+      },
+      "StatementResult": {
+        "additionalProperties": false,
+        "properties": {
+          "flagged_count": {
+            "title": "Flagged Count",
+            "type": "integer"
+          },
+          "page_count": {
+            "title": "Page Count",
+            "type": "integer"
+          },
+          "reconciliation": {
+            "$ref": "#/components/schemas/Reconciliation"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ExtractedRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "source_type": {
+            "enum": [
+              "pdf_text",
+              "pdf_ocr",
+              "image_ocr"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "source_type",
+          "page_count",
+          "flagged_count",
+          "reconciliation",
+          "warnings"
+        ],
+        "title": "StatementResult",
         "type": "object"
       },
       "SubscriptionDetail": {
@@ -2040,6 +2477,11 @@
             ],
             "title": "Error Message"
           },
+          "excluded_count": {
+            "default": 0,
+            "title": "Excluded Count",
+            "type": "integer"
+          },
           "filename": {
             "title": "Filename",
             "type": "string"
@@ -2077,6 +2519,17 @@
               "demo"
             ],
             "title": "Source",
+            "type": "string"
+          },
+          "source_type": {
+            "default": "csv",
+            "enum": [
+              "csv",
+              "pdf_text",
+              "pdf_ocr",
+              "image_ocr"
+            ],
+            "title": "Source Type",
             "type": "string"
           },
           "stage": {
@@ -5402,8 +5855,7 @@
                 "$ref": "#/components/schemas/Body_upload_api_v1_uploads_post"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "202": {
@@ -5485,12 +5937,18 @@
         "summary": "Upload",
         "tags": [
           "uploads"
-        ]
+        ],
+        "x-review-edits-schema": {
+          "items": {
+            "$ref": "#/components/schemas/RowEdit"
+          },
+          "type": "array"
+        }
       }
     },
     "/api/v1/uploads/preview": {
       "post": {
-        "description": "Bounded preview without persistence. Confirm the suggested mapping on upload.",
+        "description": "CSV returns a mapping preview. PDF/JPEG/PNG return a 202 extraction job.\n\nPassword is memory-only; never echoed, stored or placed in a URL. Poll the preview ID.",
         "operationId": "preview_api_v1_uploads_preview_post",
         "requestBody": {
           "content": {
@@ -5507,7 +5965,123 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Preview"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Preview"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StatementPreviewOut"
+                    }
+                  ],
+                  "title": "Response Preview Api V1 Uploads Preview Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementPreviewOut"
+                }
+              }
+            },
+            "description": "Poll the scoped preview job; review every extracted row."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Preview",
+        "tags": [
+          "uploads"
+        ]
+      }
+    },
+    "/api/v1/uploads/previews/{preview_id}": {
+      "delete": {
+        "operationId": "cancel_statement_preview_api_v1_uploads_previews__preview_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preview_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preview Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementPreviewOut"
                 }
               }
             },
@@ -5579,7 +6153,103 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Preview",
+        "summary": "Cancel Statement Preview",
+        "tags": [
+          "uploads"
+        ]
+      },
+      "get": {
+        "operationId": "statement_preview_status_api_v1_uploads_previews__preview_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preview_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Preview Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Statement Preview Status",
         "tags": [
           "uploads"
         ]

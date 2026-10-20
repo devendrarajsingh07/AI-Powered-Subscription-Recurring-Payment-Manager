@@ -41,6 +41,8 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | GET | `/api/v1/uploads` | JWT | Uploads |
 | POST | `/api/v1/uploads` | JWT | Upload |
 | POST | `/api/v1/uploads/preview` | JWT | Preview |
+| DELETE | `/api/v1/uploads/previews/{preview_id}` | JWT | Cancel Statement Preview |
+| GET | `/api/v1/uploads/previews/{preview_id}` | JWT | Statement Preview Status |
 | GET | `/api/v1/uploads/{upload_id}` | JWT | Upload Detail |
 
 See the JSON contract for request/response schemas, examples, filters, bounds,

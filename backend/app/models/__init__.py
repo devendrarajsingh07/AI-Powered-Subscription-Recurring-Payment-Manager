@@ -56,6 +56,8 @@ class User(Identity, Base):
 class Upload(Owned, Base):
     __tablename__ = "uploads"
     source: Mapped[str] = mapped_column(String(16), server_default="upload")
+    source_type: Mapped[str] = mapped_column(String(16), server_default="csv")
+    excluded_count: Mapped[int] = mapped_column(Integer, server_default="0")
     demo_as_of: Mapped[date | None] = mapped_column(Date)
     demo_defaults: Mapped[dict | None] = mapped_column(JSONB)
     filename: Mapped[str] = mapped_column(String(255))
@@ -76,6 +78,37 @@ class Upload(Owned, Base):
         DateTime(timezone=True), server_default=func.now()
     )
     __table_args__ = (UniqueConstraint("id", "user_id", name="uq_upload_owner"),)
+
+
+class StatementPreview(Owned, Base):
+    __tablename__ = "statement_previews"
+    filename: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), server_default="pending")
+    stage: Mapped[str] = mapped_column(String(64), server_default="queued")
+    source_type: Mapped[str] = mapped_column(String(16), server_default="pdf_text")
+    processed_pages: Mapped[int] = mapped_column(Integer, server_default="0")
+    total_pages: Mapped[int] = mapped_column(Integer, server_default="0")
+    payload: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    error_message: Mapped[str | None] = mapped_column(String(255))
+    upload_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["upload_id", "user_id"], ["uploads.id", "uploads.user_id"], ondelete="CASCADE"
+        ),
+    )
+
+
+class StatementUsage(Owned, Base):
+    __tablename__ = "statement_usage"
+    day: Mapped[date] = mapped_column(Date)
+    attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    failures: Mapped[int] = mapped_column(Integer, server_default="0")
+    flagged_rows: Mapped[int] = mapped_column(Integer, server_default="0")
+    edited_rows: Mapped[int] = mapped_column(Integer, server_default="0")
+    __table_args__ = (UniqueConstraint("user_id", "day", name="uq_statement_usage_day"),)
 
 
 class Transaction(Owned, Base):

@@ -311,3 +311,31 @@ def recover_uploads(db, user_id):
             error_message="Processing was interrupted; please upload again.",
         )
     ).rowcount
+
+
+def purge_statement_previews(db, user_id, now):
+    return db.execute(
+        delete(m.StatementPreview).where(
+            m.StatementPreview.user_id == user_id, m.StatementPreview.expires_at <= now
+        )
+    ).rowcount
+
+
+def statement_usage(db, user_id, day):
+    row = db.scalar(
+        select(m.StatementUsage).where(
+            m.StatementUsage.user_id == user_id, m.StatementUsage.day == day
+        )
+    )
+    if row is None:
+        row = create_owned(
+            db,
+            user_id,
+            m.StatementUsage,
+            day=day,
+            attempts=0,
+            failures=0,
+            flagged_rows=0,
+            edited_rows=0,
+        )
+    return row

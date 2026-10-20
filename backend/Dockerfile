@@ -1,6 +1,9 @@
 FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr tesseract-ocr-eng poppler-utils fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 # Keep tool caches writable when /app is a host-owned or read-only bind mount.
 ENV RUFF_CACHE_DIR=/tmp/subtrack-ruff-cache \
     PYTEST_ADDOPTS="-o cache_dir=/tmp/subtrack-pytest-cache"

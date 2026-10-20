@@ -26,6 +26,9 @@ class UploadWorker:
             max_workers=workers or config.upload_workers, thread_name_prefix="subtrack-upload"
         )
         self.capacity = BoundedSemaphore(queue_limit or config.upload_queue_limit)
+        from app.statement_jobs import PreviewWorker
+
+        self.previews = PreviewWorker(engine)
 
     def reserve(self):
         return self.capacity.acquire(blocking=False)
@@ -42,9 +45,12 @@ class UploadWorker:
             raise
 
     def close(self):
+        self.previews.close()
         self.pool.shutdown(wait=True, cancel_futures=False)
 
     def recover(self):
+        self.previews.recover()
+        self.previews.start_purge()
         # System bootstrap enumerates account IDs only, then uses scoped repository operations.
         with Session(self.engine) as db:
             user_ids = list(db.scalars(select(User.id)))

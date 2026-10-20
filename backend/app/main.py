@@ -66,12 +66,16 @@ def documented_openapi():
         document = get_openapi(
             title=app.title, version=app.version, routes=app.routes, description=app.description
         )
-        for model in (s.ChatFinal, s.ChatStatus, s.ChatStreamError):
+        for model in (s.ChatFinal, s.ChatStatus, s.ChatStreamError, s.RowEdit):
             document["components"]["schemas"][model.__name__] = model.model_json_schema()
         document["paths"]["/api/v1/chat"]["post"]["x-sse-events"] = {
             "status": {"$ref": "#/components/schemas/ChatStatus"},
             "final": {"$ref": "#/components/schemas/ChatFinal"},
             "error": {"$ref": "#/components/schemas/ChatStreamError"},
+        }
+        document["paths"]["/api/v1/uploads"]["post"]["x-review-edits-schema"] = {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/RowEdit"},
         }
         app.openapi_schema = document
     return app.openapi_schema

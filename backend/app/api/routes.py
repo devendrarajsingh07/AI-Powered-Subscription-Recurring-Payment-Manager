@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from pydantic import SecretStr
 from sqlalchemy.exc import IntegrityError
 
 from app import auth
@@ -81,11 +82,15 @@ def me(user: CurrentUser):
     return user
 
 
-async def read_file(file: UploadFile) -> bytes:
-    data = await file.read(MAX_BYTES + 1)
+async def read_file(file: UploadFile, *, limit=MAX_BYTES, label="CSV") -> bytes:
+    data = await file.read(limit + 1)
     await file.close()
-    if len(data) > MAX_BYTES:
-        fail(413, "file_too_large", "CSV exceeds the 5 MB limit")
+    if len(data) > limit:
+        fail(
+            413,
+            "file_too_large",
+            f"{label} exceeds the {limit // (1024 * 1024)} MB limit",
+        )
     return data
 
 
@@ -99,10 +104,59 @@ def validate_csv(data, mapping=None):
     return parsed
 
 
-@router.post("/uploads/preview", response_model=s.Preview, tags=["uploads"])
-async def preview(user: CurrentUser, file: UploadFile = File(...)):
-    """Bounded preview without persistence. Confirm the suggested mapping on upload."""
-    data = await read_file(file)
+@router.post(
+    "/uploads/preview",
+    response_model=s.Preview | s.StatementPreviewOut,
+    tags=["uploads"],
+    responses={
+        202: {
+            "model": s.StatementPreviewOut,
+            "description": "Poll the scoped preview job; review every extracted row.",
+        }
+    },
+)
+async def preview(
+    user: CurrentUser,
+    db: Db,
+    request: Request,
+    file: UploadFile = File(...),
+    password: SecretStr = Form(default=SecretStr(""), max_length=256),
+    worker=Depends(get_worker),
+):
+    """CSV returns a mapping preview. PDF/JPEG/PNG return a 202 extraction job.
+
+    Password is memory-only; never echoed, stored or placed in a URL. Poll the preview ID.
+    """
+    filename = file.filename or "upload.csv"
+    statement = filename.lower().endswith((".pdf", ".jpg", ".jpeg", ".png"))
+    data = await read_file(
+        file, limit=get_settings().statement_max_mb * 1024 * 1024 if statement else MAX_BYTES,
+        label="PDF/image" if statement else "CSV",
+    )
+    if statement or data.startswith((b"%PDF-", b"\xff\xd8\xff", b"\x89PNG")):
+        from fastapi.responses import JSONResponse
+        from starlette.background import BackgroundTask
+
+        from app.services.statement_previews import create, output
+
+        auth.limiter.check(request, "statement-preview:" + str(user.id))
+        if worker is None:
+            fail(503, "preview_unavailable", "Statement preview worker is unavailable")
+        row = create(db, user.id, data, filename, worker)
+        response = s.StatementPreviewOut.model_validate(output(row))
+        return JSONResponse(
+            status_code=202,
+            content=response.model_dump(mode="json"),
+            background=BackgroundTask(
+                worker.previews.submit, user.id, row.id, data, filename, password.get_secret_value()
+            ),
+        )
+    if filename.lower().endswith((".xlsx", ".xls")):
+        fail(422, "unsupported_file", "Excel statements are unsupported; export CSV or PDF")
+    if not filename.lower().endswith(".csv") or data.startswith(
+        (b"GIF87a", b"GIF89a", b"BM", b"PK\x03\x04")
+    ):
+        fail(422, "unsupported_file", "Choose a valid CSV, PDF, JPEG or PNG file")
     try:
         result = preview_csv(data)
     except CsvValidationError as exc:
@@ -150,8 +204,10 @@ async def upload(
     user: CurrentUser,
     db: Db,
     request: Request,
-    file: UploadFile = File(...),
-    mapping: str = Form(...),
+    file: UploadFile | None = File(default=None),
+    mapping: str | None = Form(default=None),
+    preview_id: uuid.UUID | None = Form(default=None),
+    edits: str = Form(default="[]", max_length=5 * 1024 * 1024),
     worker=Depends(get_worker),
     as_of=Depends(today),
 ):
@@ -161,6 +217,28 @@ async def upload(
     Processing is atomic for transactions, detections and charge links.
     Safe row warnings are capped at 100.
     """
+    if preview_id is not None:
+        from fastapi.responses import JSONResponse
+        from starlette.background import BackgroundTask
+
+        from app.services.statement_previews import confirm
+
+        if file is not None or mapping is not None:
+            fail(422, "invalid_review", "Choose either CSV file/mapping or a statement preview")
+        if worker is None:
+            fail(503, "preview_unavailable", "Statement worker is unavailable")
+        record, data = confirm(db, user.id, preview_id, edits, worker)
+        response = s.UploadOut.model_validate(record)
+        task = (
+            None
+            if data is None
+            else BackgroundTask(worker.submit, user.id, record.id, data, None, as_of=as_of)
+        )
+        return JSONResponse(
+            status_code=202, content=response.model_dump(mode="json"), background=task
+        )
+    if file is None or mapping is None:
+        fail(422, "invalid_upload", "Provide a CSV file and mapping, or a reviewed preview ID")
     try:
         selected = json.loads(mapping)
         if (
@@ -230,6 +308,30 @@ def uploads(user: CurrentUser, db: Db, limit: Limit = 20, offset: Offset = 0):
 @router.get("/uploads/{upload_id}", response_model=s.UploadOut, tags=["uploads"])
 def upload_detail(upload_id: uuid.UUID, user: CurrentUser, db: Db):
     return require_owned(db, user.id, Upload, upload_id)
+
+
+@router.get(
+    "/uploads/previews/{preview_id}", response_model=s.StatementPreviewOut, tags=["uploads"]
+)
+def statement_preview_status(preview_id: uuid.UUID, user: CurrentUser, db: Db):
+    from app.services.statement_previews import output, owned
+
+    return output(owned(db, user.id, preview_id))
+
+
+@router.delete(
+    "/uploads/previews/{preview_id}", response_model=s.StatementPreviewOut, tags=["uploads"]
+)
+def cancel_statement_preview(preview_id: uuid.UUID, user: CurrentUser, db: Db):
+    from app.services.statement_previews import output, owned
+
+    repo.lock_ingestion(db, user.id)
+    row = owned(db, user.id, preview_id)
+    if row.status != "confirmed":
+        row.status, row.stage, row.payload = "cancelled", "cancelled", {}
+        row.error_code, row.error_message = None, None
+        db.commit()
+    return output(row)
 
 
 @router.post("/demo/load", response_model=s.UploadOut, status_code=202, tags=["demo"])

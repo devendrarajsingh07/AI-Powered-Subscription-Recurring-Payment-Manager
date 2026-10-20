@@ -3,6 +3,7 @@
 import re
 import uuid
 from datetime import date, datetime
+from datetime import date as DateValue
 from decimal import Decimal
 from typing import Annotated, Generic, Literal, TypeVar
 
@@ -162,6 +163,8 @@ class Preview(Schema):
 
 
 class UploadOut(Schema):
+    source_type: Literal["csv", "pdf_text", "pdf_ocr", "image_ocr"] = "csv"
+    excluded_count: int = 0
     source: Literal["upload", "demo"] = "upload"
     demo_as_of: date | None = None
     model_config = ConfigDict(
@@ -477,3 +480,58 @@ class ChatHistory(Schema):
 
 class ClearedHistory(Schema):
     deleted: int
+
+
+class ExtractedRow(Schema):
+    index: int
+    date: DateValue | None
+    description: str = Field(max_length=1000)
+    amount: Money | None
+    type: Literal["debit", "credit"] | None
+    page: int
+    confidence: str
+    field_confidence: dict[str, str] = Field(default_factory=dict)
+    flags: list[str]
+    balance: str | None
+
+
+class Reconciliation(Schema):
+    status: Literal["matched", "mismatch", "unavailable"]
+    balance_checks: int
+    total_checks: int
+    opening: str | None
+    closing: str | None
+
+
+class StatementResult(Schema):
+    rows: list[ExtractedRow]
+    source_type: Literal["pdf_text", "pdf_ocr", "image_ocr"]
+    page_count: int
+    flagged_count: int
+    reconciliation: Reconciliation
+    warnings: list[str]
+
+
+class StatementPreviewOut(Schema):
+    id: uuid.UUID
+    filename: str
+    status: Literal["pending", "processing", "ready", "failed", "cancelled", "confirmed"]
+    stage: str
+    source_type: Literal["pdf_text", "pdf_ocr", "image_ocr"]
+    processed_pages: int
+    total_pages: int
+    expires_at: datetime
+    error_code: str | None
+    error_message: str | None
+    result: StatementResult | None
+    upload_id: uuid.UUID | None
+
+
+class RowEdit(Schema):
+    index: StrictInt = Field(ge=0, le=4999)
+    date: DateValue | None = None
+    description: str | None = Field(default=None, min_length=1, max_length=1000, strict=True)
+    amount: Money | None = None
+    type: Literal["debit", "credit"] | None = None
+    verified: StrictBool = False
+    delete: StrictBool = False
