@@ -23,6 +23,7 @@ export function passwordError(
 export function Auth({ register = false }: { register?: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const session = useSession();
@@ -54,7 +55,13 @@ export function Auth({ register = false }: { register?: boolean }) {
     setError("");
     try {
       const body = { email: email.trim().toLowerCase(), password };
-      if (register) await api.POST("/api/v1/auth/register", { body });
+      if (register)
+        await api.POST("/api/v1/auth/register", {
+          body: {
+            ...body,
+            ...(inviteCode.trim() ? { invite_code: inviteCode.trim() } : {}),
+          },
+        });
       const result = await api.POST("/api/v1/auth/login", { body });
       saveSession(result.data!);
       navigate(destination, { replace: true });
@@ -138,6 +145,18 @@ export function Auth({ register = false }: { register?: boolean }) {
                 onChange={(event) => setEmail(event.target.value)}
               />
             </label>
+            {register && (
+              <label>
+                Invitation code (if required)
+                <input
+                  type="password"
+                  autoComplete="off"
+                  maxLength={128}
+                  value={inviteCode}
+                  onChange={(event) => setInviteCode(event.target.value)}
+                />
+              </label>
+            )}
             <label>
               Password
               <input

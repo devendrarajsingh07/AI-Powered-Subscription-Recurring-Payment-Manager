@@ -13,7 +13,7 @@ import UploadPage, {
   mappingValid,
   UploadProgress,
 } from "../pages/Upload";
-import { DeleteDialog } from "../pages/Settings";
+import { DeleteDialog, ExportData } from "../pages/Settings";
 import { filtersFromSearch } from "../pages/Subscriptions";
 import { Dialog, Notices } from "./Common";
 import { clearSession, saveSession } from "../lib/session";
@@ -113,6 +113,64 @@ test("password validation mirrors backend character classes and UTF-8 limit", ()
   expect(passwordError("ValidPassword42!", true)).toBeNull();
   expect(passwordError("é".repeat(37), false)).toMatch(/72/);
   expect(passwordError("", false)).toMatch(/Enter/);
+});
+
+test("registration submits an optional invite privately and explains closed registration", async () => {
+  let submitted: components["schemas"]["Register"] | undefined;
+  server.use(
+    http.post("*/api/v1/auth/register", async ({ request }) => {
+      submitted = (await request.json()) as components["schemas"]["Register"];
+      return HttpResponse.json(
+        {
+          error: {
+            code: "registration_unavailable",
+            message: "Registration is closed or requires a valid invitation",
+          },
+        } satisfies components["schemas"]["ErrorEnvelope"],
+        { status: 403 },
+      );
+    }),
+  );
+  const view = wrapper(<Auth register />, "/register");
+  fireEvent.change(screen.getByLabelText("Email address"), {
+    target: { value: "invited@example.org" },
+  });
+  fireEvent.change(screen.getByLabelText("Password", { exact: true }), {
+    target: { value: "ExampleSecure42!" },
+  });
+  const code = "synthetic-single-use-code-for-testing-only";
+  fireEvent.change(screen.getByLabelText("Invitation code (if required)"), {
+    target: { value: code },
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Registration is closed",
+  );
+  expect(submitted?.invite_code).toBe(code);
+  expect(sessionStorage.getItem("subtrack.session")).toBeNull();
+  expect((await axe(view.container)).violations).toEqual([]);
+});
+
+test("export displays a safe retryable failure", async () => {
+  server.use(
+    http.get("*/api/v1/me/export", () =>
+      HttpResponse.json(
+        {
+          error: {
+            code: "unavailable",
+            message: "Export unavailable; retry shortly",
+          },
+        } satisfies components["schemas"]["ErrorEnvelope"],
+        { status: 503 },
+      ),
+    ),
+  );
+  wrapper(<ExportData />);
+  await userEvent.click(screen.getByRole("button", { name: "Export my data" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Export unavailable",
+  );
+  expect(screen.getByRole("button", { name: "Export my data" })).toBeEnabled();
 });
 test("login handles generic invalid credentials via real network client", async () => {
   server.use(

@@ -75,6 +75,7 @@ export default function SettingsPage() {
       <RecentAlerts />
       <section className="panel danger-zone">
         <h2>Your data, your control</h2>
+        <ExportData />
         <p>
           Delete your account and all uploaded transactions, detected payments,
           preferences and private development-outbox copies. Delivered inbox
@@ -87,6 +88,49 @@ export default function SettingsPage() {
       </section>
       {deleting && <DeleteDialog onClose={() => setDeleting(false)} />}
     </>
+  );
+}
+export function ExportData() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  return (
+    <div>
+      <p>
+        Download your account data as JSON. Keep this private export outside
+        shared folders and source control.
+      </p>
+      <button
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError("");
+          setNotice("");
+          try {
+            const response = await api.GET("/api/v1/me/export", {
+              parseAs: "blob",
+            });
+            const url = URL.createObjectURL(response.data!);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "subtrack-data.json";
+            link.click();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setNotice(
+              "Export downloaded. The file contains private account and transaction data.",
+            );
+          } catch (caught) {
+            setError(errorMessage(caught));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Preparing export…" : "Export my data"}
+      </button>
+      {notice && <p role="status">{notice}</p>}
+      {error && <p role="alert">{error}</p>}
+    </div>
   );
 }
 function BudgetForm({

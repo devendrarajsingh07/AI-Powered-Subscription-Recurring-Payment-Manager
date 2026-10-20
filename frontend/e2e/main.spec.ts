@@ -308,6 +308,26 @@ test("real stack: register, login, import 16 products, review, budget and delete
     await authed(page, "/budget")
   ).json()) as components["schemas"]["BudgetOut"];
   expect(budget.monthly_limit).toBe("2000.01");
+  const downloaded = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Export my data", exact: true })
+    .click();
+  const exportedFile = await downloaded;
+  expect(exportedFile.suggestedFilename()).toBe("subtrack-data.json");
+  const exportPath = await exportedFile.path();
+  const exported = JSON.parse(fs.readFileSync(exportPath!, "utf8")) as {
+    transactions: { amount: string }[];
+    subscriptions: { id: string }[];
+    budgets: { monthly_limit: string }[];
+  };
+  expect(exported.transactions).toHaveLength(399);
+  expect(exported.subscriptions).toHaveLength(16);
+  expect(exported.budgets[0].monthly_limit).toBe("2000.01");
+  expect(
+    exported.transactions.every((row) => typeof row.amount === "string"),
+  ).toBe(true);
+  expect(JSON.stringify(exported)).not.toContain("password_hash");
+  await exportedFile.delete();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await capture(page, {
     path: path.join(screenshots, "settings.png"),
