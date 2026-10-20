@@ -444,6 +444,7 @@ class ChatConsent(Schema):
 
 class ChatConfig(Schema):
     mode: Literal["offline", "live"]
+    provider: Literal["fake", "gemini"] = "fake"
     live_opt_in: bool
     disclosure: str
 

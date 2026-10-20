@@ -18,7 +18,7 @@ class ToolCall:
 
 @dataclass(frozen=True)
 class Event:
-    kind: Literal["token", "tool"]
+    kind: Literal["token", "tool", "blocked"]
     text: str = ""
     call: ToolCall | None = None
 

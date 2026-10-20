@@ -11,7 +11,7 @@ and a server-side figure verifier. **1.0.0 means demo-complete for this scope, n
 Register, preview/map/import CSVs, review subscriptions and fixed bills, track renewals and budget,
 review advisory savings, inspect dev emails and ask the offline assistant. A clock-relative demo
 loader makes the same real ingestion pipeline available without a statement. Gemini is the single
-optional live provider, replacing Claude at the owner's explicit request. No live eval was run.
+optional live provider, replacing the previous provider at the owner's explicit request. No live eval was run.
 
 ## Quick start — Windows, Linux and macOS
 
@@ -171,6 +171,14 @@ Settings shows notifier mode and recent alerts; no unauthenticated job-trigger e
 
 ## Offline and live Gemini
 
+**Read the API tier's terms before enabling live mode.** Google's
+[Unpaid Services terms](https://ai.google.dev/gemini-api/terms) permit product improvement and human
+review; do not submit sensitive/personal financial data on that tier. Paid Services exclude
+product-improvement use but allow limited safety/legal retention. The app cannot determine your
+key's tier. See [billing](https://ai.google.dev/gemini-api/docs/billing) and [privacy](docs/PRIVACY.md).
+Offline remains the default; a live key/model is never used in CI or default tests.
+
+
 Default LLM_PROVIDER=fake uses a deterministic tool-using policy, with no hard-coded figures or
 network. It handles recognized questions and says when information is unavailable. For optional live
 use set LLM_PROVIDER=gemini, a Gemini LLM_API_KEY and an available LLM_MODEL in your private .env,
@@ -181,7 +189,7 @@ and preserves signed response parts. Tests use local HTTP only; live quality is 
 Upgrading a Phase6 checkout: replace its old LLM_BASE_URL with
 `https://generativelanguage.googleapis.com` before enabling live Gemini. Existing private .env files
 are not overwritten by a Git update. Keep the default fake mode until you supply your own key/model.
-Migration0007 revokes previous live-provider consent; a Claude-era opt-in does not authorize Gemini.
+Migration0007 revokes previous live-provider consent; a previous-provider opt-in does not authorize Gemini.
 Each user must explicitly consent again to the newly disclosed recipient.
 
 Per-user consent defaults off and is checked before chat/category calls. The drawer discloses that

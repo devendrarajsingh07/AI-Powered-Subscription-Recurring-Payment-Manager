@@ -87,11 +87,20 @@ amounts go to application logs. Console outbox is a development notifier, not a 
 
 FakeLLM is an offline pattern-to-tool policy templating actual results, not a generative model
 or hard-coded demo answers. Gemini is the single live adapter, explicitly selected by the owner
-in Phase 7, replacing Claude. REST streaming uses existing httpx, bounded retries/timeouts and
+in Phase 7, replacing the previous provider. REST streaming uses existing httpx, bounded retries/timeouts and
 preserves signed function-call parts between rounds. Local HTTP protocol tests do not establish
 live model quality; the live evaluation remains an owner task.
 Migration0007 resets prior live consent: the newly selected recipient needs a fresh per-user opt-in.
 Downgrading does not restore revoked consent automatically.
+
+The adapter inlines local schema references and sends a conservative JSON Schema subset; strict
+server Pydantic models still reject extra fields. It handles parallel calls in provider order,
+returns invalid arguments as safe tool errors consuming a round, and selects the first candidate.
+Categorization uses JSON structured output, validated again against the fixed enum. Blocked,
+empty and token-truncated completions discard all model text and yield deterministic unverified
+fallback. Only transport/timeouts and transient HTTP statuses receive bounded retries. Cancellation
+closes the upstream HTTP context. These paths are tested with a local HTTP server, never live keys.
+Google's unpaid/paid data-use distinction appears in consent and PRIVACY; key tier is operator-owned.
 
 Seven strict tools: list_subscriptions, spend_summary, upcoming_renewals, compare_to_budget,
 get_recommendations, subscription_detail, potential_savings. PostgreSQL read-only transactions

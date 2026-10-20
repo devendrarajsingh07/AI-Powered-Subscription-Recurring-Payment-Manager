@@ -730,6 +730,12 @@ export interface components {
              * @enum {string}
              */
             mode: "offline" | "live";
+            /**
+             * Provider
+             * @default fake
+             * @enum {string}
+             */
+            provider: "fake" | "gemini";
         };
         /** ChatConsent */
         ChatConsent: {

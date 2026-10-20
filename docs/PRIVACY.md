@@ -17,7 +17,18 @@ personal material into chat: redaction is not a general PII classifier. Categori
 the normalized unknown merchant and a fixed category schema/instructions, no financial records.
 Consent defaults off, is checked server-side before live calls, and can be withdrawn in the drawer.
 Withdrawal prevents new sends; it cannot recall data already processed by a provider.
-The Gemini upgrade revokes existing Claude-era consent in migration0007. A previous provider's
+
+### Google Gemini tier-dependent data use
+
+The app cannot infer the API key's billing tier. Under Google's [current API terms](https://ai.google.dev/gemini-api/terms),
+Unpaid Services may use submitted content and responses to improve Google products, and human
+reviewers may process them. Do not send sensitive, confidential or personal financial data to that
+tier. Paid Services exclude product-improvement use, but permit limited logging for safety and
+legal obligations; paid does not mean zero retention. Read the applicable terms and
+[billing documentation](https://ai.google.dev/gemini-api/docs/billing) before opting in.
+Offline mode remains the default. No live evaluation, tier verification or legal review was performed.
+
+The Gemini upgrade revokes existing previous-provider consent in migration0007. A previous provider's
 approval is never silently reused for Google; users must opt in again after reading the new notice.
 
 Console emails are complete HTML/plaintext MIME files in the private Docker outbox volume,

@@ -11,9 +11,12 @@ import { ChatAssistant, ChatPanel } from "./ChatAssistant";
 type Config = components["schemas"]["ChatConfig"];
 const config: Config = {
   mode: "offline",
+  provider: "fake",
   live_opt_in: false,
   disclosure:
-    "Live Gemini receives subscription names, amounts and dates only after consent.",
+    "Google Gemini receives subscription names, amounts and dates only after consent. " +
+    "The unpaid tier allows product improvement and human review. " +
+    "Paid-tier terms exclude improvement but allow safety/legal retention.",
 };
 const history: components["schemas"]["Page_ChatHistory_"] = {
   items: [],
@@ -92,6 +95,7 @@ test("live consent gates the first message and can be withdrawn", async () => {
       HttpResponse.json({
         ...config,
         mode: "live",
+        provider: "gemini",
         live_opt_in: opted,
       } satisfies Config),
     ),
@@ -101,6 +105,7 @@ test("live consent gates the first message and can be withdrawn", async () => {
       return HttpResponse.json({
         ...config,
         mode: "live",
+        provider: "gemini",
         live_opt_in: opted,
       } satisfies Config);
     }),
@@ -108,6 +113,12 @@ test("live consent gates the first message and can be withdrawn", async () => {
   mount();
   const user = userEvent.setup();
   expect(await screen.findByText(/Live Gemini assistant/)).toBeVisible();
+  expect(screen.getByText(/Google Gemini receives/)).toHaveTextContent(
+    /human review/,
+  );
+  expect(screen.getByText(/Google Gemini receives/)).toHaveTextContent(
+    /Paid-tier/,
+  );
   expect(screen.getByRole("button", { name: "Send question" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Enable live AI" })).toBeDisabled();
   await user.click(screen.getByRole("checkbox"));

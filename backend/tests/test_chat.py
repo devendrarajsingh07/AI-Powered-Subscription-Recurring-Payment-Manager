@@ -27,6 +27,59 @@ from app.services.llm.fake import FakeLLM
 DAY = date(2026, 10, 18)
 
 
+def test_provider_block_discards_buffered_text_and_marks_fallback_unverified(api_client):
+    class Blocked(FakeLLM):
+        async def stream(self, **kwargs):
+            yield LLMEvent("token", text="PRIVATE_UNVERIFIED_TEXT ₹999999.99")
+            yield LLMEvent("blocked")
+
+    app.dependency_overrides[get_client] = lambda: Blocked()
+    headers, _ = account(api_client)
+    result, events = answer(api_client, headers, "monthly total")
+    assert result["verified"] is False
+    assert "PRIVATE_UNVERIFIED_TEXT" not in json.dumps(events)
+    assert "999999.99" not in json.dumps(events)
+
+
+def test_invalid_model_arguments_consume_rounds_without_database_access(api_client, monkeypatch):
+    class Invalid(FakeLLM):
+        calls = 0
+
+        async def stream(self, **kwargs):
+            self.calls += 1
+            if kwargs["force_final"]:
+                yield LLMEvent("token", text="I don't have that information.")
+            else:
+                yield LLMEvent(
+                    "tool",
+                    call=ToolCall(
+                        str(self.calls), "potential_savings", {"invalid_provider_arguments": True}
+                    ),
+                )
+
+    sender = Invalid()
+    app.dependency_overrides[get_client] = lambda: sender
+    headers, _ = account(api_client)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Invalid arguments reached a tool")
+
+    monkeypatch.setattr(ChatTools, "invoke", forbidden)
+    result, _ = answer(api_client, headers, "total")
+    assert sender.calls == 6 and result["tools"] == []
+    assert "untrusted-id" not in json.dumps(result)
+
+
+def test_live_config_names_gemini_and_discloses_tier_conditions(api_client, monkeypatch):
+    headers, _ = account(api_client)
+    monkeypatch.setattr(get_settings(), "llm_provider", "gemini")
+    config = api_client.get("/api/v1/chat/config", headers=headers).json()
+    assert config["provider"] == "gemini"
+    assert "Google Gemini" in config["disclosure"]
+    assert "unpaid" in config["disclosure"] and "human review" in config["disclosure"]
+    assert "Paid-tier" in config["disclosure"] and "retention" in config["disclosure"]
+
+
 def test_fabricated_answer_never_streams_and_metadata_only(api_client, db, caplog):
     headers, user = account(api_client)
     load(api_client, headers)

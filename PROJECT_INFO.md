@@ -1,129 +1,113 @@
 # SubTrack — current state and coding-agent handoff
 
-Updated 2026-10-19. Workspace root is the repository; do not create a nested subtrack folder.
+Updated 2026-10-20. The repository root is the workspace; do not create a nested subtrack folder.
 
 ## Current state
 
-Phases 1–7 demo scope implemented and verified. Release publication is gated on green hosted CI
-for the tagged commit; v1.0.0 denotes demo-complete, not production-ready.
-Stack unchanged: React/Vite/TypeScript/Tailwind/Recharts/TanStack Query/Router,
-FastAPI/SQLAlchemy/Alembic/PostgreSQL16. Decimal money; decimal-string APIs. Never create_all.
-One live provider is now Gemini per explicit owner instruction; fake remains offline default.
-No live evaluation was run. Recommendations/emails remain deterministic.
+Phases 1–7 were released as v1.0.0 at 7dba254a2f84b62f525ee39595b1dfe907a03d04.
+The tag is published. It means demo-complete for that scope, not production-ready.
+Release/tag CI passed, including all 13 browser flows on Ubuntu:
+https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39368517177
 
-Public origin: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager
+The owner supplied a combined Phases 7/7.5/8 prompt. Additional Part 1 Gemini requirements
+are implemented and locally verified; hosted CI on the addendum must pass before Part 2. After Part 2, stop before Part 3
+and request the Vercel/domain/container-host/managed-PostgreSQL/email/paid-Gemini prerequisites.
+Do not invent accounts or deploy/invite real users automatically.
+
+Stack unchanged: React/Vite/TypeScript/Tailwind/Recharts/TanStack Query/Router,
+FastAPI/SQLAlchemy/Alembic/PostgreSQL16. Decimal money, decimal-string APIs, Alembic only.
+Gemini is the sole live adapter; fake remains offline default. No live evaluation has run.
+Recommendations/emails remain deterministic. No original statements or real user data in git.
 Local web http://localhost:5173; API http://localhost:8000/docs. Development-only demo login:
 subtrack-demo@example.org / SubTrackDemo2026!. make seed is implemented and idempotent.
-Run after .env copy: docker compose up --build --wait, then make seed. No external AI/SMTP at runtime;
-initial clone/images/packages require network or caches. See README and docs/DEMO.md.
+After .env copy: docker compose up --build --wait, then make seed.
 
-Current local results: 287 PostgreSQL tests, 46 frontend tests, eighteen independent chat questions;
-detector three fixture sets P/R/F1 1.0000. Chromium7 flows and WebKit3 flows passed. Firefox157
-cannot launch on this Windows host: native side-by-side assembly mozglue error; no app test ran in
-that engine locally. Default suite retains Firefox, and Ubuntu CI installs/runs all3 engines.
-Fresh public clone523ce47, separate volumes/project/ports5273+8100: up/seed twice/verify passed,
-then both real demo-script and all-page accessibility tests passed. Fast-forwarded to c85418b and
-reran the full available-browser suite:10 passed. Exact command evidence: docs/DOD.md.
+## Current verification
 
-History scan baseline18 commits clean. Expanded22-commit scan flagged3 synthetic test JWT literals,
-reported to owner; never real credentials, no history rewrite. Tests now generate ephemeral values;
-.gitleaksignore contains only those exact historical fingerprints. Reviewed scan has no unreviewed
-findings. .env/outbox/eml/real statements are not tracked. npm audit0; pip-audit no known vulnerabilities
-after security updates/hash-lock regeneration. API/web uid1000; PostgreSQL process uid70.
+Combined baseline: ignored var/combined-baseline-20261020-095823/.
+make dev, verify, test, lint, evaluate exit0. 287 PostgreSQL backend tests,46 frontend tests;
+OpenAPI/TypeScript drift pass. Detector TP/FP/FN: synthetic16/0/0, handwritten bank3/0/0,
+handwritten products5/0/0; precision/recall/F1=1.0000 each. Real-bank accuracy is unmeasured.
+make e2e Windows:10 passed,3 failed; Firefox157 native launch fails before app execution.
+The redundant available-engine baseline rerun had9 pass/1 fail: mapping preview state was lost
+during a Vite reconnect while generated types were being written. Subsequent edits and browser
+checks were serialized. Stable final addendum run:10/10 Chromium/WebKit flows pass. No browser
+is removed and no assertions weakened. Ubuntu release checks/e2e passed; addendum CI pending.
 
-Known gaps: real-bank accuracy unmeasured; nominal calendar renewal dates; INR only; one API process,
-in-process worker/scheduler/limiters, no durable queue; figure verifier checks provenance not prose;
-SMTP at-least-once after acceptance/commit crash; exported files/delivered emails cannot be recalled.
-Compose/Vite is DEV/DEMO, not a production deployment. Human screen-reader pass and live Gemini eval
-not performed. Owner selected MIT; explicit phase instruction leaves LICENSE absent for owner action.
+Codex Process Jobs refused win32 as unsupported, so normal command execution is used. A local
+Firefox repair copied the exact manifest embedded in its mozglue DLL to a sidecar. Launch still
+failed, so that sidecar was removed and the original installation restored.
 
-## Phase 7 decisions — recorded before implementation
+## Part 1 addendum — decisions before implementation
 
-- Baseline: make dev, verify, test, lint, evaluate and e2e all exit 0: 266 backend,
-  42 frontend tests, five Chromium flows; three detector datasets precision/recall/F1 1.0000.
-  Hosted master c4d1138 checks/e2e green (run 39238761092). Gitleaks full history:
-  18 commits, no leaks. Repository public. No env/outbox/statement files tracked.
-- User explicitly chose Gemini for live use: replace Claude with ONE Gemini REST adapter,
-  using existing httpx, preserving consent, read-only tools, verification and offline default.
-  Historical Claude decisions below are superseded only as to live provider. No live eval run.
-  Before publication, revoke existing Claude-era live consent in a forward migration: a previous
-  provider's opt-in does not authorize Gemini. Users must explicitly consent to Gemini afterward.
-- Generate demo CSV and independent truth relative to application today, deterministic seed 42.
-  Feed the existing parser/background worker/detector/persistence/insights and alert planner.
-  Reuse the existing demo upload, including its visible as_of, until explicit removal/reload.
-  Never shift real data. Loading is refused when real uploads exist; real uploads are refused
-  while demo data exists. Scoped removal also defensively preserves any real-origin records.
-- Mark uploads with source/as_of and a snapshot of settings changed by demo defaults. Seed
-  budget only when absent; notification email only when absent. Restore defaults on removal
-  only if unchanged since loading, preserving subsequent user choices. Remove demo-linked
-  products only when no real charges remain, then regenerate recommendations/alerts.
-- ENVIRONMENT defaults development. Demo endpoints/seed and clock overrides are forbidden
-  in production; console notifier and adversarial FakeLLM are forbidden there too. Outside
-  development require a strong non-placeholder JWT secret and explicit CORS origin.
-- Theme preference light/dark/system is non-sensitive, guarded storage, applied before paint.
-  Reuse slate/teal design and existing Playwright fallback (Browser plugin unavailable).
-- Compose is a dev/demo deployment, not production guidance. SMTP remains at-least-once;
-  console atomic outbox is a dev demonstration. No screen-reader, real-bank or live-AI claim.
-- License: user selected MIT in the Phase 7 question. Per explicit phase instruction, no
-  LICENSE file is added in this phase; record the selection for the owner to apply afterward.
+- Reuse Gemini and consent-reset migration0007. Do not rebuild the demo loader, repeat migrations,
+  rewrite history or move published v1.0.0. New additive requirements get separate commits.
+- Keep existing httpx REST transport. LLM_MODEL must be explicitly configured; no guessed default.
+  Exactly fake|gemini. Key remains SecretStr in x-goog-api-key header, never URL/query/log output.
+- Rechecked the official sources below on 2026-10-20. Sanitize schemas only at the adapter boundary:
+  inline local references, keep a documented conservative subset, strip unsupported keywords.
+  Server-side extra=forbid Pydantic validation stays authoritative and unchanged.
+- Categorization uses constrained JSON structured output and server-side enum validation. Its only
+  user data is the normalized merchant. Suggestions remain unconfirmed and never override choices.
+- Process parallel function calls in provider order within existing caps. Malformed arguments become
+  safe tool errors consuming a round; they never reach repositories. Five-round cap stays.
+- Blocked, empty or truncated completions discard buffered model text and yield deterministic fallback
+  with verified=false. No unverified token reaches the browser. Retry transient failures only, with
+  existing bounds; cancellation closes upstream. Test with local HTTP, never live keys in CI.
+  Unknown tools/extra identity fields still fail closed; only malformed wire-argument markers get
+  the recoverable tool-error path. Existing injection/identity tests remain intact.
+- Consent names Google Gemini and discloses tier differences. Unpaid Services terms permit product
+  improvement and human review and prohibit sensitive/personal submissions. Paid Services terms
+  exclude improvement use but permit limited safety/legal retention. The app cannot infer key tier.
+  Operator must read the applicable terms before sending financial data; offline stays default.
+- Active docs/errors/contract metadata name the configured provider; historical facts live under
+  docs/history. Do not reapply superseded no-remote or phase-stop instructions from those logs.
 
-## Verification and resume
+Official sources (no live model calls):
+- https://ai.google.dev/api/generate-content
+- https://ai.google.dev/gemini-api/docs/function-calling
+- https://ai.google.dev/gemini-api/docs/structured-output
+- https://ai.google.dev/gemini-api/docs/billing
+- https://ai.google.dev/gemini-api/terms
 
-Read README, docs/DOD.md and docs/ARCHITECTURE.md for actual results and limits; inspect checked-in
-OpenAPI/schemas before code changes. Earlier factual decision logs are preserved in
-[Phases1–5](docs/history/PHASES_1_5.md) and [Phase6](docs/history/PHASE_6.md). Their old no-remote,
-provider and phase-stop instructions are historical, not current authorization.
+## Limits and human-owned checks
 
-Stop after Phase7 release verification. Do not implement stretches without a new user request.
-Priorities: correct numbers > data safety > working demo > polish > extra features.
+Compose is dev/demo, not production. One API process; in-process workers/scheduler/limiters/chat gate,
+no durable queue; INR only; nominal renewal dates; figure verification proves provenance, not prose.
+SMTP is at-least-once across accepted-send/commit crashes. Exported/delivered data cannot be recalled.
+Human screen-reader, private real-statement checks, and live Gemini evaluation remain unperformed.
+Owner selected MIT; explicit instructions leave LICENSE absent for owner application.
 
+Prior release audits: npm0/pip no known vulnerabilities; Gitleaks has three exact reviewed historical
+synthetic JWT exceptions, no unreviewed findings. No .env/outbox/eml/private statements tracked.
+Re-run scans for each new part; historical results do not certify new changes.
 
-## Phase 7 verification log
+History preserving decisions/results/failures:
+- [Phases1–5](docs/history/PHASES_1_5.md)
+- [Phase6](docs/history/PHASE_6.md)
+- [Phase7 release](docs/history/PHASE_7.md)
 
-Logical commits:2b1f3ad decisions, f9043c5 backend/demo/Gemini/security lock,4244e15 UI/browser checks,
-523ce47 docs,3d5f7f9 WebKit focus/reviewed scan findings,c85418b non-development auth guard,
-6e3fd76 browser register Retry-After handling. No default limiter was raised for tests.
+Priority: correct numbers > data safety > working demo > polish > extra features.
+Part 2 is pending. Part 3 requires the external-prerequisite handoff after Part 2.
 
-make dev/verify/seed and seed repeat exit0. Full final make test286 backend+46 frontend,
-OpenAPI/TS drift current; make lint/evaluate exit0. Eighteen independent questions pass offline.
-Fresh clone has separate new volumes, ports5273/8100 and explicit replay clock18Oct; demo path
-and every-view axe light/dark360 pass; all protected routes overflow checks360/768/1280 pass.
-Full local Chromium7+WebKit3 pass. Windows Firefox host launch blocked before page execution;
-all3 engines remain configured on Ubuntu CI. Corrected real WebKit focus bug without removing checks.
+## Part 1 addendum verification — 2026-10-20
 
-Initial Python audit49 advisory entries in4 packages remediated and hash-lock regenerated:
-FastAPI0.147.0, Starlette1.9.0, PyJWT2.15.0, multipart0.0.31, pytest9.0.3; no stack change.
-Repeat npm/pip audits clean. Reviewed full-history scan25 commits clean after exactly3 documented
-synthetic-test fingerprint exceptions; no real credential/history rewrite. Non-root IDs verified.
-Production preview has headers, zero page errors; first DCL sample105ms (single local sample),
-main346KB/109KB gzip, lazy charts390KB/114KB gzip. Full limits/measurements are in DOD.
+Logs: var/combined-part1-20261020-102403/ (ignored). make dev/verify/test/evaluate exit0;
+307 real PostgreSQL tests,46 frontend tests,18 independent offline questions; OpenAPI/TS drift pass.
+Initial focused run53 pass/2 fail: disclosure assertion wording and too-broad invalid-tool recovery.
+Both were fixed, preserving fail-closed user-id rejection; focused rerun55 pass, then one wire-schema
+test added and the full307 passed. No known-answer expected values or evaluator were changed.
 
-All runtime demo records flow through real ingestion. Production guards include default demo auth
-and pre-existing tokens when a dev database is reused outside development. New seed never resets
-someone else's password. Delete account/demo purge private console files; exports are not recalled.
-No real-bank, screen-reader or live-Gemini evaluation was performed. Owner selected MIT; no LICENSE
-file added under explicit Phase7 instruction. Human actions: apply license, screen reader/private
-statement/live Gemini checks. No stretch implemented. Hosted source CI is GREEN on 6e3fd76794edbd560698c7bb24adf7be97d54ecb, run39246044919.
-Both checks/e2e succeeded, including13 browser flows: Chromium7, Firefox3, WebKit3.
-The final documentation/screenshot commit must itself pass hosted CI before pushing v1.0.0.
+First make lint/build failed because the generated response type required provider in the typed
+MSW fixture. Added explicit fake/gemini fixture providers. Repeated make lint, npm --prefix frontend
+run build, npm --prefix frontend test -- --run all exit0 (46 tests). No source changes during the
+stable browser verification: python scripts/run_e2e.py --project=chromium --project=webkit exit0,
+10 passed (Chromium7/WebKit3). Hosted all-browser result must be recorded before Part 2.
 
-
-Hosted evidence: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39246044919
-This documentation-only release record changes no verified application code. The release tag's
-commit/check association on GitHub is the final publication evidence; never tag a failing commit.
-Latest production-build check: main346.56KB (109.50KB gzip), charts389.93KB (114.22KB gzip),
-CSS24.93KB (6.25KB gzip); preview DCL96ms in repeat single local sample, headers/zero errors pass.
-Final audits repeated: npm0, pip no known vulnerabilities; Gitleaks25 commits no unreviewed findings.
-
-Isolated checkout repeated full make verify/test/lint/evaluate through8ae8845: all exit0,
-286 backend+46 frontend, both drift checks, F1=1 across all3 fixture sets. Corrected test-only
-assumptions about CORS5173 and inherited replay clocks; production guards remain strict. The
-written-demo browser now also opens/closes charges, records music intent without cancellation,
-and checks Sent in Settings, matching docs/DEMO.md clicks; local test passed in24.4s.
-No screen reader, real statement or live Gemini evaluation claimed. Current release publication
-still requires hosted green on the tagged commit. Optional checker never writes bytecode/results.
-
-Final privacy guard: migration0007 resets old Claude-era live consent so Gemini requires a fresh
-per-user opt-in. PostgreSQL upgrade0005→head and safe downgrade are tested with an opted-in user.
-make dev/verify/test/lint/evaluate after the guard all exit0:287 backend+46 frontend, drift current,
-P/R/F1=1.0000 on the3 fixture sets. Earlier286 entries are preserved historical measurements.
+npm --prefix frontend audit --audit-level=low:0 vulnerabilities. pip-audit against requirements.lock
+in disposable Python3.12 container: no known vulnerabilities. Gitleaks full32-commit history: no
+unreviewed findings, retaining only the3 exact historical synthetic-test exceptions. Post-commit scan
+must include the addendum. No .env/private statements/eml/LICENSE tracked; .env.example only.
+Production bundle: main346.56KB/109.50KB gzip; lazy charts389.93KB/114.22KB gzip, unchanged.
+One existing Starlette TestClient deprecation warning remains. No live Gemini, real-bank or human
+screen-reader claim. Do not move v1.0.0; this is an additive post-release correction.

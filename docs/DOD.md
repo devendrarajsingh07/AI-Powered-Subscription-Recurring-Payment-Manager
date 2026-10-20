@@ -1,6 +1,8 @@
 # Definition-of-Done evidence
 
-Local and hosted source verification completed. Release publication requires green CI on the tagged commit. This file records measured results, not promises. Baseline before
+Release v1.0.0 is published; exact release/tag CI passed (run39368517177). The combined-prompt
+Part 1 addendum has local results below; its hosted CI is pending. This file records measurements.
+Baseline before
 Phase 7: 266 PostgreSQL tests, 42 frontend tests, five Chromium flows; hosted c4d1138 green.
 Final command/count/CI and fresh-clone evidence are recorded below.
 
@@ -10,14 +12,14 @@ Final command/count/CI and fresh-clone evidence are recorded below.
 | Seeded current demo; no direct fixture subscriptions/recommendations | make seed; test_demo real pipeline/idempotency | Pass; CSV → parser/worker → detector/DB/insights/alert plans |
 | Full register→data→review→chat→email→budget→delete demo | demo.spec.ts written-three-minute flow | Pass: fresh-clone full available-browser run below |
 | F1≥0.9 and honest precision/recall | make evaluate | Three fixture sets P/R/F1 1.0000; real-bank accuracy unmeasured |
-| Backend and per-user isolation | make test, test_api/test_chat/test_insights/test_demo | Pass: 287 PostgreSQL tests |
+| Backend and per-user isolation | make test, test_api/test_chat/test_insights/test_demo | Pass: 307 PostgreSQL tests after Part1 addendum; release baseline287 |
 | Frontend, typecheck, lint, build | Vitest/MSW, make lint, npm run build | Pass: 46 frontend tests; lint/type/build/drift clean |
 | Browser main flow | make e2e | Local Chromium7/WebKit3 pass; Ubuntu CI13 pass including Firefox3; Windows native launch limitation documented |
 | ≥15 grounded chat known answers | test_chat_evals, make chat-eval | 18 independent expectations; default offline; live not run |
 | Verifier blocks invented numbers; never stream unverified text | test_grounding, adversarial FakeLLM/chat tests | Pass; figures only, prose associations not proven |
 | README setup/env/architecture/limitations and shareable handoff | README, ARCHITECTURE, PROJECT_INFO/history | Documented; fresh-clone verification below |
 | Phases gated, no stretches or fake completion | Preserved phase logs and test outputs | Prior phases archived; no stretch implementations |
-| Stack/provider changes need authorization | Gemini replaces Claude | Explicit owner authorization “for live use gemini”; no second live adapter |
+| Stack/provider changes need authorization | Gemini replaces the previous provider | Explicit owner authorization “for live use gemini”; no second live adapter |
 | LLM never detects/aggregates/calculates | Pure Decimal detector/summary/insights and seven read-only tools | Tested; live response figures checked against tools |
 | Normalize merchants, alias rails/references | normalizer/detector hard-case tests | Pass; no exact raw-string matching |
 | Drift/FX/product clusters/irregular purchases/yearly/stopped/credits | Detector tests + handwritten fixtures | Pass on fixtures; limits documented |
@@ -170,7 +172,7 @@ suppressed warnings. No major tooling migration was added in this release scope.
 
 ## Recipient-consent release guard
 
-Before tagging, migration0007 was added so an old Claude opt-in cannot authorize Gemini.
+Before tagging, migration0007 was added so an old provider opt-in cannot authorize Gemini.
 A real-PostgreSQL upgrade test inserts an opted-in user at0005, upgrades to head and verifies
 consent=false; downgrade does not reconstruct consent. Twenty-four schema/demo safety cases pass.
 Final make dev/verify/test/lint/evaluate after this guard all exit0: **287 backend,46 frontend**,

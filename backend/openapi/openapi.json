@@ -489,6 +489,15 @@
             ],
             "title": "Mode",
             "type": "string"
+          },
+          "provider": {
+            "default": "fake",
+            "enum": [
+              "fake",
+              "gemini"
+            ],
+            "title": "Provider",
+            "type": "string"
           }
         },
         "required": [

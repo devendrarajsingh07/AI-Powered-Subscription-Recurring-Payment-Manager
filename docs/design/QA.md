@@ -160,3 +160,14 @@ zoom200–400%, high-contrast OS mode and touch-device usability. Automated axe 
 Final measured suites:286 PostgreSQL tests,46 frontend tests; available Windows Chromium7/WebKit3 pass.
 Ubuntu hosted run39246044919 passed all13 browser flows, including Firefox3. Windows Firefox native
 mozglue activation failure is documented, not skipped by the default suite. No screen reader claim.
+# Combined-prompt Part 1 addendum — 2026-10-20
+
+Browser plugin not available; existing Playwright workflow used. No React product layout changes.
+Consent copy is served as plain text: Google Gemini, unpaid product improvement/human review,
+paid safety/legal retention, operator responsibility for tier. Typed MSW live-consent test asserts
+the provider/caveat and opt-in gate. Stable real-stack Chromium7/WebKit3 flows pass, including
+all-page axe light/dark360 and responsive768/1280 checks. Native Windows Firefox launch remains
+blocked; all three engines stay enabled for Ubuntu CI. Human screen-reader pass remains pending.
+An earlier redundant run lost upload state during Vite reconnect while types were regenerated;
+edits and final browser checks were serialized. No assertion/time limit was weakened.
+

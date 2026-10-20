@@ -22,6 +22,7 @@ from app.services.normalizer import normalize_merchant
 def chat_config(user: CurrentUser):
     return dict(
         mode="offline" if get_settings().llm_provider == "fake" else "live",
+        provider=get_settings().llm_provider,
         live_opt_in=user.live_opt_in,
         disclosure=DISCLOSURE,
     )
@@ -37,7 +38,7 @@ def chat_consent(body: s.ChatConsent, user: CurrentUser, db: Db):
 
 def check_consent(user):
     if get_settings().llm_provider != "fake" and not user.live_opt_in:
-        fail(400, "consent_required", "Enable live AI consent before sending data to Claude")
+        fail(400, "consent_required", "Enable live AI consent before sending data to Google Gemini")
 
 
 @router.post(
