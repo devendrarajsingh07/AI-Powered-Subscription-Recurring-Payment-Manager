@@ -170,3 +170,29 @@ all-page axe light/dark360 and responsive768/1280 checks. Native Windows Firefox
 blocked; all three engines stay enabled for Ubuntu CI. Human screen-reader pass remains pending.
 An earlier redundant run lost upload state during Vite reconnect while types were regenerated;
 edits and final browser checks were serialized. No assertion/time limit was weakened.
+
+## Statement-import audit — 2026-10-20
+
+The frontend debugging skill was applied; its browser plugin was unavailable, so the existing
+Playwright/axe workflow was used. Synthetic review screenshots are under docs/screenshots/statement-*.
+
+| Async view/action | Loading / empty | Error / success | Evidence |
+| --- | --- | --- | --- |
+| File/password intake | Reading state, labelled keyboard picker | Size/format guidance; memory-only password cleared; preview job | typed MSW + real encrypted retry |
+| Extraction | Pending/processing stage and page counts, backoff | Safe failure/readable re-export guidance; ready status | PostgreSQL lifecycle + real OCR |
+| Review | Empty/query error; 25-row pagination | Reconciliation and uncertainty notices; plain-text hostile description | component + real PDF/image flows |
+| Edit/verify/remove/filter | Unverified rows disable import | Edits reset verification; per-row/bulk acknowledgment; remove/undo | nine statement component tests |
+| Confirm | Disabled invalid rows; importing state | Safe validation feedback; upload results/excluded counts | API validation/idempotency + real import |
+| Cancel/unmount | Cancelling; polling cleanup | Safe failure; cleared payload and local object URL | component/API; StrictMode regression |
+| Expiry/account deletion | No retained stale result | Scoped 404, TTL purge/account cascades | real PostgreSQL tests |
+
+Browser axe covers review in light/dark at360px with no rule suppression; mobile overflow is
+asserted. The text/scanned/JPEG paths assert independent ground-truth products and amounts;
+PNG cancellation uses a real local image. Hostile descriptions stay plain text; password retries
+and unreadable input are exercised. No console/page errors are allowed in the text-review flow.
+An initial browser run found React.StrictMode cleanup cancelling a newly opened job. Cleanup now
+distinguishes effect replay from unmount; a dedicated regression test and rerun cover both paths.
+Human screen-reader/zoom/high-contrast/touch checks remain to-do; automated axe is not that pass.
+
+Final Phase7.5 available-engine rerun:13/13 pass. Hosted implementation764a3c9 checks/e2e
+passed run39381573641, including the unchanged Ubuntu three-engine configuration (16 flows).

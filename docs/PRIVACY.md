@@ -53,3 +53,28 @@ Keep personal exports outside the repo or in ignored private-statements/. Never 
 .env, database dumps, browser traces or outbox emails. The optional local checker prints to your
 terminal only, writes no result file and makes no network call. Terminal scrollback is still
 private data; do not paste it into public issues.
+
+## PDF and image statement import
+
+Extraction happens on the application's server using local PDF/OCR programs. Original statement
+bytes and PDF passwords are not stored in PostgreSQL, logged or sent to a third party. Upload
+multipart spooling stays in memory within the enforced size limit; extraction can write decrypted
+pages and normalized images only inside a private temporary directory. Files are removed after
+completion, cancellation or timeout. Startup removes abandoned extraction directories after an
+ungraceful process stop; this is not secure erasure or protection against a compromised host.
+Passwords are passed through an in-memory pipe, never URL/query parameters; the browser clears
+the password input after submission. The API returns safe failure codes without the file content.
+
+User-scoped preview rows contain extracted descriptions, dates, decimal amounts, flags and optional
+balances for at most 30 minutes. Confirmation or cancellation immediately clears the row payload;
+small status/upload-pointer metadata remains until expiry for idempotent confirmation. A periodic
+purge and access-time expiry delete expired previews. Per-user daily counters retain attempts,
+failures, flagged-row and edited-row counts until account deletion, with no financial content.
+Delete my data cascades through both preview and counter tables. Cancel/expiry does not reset quotas.
+
+The review shows a browser-held local object URL, not a retained server file. Import persists only
+the reviewed virtual-CSV transactions and existing derived records. Original extracted row text
+is never submitted to an OCR/LLM provider. Later, if the user separately opts into live chat, the
+existing disclosure still applies: normalized subscription names, amounts and dates returned by
+read-only tools may be sent to Google Gemini; raw transaction descriptions and original files are
+excluded. Offline mode sends neither. See [statement scope and private local check](STATEMENT_IMPORT.md).

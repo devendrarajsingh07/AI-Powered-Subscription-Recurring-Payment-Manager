@@ -1,7 +1,7 @@
 # Definition-of-Done evidence
 
 Release v1.0.0 is published; exact release/tag CI passed (run39368517177). The combined-prompt
-Part 1 addendum has local results below; its hosted CI is pending. This file records measurements.
+Part 1 addendum passed hosted run39372903888. Part 2 passed hosted run39381573641 on764a3c9; local results are below. This file records measurements.
 Baseline before
 Phase 7: 266 PostgreSQL tests, 42 frontend tests, five Chromium flows; hosted c4d1138 green.
 Final command/count/CI and fresh-clone evidence are recorded below.
@@ -179,4 +179,25 @@ Final make dev/verify/test/lint/evaluate after this guard all exit0: **287 backe
 OpenAPI/TypeScript current, three fixture sets P/R/F1=1.0000. Application data migration was also
 applied to the running dev stack before readiness passed. The prior286 counts above describe
 the earlier measured runs, not an omitted test. Live Gemini still requires each user's new opt-in.
+
+## Phase 7.5 evidence — supplemental statement import
+
+| Requirement | Actual evidence/result |
+| --- | --- |
+| PDF/scanned PDF/JPEG/PNG reuse real pipeline | 330 PostgreSQL tests; real browser text PDF399 rows ->16 ground-truth products; scanned15 plus corrected JPEG -> independent totals and dedupe; PNG local preview/cancel |
+| No silent extraction errors | make test includes evaluate_extraction.py:18 synthetic variants; silent0; clean text field1.000; every returned row flagged, no automatic acceptance |
+| OCR limitations disclosed | docs/STATEMENT_IMPORT.md complete matrix: degraded/rejected variants, 150dpi synthetic floor, description mistakes; no real-bank claim |
+| Review/edit/strict validation | Nine typed-MSW statement component tests; server excludes flagged-unverified rows; Decimal/reconciliation/Dr-Cr/grouping tests |
+| Isolation/privacy/intake/password | Parser limits, hanging-worker fault injection, actual malformed/recursive PDFs, memory/temp/EXIF/shell/polyglot/password tests; scoped TTL/cancel/delete/quota tests |
+| Timeout evidence limit | Controlled subprocess fault injection proves watchdog/cleanup; no claim that a naturally occurring bank PDF hung during testing |
+| Migration/contracts | Alembic up/down/drift included; OpenAPI and generated TS checks pass |
+| Frontend/accessibility | 55 frontend tests; real review axe both themes360; hostile strings plain text; screenshots/QA checklist |
+| Earlier behavior | Full available-browser13/13 pass; detector all3 fixture sets P/R/F1=1; 18 offline chat questions retained |
+| Audits/runtime | npm0; pip no known vulnerabilities; image646058096bytes; API uid1000; full-history secret scan recorded in handoff |
+| Optional private checker | Synthetic15-row PDF, Docker network-none/read-only+tmpfs, exit0; real personal check human-owned |
+| Hosted CI | checks and e2e passed on implementation764a3c9, run39381573641; Ubuntu16 configured flows including Firefox; docs-only successor is checked after push |
+
+The prior release counts are historical. Current local counts330 backend/55 frontend supersede them.
+Phase8 beta readiness is **not met**: no hosted staging/prod, durable queue, cookie sessions, invitation,
+verification/reset, backup restore drill or legal sign-off. External prerequisites are in PROJECT_INFO.md.
 

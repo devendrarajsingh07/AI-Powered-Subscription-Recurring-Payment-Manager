@@ -8,10 +8,24 @@ and a server-side figure verifier. **1.0.0 means demo-complete for this scope, n
 
 ![Synthetic dashboard](docs/screenshots/demo-dashboard.png)
 
-Register, preview/map/import CSVs, review subscriptions and fixed bills, track renewals and budget,
+Register, preview/map/import CSVs or review PDF/image statements, review subscriptions and fixed bills, track renewals and budget,
 review advisory savings, inspect dev emails and ask the offline assistant. A clock-relative demo
 loader makes the same real ingestion pipeline available without a statement. Gemini is the single
 optional live provider, replacing the previous provider at the owner's explicit request. No live eval was run.
+
+Statement import supports English text/scanned PDFs and JPEG/PNG through local extraction and
+mandatory editable review. CSV stays 5 MB/50,000 rows; PDF/image limits are 10 MB, PDF 30 pages,
+image 25 megapixels. Encrypted PDFs use a separate memory-only password field. Original files and
+passwords are not retained; row previews expire after 30 minutes. Clean scans around 200 dpi or
+better are the target; skew, blur and unfamiliar layouts can fail or misread digits. All extracted
+rows require review, even when balances match. INR only; Excel, phone photos and handwriting are
+unsupported/best effort. See [formats, evaluation, limits and private checker](docs/STATEMENT_IMPORT.md).
+The synthetic evaluation has zero silent errors because every returned row is flagged; it does
+not establish accuracy on real bank statements. Docker installs Tesseract/poppler; no host OCR
+installation, cloud OCR, LLM extraction or API key is needed. Native Windows parsing is unsupported;
+use the Linux Docker API. Run `make evaluate-extraction`; it is also included in `make test`/CI.
+
+![Synthetic statement review](docs/screenshots/statement-review-desktop.png)
 
 ## Quick start — Windows, Linux and macOS
 

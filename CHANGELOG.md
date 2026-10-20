@@ -6,7 +6,10 @@
   malformed-argument handling and local HTTP protocol/security tests.
 - Add tier-dependent Google data-use disclosure and configured provider in chat config.
 - Archive the Phase 7 handoff facts; keep the published v1.0.0 tag unchanged.
-- PDF/image import and hosted beta remain pending their sequential gates.
+- Add local text/scanned PDF and JPEG/PNG extraction with bounded preview jobs, Decimal reconciliation,
+  mandatory editable review, encrypted-PDF password handling and reuse of the CSV ingestion pipeline.
+- Add synthetic variant evaluation, parser security/privacy tests, real-stack browser review flows
+  and private terminal-only checker. Hosted beta remains gated on external prerequisites and Phase8.
 
 ## 1.0.0 — 2026-10-19 — demo scope
 

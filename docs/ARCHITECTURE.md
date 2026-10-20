@@ -3,6 +3,36 @@
 SubTrack 1.0.0 means demo-complete for the seven-phase scope, **not production-ready**.
 The Compose deployment is a local dev/demo environment with Vite and API reload enabled.
 
+## Additive statement-import path (Phase 7.5)
+
+PDF/image multipart intake checks size, magic and extension. A user-scoped preview job runs local
+extraction in a credential-free subprocess. pypdf decrypts/copies pages without document-level active
+content; pdfminer reads positioned text. Scanned pages use poppler at 200 dpi and Tesseract TSV after
+grayscale/metadata removal, bounded upscale, median denoise and conservative deskew. Positioned
+words share table/line reconstruction. No JavaScript or attachment is executed. Malformed parsers
+are bounded by per-page/total deadlines, resource limits and process-group termination.
+
+Preview rows use the existing CSV date/Decimal validators. Running balances use exact debit/credit
+equations; opening/closing/debit/credit totals are checked when present. Incomplete coverage is not
+called matched. Breaks and neighboring rows are flagged. Every row additionally requires explicit
+review, including high-confidence/reconciled text/OCR: confidence cannot establish a correct digit.
+Confirmation locks the preview, validates strict edits, excludes unverified rows and queues virtual
+CSV through the existing transactional upload/dedupe/detection/insight/alert-planning pipeline.
+Repeated confirmation returns the same upload. No subscriptions are inserted directly.
+
+Migration0008 adds upload source_type/excluded_count, owned preview jobs with JSONB row payloads
+and 30-minute expiry, and content-free daily usage counters. Confirmation/cancellation clears
+payloads immediately; metadata expires; startup/periodic/access cleanup handles abandoned/expired
+previews. Account deletion cascades. Original bytes/passwords are transient; review uses a local
+browser object URL. Responses containing authenticated data use Cache-Control: no-store.
+
+The worker pool is in-process and single-instance; a restart marks interrupted jobs failed. Parser
+subprocess limits are not an OS sandbox/network policy, and API/parser share a container. Before
+real users, Phase8 must isolate extraction in a no-network worker container with durable jobs,
+shared caps and cgroup limits. Formats, defaults, component licenses, measured OCR failures and
+private terminal-only testing are in [Statement import](STATEMENT_IMPORT.md). Real-bank layout
+coverage, phone photos and handwriting remain unmeasured/unsupported; English and INR only.
+
 ```mermaid
 flowchart LR
   U[Browser: React and TanStack Query] -->|JWT, typed OpenAPI| A[FastAPI]

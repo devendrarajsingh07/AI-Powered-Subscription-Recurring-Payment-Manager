@@ -10,7 +10,8 @@ Release/tag CI passed, including all 13 browser flows on Ubuntu:
 https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39368517177
 
 The owner supplied a combined Phases 7/7.5/8 prompt. Additional Part 1 Gemini requirements
-are complete: both hosted jobs passed on 4b36e5a. Part 2 may now begin. After Part 2, stop before Part 3
+are complete: both hosted jobs passed on 4b36e5a (run39372903888). Part 2 implementation and local
+verification are complete; both hosted jobs passed on764a3c9 (run39381573641). After Part 2, stop before Part 3
 and request the Vercel/domain/container-host/managed-PostgreSQL/email/paid-Gemini prerequisites.
 Do not invent accounts or deploy/invite real users automatically.
 
@@ -23,6 +24,14 @@ subtrack-demo@example.org / SubTrackDemo2026!. make seed is implemented and idem
 After .env copy: docker compose up --build --wait, then make seed.
 
 ## Current verification
+
+Part2 local:330 PostgreSQL backend tests,55 frontend tests; extraction matrix18 variants, silent0,
+all rows flagged for review; clean text field accuracy1.000. Earlier detector gates remain1.0000.
+OpenAPI/type drift, lint/typecheck/build and dependency audits pass. Available-browser13/13 pass;
+the final review-position/screenshot rerun also passes13/13. Hosted checks/e2e pass on764a3c9; details are below.
+Runtime image646058096bytes, non-root. No live Gemini/real-bank/manual screen-reader claim.
+
+### Historical combined baseline
 
 Combined baseline: ignored var/combined-baseline-20261020-095823/.
 make dev, verify, test, lint, evaluate exit0. 287 PostgreSQL backend tests,46 frontend tests;
@@ -118,7 +127,7 @@ screen-reader claim. Do not move v1.0.0; this is an additive post-release correc
   for decryption (BSD-3-Clause), Pillow for normalization (MIT-CMU), ReportLab for synthetic fixtures
   (BSD). Current PyPI metadata checked before dependency selection:20260107/6.21.1/13.0.0/5.0.1
   respectively. Check actual installed/transitive licenses after locking. No AGPL dependency.
-  Tesseract CLI (Apache2) and poppler CLI (GPL2) run as separate local programs, not linked libraries.
+  Tesseract CLI (Apache2) and poppler CLI (main GPL-2, component GPL-2-or-GPL-3/GPL-3) run as separate local programs, not linked libraries.
 - Python dependencies get explicit pins and hashed requirements.lock. OCR English only. No phone
   photo/handwriting support claim; clean English scans/screenshots approximately200dpi+ are target.
 - PDF/image previews become user-scoped PostgreSQL jobs with30-minute row-text TTL. Keep tiny
@@ -149,3 +158,80 @@ screen-reader claim. Do not move v1.0.0; this is an additive post-release correc
   Clean text-PDF exact field quality gate>=99%; silent-error gate=0 on every variant. Report OCR
   variants/errors/rejections honestly, including conservative review rate. No real-bank accuracy claim.
 - No Phase8 work until this phase's tests/evaluation/audits/CI pass. Then stop for external accounts.
+
+## Phase 7.5 implementation and verification log
+
+Migration0008 adds scoped preview/usage tables, upload source_type and excluded_count. Parser jobs
+use resource-limited subprocesses; user edits are strict and locked confirmation queues virtual CSV
+through the real pipeline. No DB financial math or earlier known-answer expectations were replaced.
+Every extracted row requires explicit review; this deliberately exceeds the minimum OCR guard.
+Complete 18-variant measurements, dependency licenses and limits: docs/STATEMENT_IMPORT.md.
+
+Commands/results (2026-10-20; ignored logs var/phase75-*):
+- make dev / make verify: Compose health and migration-head checks pass; API uid/gid1000.
+- make test: exit0, 330 PostgreSQL backend tests (one existing Starlette TestClient deprecation),
+  55 frontend tests, OpenAPI export and generated TypeScript drift checks pass. Includes migrations
+  upgrade/down/drift, 18 offline chat questions, parser/API privacy/security and the extraction gate.
+- make evaluate (also in make test): synthetic16/0/0, handwritten3/0/0 and products5/0/0 TP/FP/FN;
+  precision/recall/F1 all1.0000. Real-bank detection/extraction accuracy remains unmeasured.
+- Extraction matrix: clean text field accuracy1.000; zero silent errors; all returned rows flagged.
+  Clean synthetic date/amount/row quality floor150dpi. Skew-2 and deliberately corrupt amounts
+  retain errors and reconcile as mismatch; skew+2/noise/blur/unreadable reject. No perfect OCR claim.
+- python scripts/run_e2e.py --project=chromium statements.spec.ts:3/3 pass. Full available engines
+  Chromium10/WebKit3:13/13 pass; final layout/screenshot rerun also13/13 (4.8minutes). All three
+  engines remain enabled in hosted Ubuntu CI; native
+  Windows Firefox157 cannot launch (SideBySide/mozglue), so no local Firefox app pass is claimed.
+- npm audit --audit-level=low:0 vulnerabilities; pip-audit -r requirements.lock --disable-pip in
+  disposable Python3.12 container: no known vulnerabilities. Hash-locked new Python dependencies.
+- Private checker executed on synthetic list_text.pdf in network-none/read-only Docker with tmpfs:
+  exit0,15 rows, terminal JSON only, every row flagged, reconciliation unavailable as labelled.
+- API image646058096 bytes; Tesseract/poppler licenses inspected in installed Debian copyright;
+  new Python/transitive license metadata reviewed (see statement-import doc). No AGPL dependency.
+- Production build after review-position adjustment: main346.57KB/109.50KB gzip;
+  lazy charts389.93KB/114.22KB gzip; lazy upload17.08KB/6.03KB gzip; CSS27.24KB/6.78KB gzip.
+
+Failures retained honestly: initial subprocess stdin/communicate loop deadlocked, fixed with bounded
+reader/writer threads plus cancellation/process-group cleanup. First OCR run lost low-resolution
+rows; bounded upscale improved clean scans and quality rejection now catches degraded pages.
+First text precision counter compared decimal string scales (119 vs119.00), fixed to Decimal keys;
+labels/thresholds did not change. First new browser run failed3/3 because StrictMode cleanup cancelled
+fresh jobs; generation-aware cleanup plus regression tests fixed replay and real unmount. First
+lint run had one cleanup-ref warning; capture of the same stable lifecycle object removes it.
+Visual inspection found review below the picker; review now precedes intake while active, and
+screenshots are regenerated. Existing baseline suite results remain above as historical measurements.
+
+Known gaps: English/INR only; foreign currency text elsewhere in PDF is not reliably detected, so
+user must verify currency. Cover-only pages reject. All rows need manual review. Preview30-minute
+TTL; counters retain counts until deletion. Subprocess isolation is not a hardened sandbox or OS
+network block; same-container parser/API, in-process jobs/caps and restart-failed jobs remain demo
+limits. No real statements, live Gemini, staging deployment or manual screen-reader pass performed.
+No Phase8 account/session/queue/deployment work has started. Published v1.0.0 stays unchanged.
+Optional future vision extraction would need a new explicit owner request, a separate disclosure
+and opt-in; no such service or data transfer exists here.
+
+Full-history gitleaks8.30.1:36 commits/~2MB, no unreviewed findings, retaining only the3 exact
+historical synthetic-test fingerprints documented in DOD. Initial Windows textconv subprocess
+failed despite scanner exit0; reran with --log-opts="--all --no-textconv" and verified all36 commits
+were scanned without git errors. Staged backend/frontend scans also pass. git ls-files confirms
+no .env, .venv, private-statements, outbox .eml or LICENSE tracked (.env.example is intentional).
+
+## Phase 8 prerequisites — stop here until supplied
+
+Need Vercel project and registrable domain (sibling web/API subdomains), container-host account and
+region choice, managed PostgreSQL with PITR and separate staging/production databases, transactional
+email account/verified sender, and Google project with paid Gemini billing/key. Configure secrets
+through platform secret managers, never paste keys into chat. Prefer architectureA (static Vercel,
+container API plus isolated worker, same-region database); no provider/region has been invented.
+Human tasks: screen-reader/keyboard/zoom checks; own redacted CSV and PDF/image local checks;
+paid Gemini live eval and spend alerts/terms; apply already-selected MIT choice when authorized;
+qualified legal/privacy/DPDP review, DNS SPF/DKIM/DMARC, incident contact, invitees kept private,
+and decision whether repository stays public. No second license-choice question is needed.
+
+## Phase 7.5 hosted gate — complete
+
+Implementation764a3c9f8eb0ec4fdb667690c2a494791f4a88e1: both checks and e2e passed.
+https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39381573641
+The unchanged browser configuration runs Chromium10/Firefox3/WebKit3 (16 flows) on Ubuntu;
+Windows available-engine final run is13/13. Hosted jobs118491650807 (checks) and118491650673
+(e2e) completed success. The following commit records docs/screenshots only; its fresh hosted
+run is checked after pushing and reported to the owner. Do not retag v1.0.0 or begin Phase8.
