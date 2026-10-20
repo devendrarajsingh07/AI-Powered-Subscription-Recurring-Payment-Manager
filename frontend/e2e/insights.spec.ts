@@ -130,7 +130,7 @@ test("real insights, renewal and budget delivery are grounded and idempotent", a
     .first()
     .click();
   await page
-    .getByLabel("Choose CSV file")
+    .getByLabel("Choose statement file")
     .setInputFiles(path.join(root, "backend/data/sample_transactions.csv"));
   await page.getByRole("button", { name: "Confirm and import" }).click();
   await expect(

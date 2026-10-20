@@ -11,6 +11,8 @@ import { DemoPanel } from "./DemoPanel";
 import { applyTheme, readTheme } from "../lib/theme";
 
 const upload: components["schemas"]["UploadOut"] = {
+  source_type: "csv",
+  excluded_count: 0,
   source: "demo",
   demo_as_of: "2026-10-18",
   id: "demo-id",

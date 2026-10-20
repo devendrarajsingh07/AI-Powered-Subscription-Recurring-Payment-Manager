@@ -53,6 +53,12 @@ export function UploadProgress({ upload }: { upload: Upload }) {
               <strong>{upload.detected_count}</strong>
               <span>Detected products</span>
             </div>
+            {upload.source_type !== "csv" && (
+              <div>
+                <strong>{upload.excluded_count}</strong>
+                <span>Excluded from review</span>
+              </div>
+            )}
           </div>
           <p className="success">
             <CheckCircle2 size={18} />

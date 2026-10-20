@@ -1,7 +1,8 @@
 import { UploadProgress, Warnings } from "../components/UploadProgress";
 export { UploadProgress } from "../components/UploadProgress";
 import { DemoPanel } from "../components/DemoPanel";
-import { useEffect, useState } from "react";
+import { StatementReview } from "../components/StatementReview";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileUp } from "lucide-react";
 import { api, errorMessage } from "../api/client";
@@ -44,6 +45,9 @@ export default function UploadPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [uploadId, setUploadId] = useState<string | null>(null);
+  const [statementJobId, setStatementJobId] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
+  const picker = useRef<HTMLInputElement>(null);
   const refresh = useRefresh();
   const upload = useQuery({
     queryKey: ["upload", uploadId],
@@ -77,30 +81,49 @@ export default function UploadPage() {
   }, [upload.data?.status, refresh]);
   async function choose(selected?: File) {
     if (!selected) return;
+    if (statementJobId) {
+      await api
+        .DELETE("/api/v1/uploads/previews/{preview_id}", {
+          params: { path: { preview_id: statementJobId } },
+        })
+        .catch(() => undefined);
+      setStatementJobId(null);
+    }
     setError("");
     setPreview(null);
     setUploadId(null);
     setFile(null);
-    if (!selected.name.toLowerCase().endsWith(".csv")) {
-      setError("Choose a .csv file.");
+    const csv = selected.name.toLowerCase().endsWith(".csv");
+    if (!/\.(csv|pdf|jpe?g|png)$/i.test(selected.name)) {
+      setError(
+        "Choose a CSV, PDF, JPEG or PNG file. Excel is unsupported; export CSV instead.",
+      );
       return;
     }
-    if (selected.size > 5 * 1024 * 1024) {
-      setError("CSV exceeds the 5 MB limit.");
+    if (selected.size > (csv ? 5 : 10) * 1024 * 1024) {
+      setError(
+        csv
+          ? "CSV exceeds the 5 MB limit."
+          : "PDF/image exceeds the 10 MB limit.",
+      );
       return;
     }
     setBusy(true);
     try {
       const form = new FormData();
       form.set("file", selected);
+      form.set("password", csv ? "" : password);
+      setPassword("");
       const result = await api.POST("/api/v1/uploads/preview", {
-        body: { file: "" },
+        body: { file: "", password: csv ? "" : password },
         bodySerializer: () => form,
       });
       setFile(selected);
-      setPreview(result.data!);
-      setMapping(result.data!.suggested_mapping);
-      setLayout(result.data!.suggested_mapping.debit ? "split" : "single");
+      if (result.data && "columns" in result.data) {
+        setPreview(result.data);
+        setMapping(result.data.suggested_mapping);
+        setLayout(result.data.suggested_mapping.debit ? "split" : "single");
+      } else if (result.data) setStatementJobId(result.data.id);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -115,8 +138,9 @@ export default function UploadPage() {
       const form = new FormData();
       form.set("file", file);
       form.set("mapping", JSON.stringify(mappingForLayout(mapping, layout)));
+      form.set("edits", "[]");
       const result = await api.POST("/api/v1/uploads", {
-        body: { file: "", mapping: "" },
+        body: { file: "", mapping: "", edits: "[]" },
         bodySerializer: () => form,
       });
       setUploadId(result.data!.id);
@@ -133,14 +157,30 @@ export default function UploadPage() {
         title="Upload a statement"
         subtitle="Turn transaction history into a clearer recurring spend picture."
       />
-      <DemoPanel />
+      {!statementJobId && !uploadId && <DemoPanel />}
       <div className="steps" aria-label="Upload steps">
-        <span className={!preview && !uploadId ? "current" : ""}>
-          1 · Choose CSV
+        <span className={!preview && !uploadId && !statementJobId ? "current" : ""}>
+          1 · Choose a file
         </span>
-        <span className={preview ? "current" : ""}>2 · Check columns</span>
+        <span className={preview || statementJobId ? "current" : ""}>2 · Check columns</span>
         <span className={uploadId ? "current" : ""}>3 · Process & review</span>
       </div>
+      {statementJobId && file && (
+        <StatementReview
+          key={statementJobId}
+          jobId={statementJobId}
+          file={file}
+          onImported={(id) => {
+            setStatementJobId(null);
+            setUploadId(id);
+          }}
+          onCancel={() => {
+            setStatementJobId(null);
+            picker.current?.focus();
+          }}
+          onRetry={() => void choose(file)}
+        />
+      )}
       <section className="panel">
         <div
           className="dropzone"
@@ -152,13 +192,14 @@ export default function UploadPage() {
         >
           <FileUp size={36} />
           <h2>Start with your transaction history</h2>
-          <p>Drop a CSV here, or choose a file below.</p>
+          <p>Drop a CSV, PDF, JPEG or PNG here, or choose a file below.</p>
           <label className="file-label">
-            Choose CSV file
+            Choose statement file
             <input
-              aria-label="Choose CSV file"
+              aria-label="Choose statement file"
+              ref={picker}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.pdf,.jpg,.jpeg,.png,text/csv,application/pdf,image/jpeg,image/png"
               disabled={busy}
               onChange={(event) => {
                 void choose(event.target.files?.[0]);
@@ -166,13 +207,35 @@ export default function UploadPage() {
               }}
             />
           </label>
-          <small>Up to 5 MB and 50,000 rows · UTF-8 · INR only</small>
+          <small>
+            CSV: 5 MB / 50,000 rows · PDF: 10 MB / 30 pages · JPEG/PNG: 10 MB /
+            25 megapixels · INR only
+          </small>
         </div>
         <p className="muted">
           Simple date / description / amount / type exports and Indian bank
           debit / credit layouts are supported. Other currencies are rejected by
-          the server.
+          the server for CSV. For extracted statements, verify the currency yourself; only INR is supported.
         </p>
+        <p className="muted">
+          PDF/image extraction runs locally on our server and requires review.
+          Use clean English scans around 200 dpi or better. Photos, handwriting,
+          heavy skew and blur may be rejected.
+        </p>
+        <label>
+          PDF password (only if encrypted)
+          <input
+            type="password"
+            autoComplete="off"
+            value={password}
+            maxLength={256}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </label>
+        <small>
+          Used in memory only, never stored or logged. Enter it before choosing
+          an encrypted PDF, or before retrying.
+        </small>
       </section>
       {error && <ErrorState error={new Error(error)} />}
       {busy && <Loading text="Reading your statement…" />}

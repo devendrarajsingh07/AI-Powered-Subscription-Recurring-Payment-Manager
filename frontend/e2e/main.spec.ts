@@ -75,7 +75,7 @@ async function upload(page: Page, filename: string) {
     .first()
     .click();
   await page
-    .getByLabel("Choose CSV file")
+    .getByLabel("Choose statement file")
     .setInputFiles(path.join(data, filename));
   await expect(
     page.getByRole("heading", { name: "Check your column mapping" }),
@@ -150,7 +150,7 @@ test("real stack: register, login, import 16 products, review, budget and delete
     .first()
     .click();
   await page
-    .getByLabel("Choose CSV file")
+    .getByLabel("Choose statement file")
     .setInputFiles(path.join(data, "sample_transactions.csv"));
   await expect(
     page.getByRole("heading", { name: "Check your column mapping" }),
@@ -343,7 +343,7 @@ test("handwritten bank export uses editable mapping and reports malformed rows",
     .first()
     .click();
   await page
-    .getByLabel("Choose CSV file")
+    .getByLabel("Choose statement file")
     .setInputFiles(path.join(data, "handwritten_bank.csv"));
   await expect(page.getByLabel("Amount layout")).toHaveValue("split");
   await page.getByLabel("Map debit").selectOption("Withdrawal Amt.");
@@ -368,7 +368,7 @@ test("malformed CSV shows a safe server error and supports retry", async ({
     .getByRole("link", { name: "Upload statement", exact: true })
     .first()
     .click();
-  await page.getByLabel("Choose CSV file").setInputFiles({
+  await page.getByLabel("Choose statement file").setInputFiles({
     name: "empty.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(""),

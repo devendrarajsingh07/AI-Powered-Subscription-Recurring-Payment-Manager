@@ -495,10 +495,30 @@ export interface paths {
         put?: never;
         /**
          * Preview
-         * @description Bounded preview without persistence. Confirm the suggested mapping on upload.
+         * @description CSV returns a mapping preview. PDF/JPEG/PNG return a 202 extraction job.
+         *
+         *     Password is memory-only; never echoed, stored or placed in a URL. Poll the preview ID.
          */
         post: operations["preview_api_v1_uploads_preview_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/uploads/previews/{preview_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Statement Preview Status */
+        get: operations["statement_preview_status_api_v1_uploads_previews__preview_id__get"];
+        put?: never;
+        post?: never;
+        /** Cancel Statement Preview */
+        delete: operations["cancel_statement_preview_api_v1_uploads_previews__preview_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -606,13 +626,26 @@ export interface components {
         Body_preview_api_v1_uploads_preview_post: {
             /** File */
             file: string;
+            /**
+             * Password
+             * Format: password
+             * @default
+             */
+            password: string;
         };
         /** Body_upload_api_v1_uploads_post */
         Body_upload_api_v1_uploads_post: {
+            /**
+             * Edits
+             * @default []
+             */
+            edits: string;
             /** File */
-            file: string;
+            file?: string | null;
             /** Mapping */
-            mapping: string;
+            mapping?: string | null;
+            /** Preview Id */
+            preview_id?: string | null;
         };
         /** BudgetOut */
         BudgetOut: {
@@ -827,6 +860,31 @@ export interface components {
         ErrorEnvelope: {
             error: components["schemas"]["ErrorDetail"];
         };
+        /** ExtractedRow */
+        ExtractedRow: {
+            /** Amount */
+            amount: string | null;
+            /** Balance */
+            balance: string | null;
+            /** Confidence */
+            confidence: string;
+            /** Date */
+            date: string | null;
+            /** Description */
+            description: string;
+            /** Field Confidence */
+            field_confidence?: {
+                [key: string]: string;
+            };
+            /** Flags */
+            flags: string[];
+            /** Index */
+            index: number;
+            /** Page */
+            page: number;
+            /** Type */
+            type: ("debit" | "credit") | null;
+        };
         /** Health */
         Health: {
             /** Status */
@@ -1037,6 +1095,22 @@ export interface components {
              */
             action: "accept" | "dismiss";
         };
+        /** Reconciliation */
+        Reconciliation: {
+            /** Balance Checks */
+            balance_checks: number;
+            /** Closing */
+            closing: string | null;
+            /** Opening */
+            opening: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "matched" | "mismatch" | "unavailable";
+            /** Total Checks */
+            total_checks: number;
+        };
         /**
          * Register
          * @example {
@@ -1056,6 +1130,41 @@ export interface components {
              */
             password: string;
         };
+        /** RowEdit */
+        RowEdit: {
+            /**
+             * Amount
+             * @default null
+             */
+            amount: string | null;
+            /**
+             * Date
+             * @default null
+             */
+            date: string | null;
+            /**
+             * Delete
+             * @default false
+             */
+            delete: boolean;
+            /**
+             * Description
+             * @default null
+             */
+            description: string | null;
+            /** Index */
+            index: number;
+            /**
+             * Type
+             * @default null
+             */
+            type: ("debit" | "credit") | null;
+            /**
+             * Verified
+             * @default false
+             */
+            verified: boolean;
+        };
         /** RowWarning */
         RowWarning: {
             /** Line */
@@ -1073,6 +1182,61 @@ export interface components {
             currency: "INR";
             /** Potential Savings */
             potential_savings: string;
+        };
+        /** StatementPreviewOut */
+        StatementPreviewOut: {
+            /** Error Code */
+            error_code: string | null;
+            /** Error Message */
+            error_message: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Processed Pages */
+            processed_pages: number;
+            result: components["schemas"]["StatementResult"] | null;
+            /**
+             * Source Type
+             * @enum {string}
+             */
+            source_type: "pdf_text" | "pdf_ocr" | "image_ocr";
+            /** Stage */
+            stage: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "processing" | "ready" | "failed" | "cancelled" | "confirmed";
+            /** Total Pages */
+            total_pages: number;
+            /** Upload Id */
+            upload_id: string | null;
+        };
+        /** StatementResult */
+        StatementResult: {
+            /** Flagged Count */
+            flagged_count: number;
+            /** Page Count */
+            page_count: number;
+            reconciliation: components["schemas"]["Reconciliation"];
+            /** Rows */
+            rows: components["schemas"]["ExtractedRow"][];
+            /**
+             * Source Type
+             * @enum {string}
+             */
+            source_type: "pdf_text" | "pdf_ocr" | "image_ocr";
+            /** Warnings */
+            warnings: string[];
         };
         /** SubscriptionDetail */
         SubscriptionDetail: {
@@ -1354,6 +1518,11 @@ export interface components {
             duplicate_count: number;
             /** Error Message */
             error_message: string | null;
+            /**
+             * Excluded Count
+             * @default 0
+             */
+            excluded_count: number;
             /** Filename */
             filename: string;
             /**
@@ -1380,6 +1549,12 @@ export interface components {
              * @enum {string}
              */
             source: "upload" | "demo";
+            /**
+             * Source Type
+             * @default csv
+             * @enum {string}
+             */
+            source_type: "csv" | "pdf_text" | "pdf_ocr" | "image_ocr";
             /** Stage */
             stage: string;
             /**
@@ -3792,7 +3967,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_upload_api_v1_uploads_post"];
             };
@@ -3882,7 +4057,168 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Preview"];
+                    "application/json": components["schemas"]["Preview"] | components["schemas"]["StatementPreviewOut"];
+                };
+            };
+            /** @description Poll the scoped preview job; review every extracted row. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPreviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    statement_preview_status_api_v1_uploads_previews__preview_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                preview_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPreviewOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    cancel_statement_preview_api_v1_uploads_previews__preview_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                preview_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPreviewOut"];
                 };
             };
             /** @description Unauthorized */

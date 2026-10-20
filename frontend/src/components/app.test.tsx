@@ -62,6 +62,8 @@ function wrapper(ui: React.ReactNode, path = "/login") {
   );
 }
 const upload: components["schemas"]["UploadOut"] = {
+  source_type: "csv",
+  excluded_count: 0,
   source: "upload",
   id: "upload-1",
   filename: "synthetic.csv",
@@ -357,7 +359,7 @@ test("upload preview uses generated network types and lets user switch amount la
   );
   wrapper(<UploadPage />);
   await userEvent.upload(
-    screen.getByLabelText("Choose CSV file"),
+    screen.getByLabelText("Choose statement file"),
     new File(["date,description\n"], "sample.csv", { type: "text/csv" }),
   );
   expect(await screen.findByLabelText("Map debit")).toHaveValue("Withdrawal");

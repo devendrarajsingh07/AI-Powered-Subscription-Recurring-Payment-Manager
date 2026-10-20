@@ -7,7 +7,7 @@ const headers = {
   "Referrer-Policy": "no-referrer",
   "X-Frame-Options": "DENY",
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self' ws:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
 };
 export default defineConfig({
   preview: { headers },

@@ -48,7 +48,7 @@ test("offline chat verifies real renewals, rejects injection and deletes history
     .first()
     .click();
   await page
-    .getByLabel("Choose CSV file")
+    .getByLabel("Choose statement file")
     .setInputFiles(path.resolve("../backend/data/sample_transactions.csv"));
   await expect(
     page.getByRole("heading", { name: "Check your column mapping" }),
@@ -57,7 +57,7 @@ test("offline chat verifies real renewals, rejects injection and deletes history
   await expect(
     page.getByRole("heading", { name: "Statement processed" }),
   ).toBeVisible();
-  await page.getByLabel("Choose CSV file").setInputFiles({
+  await page.getByLabel("Choose statement file").setInputFiles({
     name: "hostile-synthetic.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
