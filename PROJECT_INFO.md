@@ -25,6 +25,12 @@ After .env copy: docker compose up --build --wait, then make seed.
 
 ## Current verification
 
+Free-host demo deployment is now in progress at the owner's request; all resources must stay free.
+See docs/FREE_DEMO_HOSTING.md for exact configuration, expiry, the development-only boot-migration
+exception and credential incident/owner decision. This does not begin or complete the Phase8 beta.
+Eight entry-point checks pass locally, including real empty-PostgreSQL migration/readiness; remote
+startup, JWT handoff and frontend integration are still pending. Do not claim the hosted app works.
+
 Part2 local:330 PostgreSQL backend tests,55 frontend tests; extraction matrix18 variants, silent0,
 all rows flagged for review; clean text field accuracy1.000. Earlier detector gates remain1.0000.
 OpenAPI/type drift, lint/typecheck/build and dependency audits pass. Available-browser13/13 pass;
