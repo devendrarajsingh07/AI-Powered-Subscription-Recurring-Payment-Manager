@@ -2,6 +2,19 @@
 
 Use synthetic or locally redacted data. This is an educational/demo application, not a bank connection.
 
+The hosted free instance is synthetic-only; Phase 8 beta remains blocked. It additionally stores
+HMAC invitation/email digests, invite expiry/use/revocation times, minimal security-event UUIDs/kinds/
+timestamps, and HMAC peer-address fixed-window rate counters. Signing-key rotation invalidates the
+digests. Counters expire and are removed on later limited requests; no immediate timed-purge promise
+is made. Anonymous failed-login audit retention still needs a purge policy before beta.
+Security events linked to an account and issued invitations cascade with account deletion; anonymous
+events have no stored account/email association. There are no public invitation/audit admin endpoints.
+
+Settings can download a scoped JSON export with transactions, subscriptions/charge links,
+recommendations, alerts, budgets/preferences, upload metadata, category decisions, chat and statement
+usage counters. Passwords, authentication material and ephemeral statement previews are excluded.
+Downloaded exports contain private descriptions; deletion cannot remove copies from your device.
+
 Stored in PostgreSQL: normalized login email, bcrypt password hash, upload metadata/progress and
 provenance, transaction dates/descriptions/amounts/currency, derived subscriptions and charge links,
 category decisions, budget, alert preferences/recipient and payload/delivery snapshots,

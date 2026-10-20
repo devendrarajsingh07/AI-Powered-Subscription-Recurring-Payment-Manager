@@ -196,3 +196,23 @@ Human screen-reader/zoom/high-contrast/touch checks remain to-do; automated axe 
 
 Final Phase7.5 available-engine rerun:13/13 pass. Hosted implementation764a3c9 checks/e2e
 passed run39381573641, including the unchanged Ubuntu three-engine configuration (16 flows).
+# Phase 8 foundation supplement — 2026-10-20
+
+Registration now has an optional password-type invitation-code field. A typed MSW component test
+checks submission, safe closed-registration errors, no saved session and axe. Settings has an export
+action with preparing/downloaded/error states; the error/retry component test and real JSON download
+assertions in Chromium/Firefox/WebKit pass. Exported test files are synthetic and deleted after checks.
+Full current suite:57 frontend tests,16 Linux browser flows; existing every-page both-theme/mobile axe
+and responsive checks pass. New auth/settings screenshots reflect the actual synthetic browser runs.
+
+Native Windows Firefox still fails before app startup. The initial local run also overlapped schema
+edits and is not accepted as regression evidence (8 passed,8 failed). A first Linux runner used the
+hostname `web` and Vite correctly rejected it; that runner was stopped after the first timeout.
+Corrected runner shares the web container's network namespace and uses `http://localhost:5173`,
+without disabling hostname protection. All16 then passed in5.3minutes. The API test clock was fixed
+to2026-10-18 during the run and restored afterward. Official Playwright v1.64.1-noble plus Docker CLI
+and Make were used in a local-only image; no production dependency/image change was required.
+
+Manual screen-reader testing, live Gemini, real statements and deployed beta accessibility remain
+unperformed. This supplement certifies only the tested synthetic demo foundation.
+

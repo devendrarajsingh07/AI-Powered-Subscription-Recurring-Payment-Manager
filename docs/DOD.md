@@ -201,3 +201,31 @@ The prior release counts are historical. Current local counts330 backend/55 fron
 Phase8 beta readiness is **not met**: no hosted staging/prod, durable queue, cookie sessions, invitation,
 verification/reset, backup restore drill or legal sign-off. External prerequisites are in PROJECT_INFO.md.
 
+## Phase 8 foundation — launch readiness (2026-10-20)
+
+The preceding Phase8 absence list is historical. The owner chose free hosting and a blocked real-user
+beta. This batch is partial implementation, **not Phase 8 completion**. No beta tag or invitations.
+
+| Requirement | Evidence/result |
+| --- | --- |
+| Invite/closed registration | Implemented; `tests/test_beta_foundation.py` checks bound/expired/revoked/reused/concurrent invitations, rollback and issuer isolation; production rejects open |
+| Minimal audit records | Registered/login/failure/export/invite events; only kind/UUID/timestamp columns; scoped deletion/content checks pass; retention purge and complete security telemetry not implemented |
+| User JSON export | Real upload399 transactions/16 products; independent-user isolation and secret exclusions; Decimal strings, no-store download; Settings action and safe-error component test |
+| Shared abuse controls | PostgreSQL atomic fixed windows; two limiter instances, concurrency, restart, expiry and store-failure checks; account backoff/shared chat gate not implemented |
+| Email verification/reset | Not implemented; no real sender/inbox/DNS prerequisites |
+| Refresh rotation/CSRF/revocation | Not implemented; current access token/sessionStorage demo remains; sibling custom domains absent |
+| Durable queue/isolated OCR/scheduler | Not implemented; previous in-process demo behavior remains |
+| Account password denylist/MFA | Denylist not implemented; optional TOTP deferred as a launch risk; existing bcrypt/length/class policy retained |
+| Production safety | Production lifespan explicitly refuses to start because required beta controls are unfinished; free demo uses development mode |
+| App data encryption/least privilege/TLS | Raw descriptions remain plaintext in DB; hosted DB role/TLS/encryption/secret-manager release role not certified |
+| Backup/restore/rollback | Not performed; free DB has no PITR and expires2026-11-19; separate staging absent |
+| Gemini production controls | Fake deployed; paid billing/key/spend alerts absent; new kill switch/global quota/automatic fallback/metrics not implemented |
+| Real email/opt-out/suppression | Not implemented or tested live; existing SMTP/console interfaces retained |
+| Legal/support/operations | Draft policy/terms, runbook, launch plan and decisions written; no legal approval, versioned acceptance, incident contact, configured monitoring or support channel |
+| Deployment security | API HSTS plus existing API CSP; Vercel nosniff/referrer/frame/permissions headers added, preserving its stronger platform HSTS; frontend deployment-specific CSP still outstanding |
+| Full regression | make dev/verify/test/lint/evaluate pass;357 real PostgreSQL tests,57 frontend tests; OpenAPI/TS drift pass; detector all3 sets P/R/F1=1.0000; extraction18 synthetic variants, every row flagged |
+| Build/audits | Production frontend build pass; npm0 vulnerabilities; pip-audit no known findings; full-history Gitleaks39 commits/no new findings with existing exact historical exceptions |
+| Browser/hosted CI/deployment | Final evidence recorded in PROJECT_INFO; initial Windows run invalidated by concurrent schema edits and native Firefox launch failure; first Linux runner hostname blocked by Vite, corrected without disabling host checks |
+| Multi-instance/staging load/ZAP/restore | No deployed two-instance test, load numbers, ZAP baseline or restore drill; limiter-object concurrency is not a full multi-instance system test |
+| Human checks | Real statements, live Gemini, screen reader, DNS/email, legal/DPDP, incident contact and invitee selection remain human-owned |
+

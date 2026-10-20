@@ -4,12 +4,37 @@ Updated 2026-10-20. The repository root is the workspace; do not create a nested
 
 ## Current state
 
+Phase 8 has started as a **partial foundation only**. Owner decision on 2026-10-20: keep hosting free,
+implement/test code, leave the real-user beta blocked. Do not purchase resources, enable production,
+invite real users or tag a beta. Decisions: docs/PHASE8_PLAN.md; launch/runbook/legal drafts are
+preparation documents. Production lifespan now explicitly refuses startup until missing controls
+are implemented. The hosted app remains a synthetic demo in development mode.
+
+Implemented: open/invite/closed registration (production rejects open), operator create/revoke CLI,
+hashed email-bound single-use expiring invites, minimal content-free security events, scoped streaming
+JSON export plus Settings download, PostgreSQL auth/auxiliary fixed-window counters shared across
+limiter instances/restarts, API HSTS and Vercel basic security headers (preserving platform HSTS).
+OpenAPI/TS regenerated.
+Still unimplemented: email verification/reset, common-password denylist, rotating cookie sessions/
+CSRF/revocation, account-level login backoff, shared chat gate, durable jobs/isolated OCR worker,
+retention/purge and operational metrics, live-provider kill switch/fallback/global quotas, real email
+suppression/unsubscribe, versioned legal acceptance, CI-gated staging/prod and restore/rollback/load
+drills. Do not conflate infrastructure blockers with these remaining code tasks.
+
+Current foundation verification: make dev/verify/test/lint pass;357 PostgreSQL tests,57 frontend tests,
+OpenAPI/TS drift and both evaluator gates pass. Production frontend build passes; npm audit0,
+pip-audit no known vulnerabilities. Full-history Gitleaks scanned39 commits with no new findings;
+three exact historical synthetic-test exceptions remain. Final Linux browser suite:16/16 pass
+(Chromium10,Firefox3,WebKit3),5.3minutes, including real export downloads on all main-flow engines.
+Actual invite CLI create/revoke/hash-only smoke passes and cleans up its synthetic issuer.
+Publication/deployment verification follows the checked branch CI. Logs: ignored var/phase8/.
+
 Phases 1–7 were released as v1.0.0 at 7dba254a2f84b62f525ee39595b1dfe907a03d04.
 The tag is published. It means demo-complete for that scope, not production-ready.
 Release/tag CI passed, including all 13 browser flows on Ubuntu:
 https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39368517177
 
-The owner supplied a combined Phases 7/7.5/8 prompt. Additional Part 1 Gemini requirements
+Historical completion before Phase 8: the owner supplied a combined Phases 7/7.5/8 prompt. Additional Part 1 Gemini requirements
 are complete: both hosted jobs passed on 4b36e5a (run39372903888). Part 2 implementation and local
 verification are complete; both hosted jobs passed on764a3c9 (run39381573641). After Part 2, stop before Part 3
 and request the Vercel/domain/container-host/managed-PostgreSQL/email/paid-Gemini prerequisites.
@@ -215,7 +240,8 @@ user must verify currency. Cover-only pages reject. All rows need manual review.
 TTL; counters retain counts until deletion. Subprocess isolation is not a hardened sandbox or OS
 network block; same-container parser/API, in-process jobs/caps and restart-failed jobs remain demo
 limits. No real statements, live Gemini, staging deployment or manual screen-reader pass performed.
-No Phase8 account/session/queue/deployment work has started. Published v1.0.0 stays unchanged.
+At that historical checkpoint no Phase8 work had started; superseded by the current-state section.
+Published v1.0.0 stays unchanged.
 Optional future vision extraction would need a new explicit owner request, a separate disclosure
 and opt-in; no such service or data transfer exists here.
 

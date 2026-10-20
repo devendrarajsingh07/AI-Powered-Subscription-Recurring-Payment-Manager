@@ -13,6 +13,13 @@ review advisory savings, inspect dev emails and ask the offline assistant. A clo
 loader makes the same real ingestion pipeline available without a statement. Gemini is the single
 optional live provider, replacing the previous provider at the owner's explicit request. No live eval was run.
 
+Phase 8 is **in progress, not launch-ready**. The owner chose to keep the hosted demo free and the
+real-user beta blocked. Invitation controls, shared PostgreSQL auth throttling, security-event
+records and a private JSON export are implemented; verified email/reset, rotating cookie sessions,
+durable workers and operational launch gates remain unfinished. Production startup fails closed.
+See [implementation decisions](docs/PHASE8_PLAN.md), [launch gates](docs/LAUNCH.md),
+[runbook](docs/RUNBOOK.md) and the [evidence table](docs/DOD.md). Existing demo notices remain accurate.
+
 Statement import supports English text/scanned PDFs and JPEG/PNG through local extraction and
 mandatory editable review. CSV stays 5 MB/50,000 rows; PDF/image limits are 10 MB, PDF 30 pages,
 image 25 megapixels. Encrypted PDFs use a separate memory-only password field. Original files and
@@ -72,6 +79,34 @@ No email is sent until the scheduled job or operator CLI checks due alerts.
 - [Definition-of-Done evidence and honest gaps](docs/DOD.md)
 - [Agent handoff/current state](PROJECT_INFO.md), [historical phases](docs/history/PHASES_1_5.md)
 - [UI QA/state matrix](docs/design/QA.md), [changelog](CHANGELOG.md)
+
+## Registration controls and data export
+
+`REGISTRATION_MODE=open|invite|closed` defaults to open in development and closed in production;
+production rejects open. This is a registration control, **not completed beta account security**.
+For synthetic invitation testing, an existing issuing account is required. Operator-only commands:
+
+```sh
+make invite ARGS='create --issuer UUID --email synthetic@example.org --hours 48'
+make invite ARGS='revoke --issuer UUID --invite-id UUID'
+```
+
+The code is printed once to the private operator terminal. Never paste it into public logs/issues.
+The CLI has no web admin route. An invitation is HMAC-hashed, email-bound, expires within 1–168 hours,
+and can be consumed only once atomically. Signing-key rotation also invalidates outstanding invites
+and rate-limit digests. Registration accepts an optional invitation-code field; invalid/revoked/
+expired invitations have the same safe error. Do not invite real users before launch gates pass.
+
+Settings **Export my data**, backed by `GET /api/v1/me/export`, downloads scoped JSON with Decimal
+strings and excludes passwords/invitation/authentication material. It contains private transaction
+descriptions; keep it outside source control and shared folders. Security-event rows contain only
+kind, UUID, timestamp and optional account UUID. Failed unknown logins have no account association;
+their retention purge is still pending. These are minimal audit records, not full incident telemetry.
+
+Auth/auxiliary request throttling now uses shared PostgreSQL fixed windows. It fails closed on store
+outage, uses HMAC peer-address keys and expires inactive buckets on subsequent limited requests.
+It does not trust forwarded headers; the deployed proxy/client-address policy needs beta validation.
+Account-level backoff, shared chat guards and global job caps are still outstanding.
 
 ```mermaid
 flowchart LR

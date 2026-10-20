@@ -164,8 +164,9 @@ Production refuses demo/test-clock/console/adversarial settings; seed is develop
 - Similar merchant/product prices may merge; large price changes can fail stability; unknown/non-Latin
   descriptions need review. INR only; no FX conversion or multi-currency totals.
 - A recurring payment is not proof of use, redundancy, cancellation or suitability of a purchase.
-- One API instance: upload pool, scheduler, limiter and chat gate are in-process. No durable queue,
-  distributed rate limit, failover or backup/restore operational runbook.
+- One API instance: upload pool, scheduler and chat gate remain in-process. Auth/auxiliary limits use
+  shared PostgreSQL fixed windows; shared chat limits, durable queue, failover and restore testing
+  remain outstanding. The operator runbook is a preparation document, not tested recovery evidence.
 - Figure verification does not verify prose. Offline assistant handles recognized patterns only.
   Automated chat redaction is not a complete PII classifier. External retention follows the live provider.
 - SMTP has the send/commit ambiguity described above. Exported files and delivered email cannot be recalled.
