@@ -28,6 +28,9 @@ three exact historical synthetic-test exceptions remain. Final Linux browser sui
 (Chromium10,Firefox3,WebKit3),5.3minutes, including real export downloads on all main-flow engines.
 Actual invite CLI create/revoke/hash-only smoke passes and cleans up its synthetic issuer.
 Publication/deployment verification follows the checked branch CI. Logs: ignored var/phase8/.
+First branch CI run39397624373: hosted e2e passed; checks had356 pass/1 failure because an older
+production test fixture inherited REGISTRATION_MODE=open from the copied demo env. The fixture now
+explicitly uses closed; the production guard is unchanged. Verify the successor run before promotion.
 
 Phases 1–7 were released as v1.0.0 at 7dba254a2f84b62f525ee39595b1dfe907a03d04.
 The tag is published. It means demo-complete for that scope, not production-ready.

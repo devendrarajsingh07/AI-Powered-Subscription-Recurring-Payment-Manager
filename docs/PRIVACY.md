@@ -41,6 +41,13 @@ legal obligations; paid does not mean zero retention. Read the applicable terms 
 [billing documentation](https://ai.google.dev/gemini-api/docs/billing) before opting in.
 Offline mode remains the default. No live evaluation, tier verification or legal review was performed.
 
+Rechecked on 2026-10-20, terms effective March23,2026. Exact Paid Services excerpts:
+“Google doesn't use your prompts” … “or responses to improve our products”. The section still
+permits limited safety/legal logging and transient storage. Gemini API Paid Services status depends
+on the API Cloud Project having an active billing account; the operator must verify this, not infer
+it from a model name or a successful request. [Official terms](https://ai.google.dev/gemini-api/terms).
+No billing was enabled, terms accepted on the owner's behalf, or live request made during this check.
+
 The Gemini upgrade revokes existing previous-provider consent in migration0007. A previous provider's
 approval is never silently reused for Google; users must opt in again after reading the new notice.
 

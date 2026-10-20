@@ -215,4 +215,3 @@ and Make were used in a local-only image; no production dependency/image change 
 
 Manual screen-reader testing, live Gemini, real statements and deployed beta accessibility remain
 unperformed. This supplement certifies only the tested synthetic demo foundation.
-
