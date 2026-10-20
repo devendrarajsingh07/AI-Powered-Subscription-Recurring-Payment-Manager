@@ -41,7 +41,22 @@ The first Render build failed because Dockerfile was sought at repo root. Correc
 built successfully; runtime then correctly refused the missing signing secret. A quoted shell
 override was rejected by Render's command parsing, motivating the Python entry point. Eight real
 subprocess/PostgreSQL entry-point tests and focused Ruff pass locally. Hosted startup and frontend
-integration remain pending until the signing secret is supplied and environment settings saved.
+integration subsequently passed on 2026-10-20 after the signing secret was generated and settings
+saved. Backend readiness returns HTTP200. Source commit43d246e passed hosted CI:
+https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/39389982834
+
+Live frontend: https://ai-powered-subscription-recurring-p.vercel.app
+Live API: https://ai-powered-subscription-recurring.onrender.com/api/v1
+
+Vercel Production has the public `VITE_API_BASE_URL` set to that API URL. Deployment
+6PvaC2kJE9qQH1rJEvmoMWSeM6zB rebuilt successfully with the setting; direct `/login` routing works.
+Remote disposable-account API smoke checks passed: registration/login,399 inserted rows,16 products
+matched independently against ground truth, Decimal summary expectations, exact-origin CORS,
+repeat upload with zero inserts, duplicate-music recommendation, verified offline chat and account
+cleanup. The deployed browser also registered successfully and loaded the current-clock demo:
+399 rows,16 products,12 subscriptions and4 fixed bills; monthly equivalent26312.85, yearly315754.24,
+subscription monthly4015.80, fixed-bill monthly22297.05 and potential savings343.00 (INR).
+These are synthetic-demo observations, not capacity, real-bank or production certification.
 
 A database credential was accidentally exposed by the browser accessibility output even after
 the field was hidden. The owner explicitly requested retaining it. External ingress is blocked;

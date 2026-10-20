@@ -25,11 +25,15 @@ After .env copy: docker compose up --build --wait, then make seed.
 
 ## Current verification
 
-Free-host demo deployment is now in progress at the owner's request; all resources must stay free.
+Free-host demo deployment is working at the owner's request; all resources must stay free.
 See docs/FREE_DEMO_HOSTING.md for exact configuration, expiry, the development-only boot-migration
 exception and credential incident/owner decision. This does not begin or complete the Phase8 beta.
-Eight entry-point checks pass locally, including real empty-PostgreSQL migration/readiness; remote
-startup, JWT handoff and frontend integration are still pending. Do not claim the hosted app works.
+Eight entry-point checks pass locally, including real empty-PostgreSQL migration/readiness. Source
+43d246e passed hosted CI (run39389982834). Render readiness returns200; Vercel Production was
+configured with the hosted API URL and rebuilt successfully. Remote API smoke checks passed auth,
+399-row upload,16 expected products, independent Decimal totals, CORS, upload idempotency,
+duplicate music, verified offline chat and disposable-account cleanup. Browser registration and
+current-clock demo loading also passed. Details and limitations: docs/FREE_DEMO_HOSTING.md.
 
 Part2 local:330 PostgreSQL backend tests,55 frontend tests; extraction matrix18 variants, silent0,
 all rows flagged for review; clean text field accuracy1.000. Earlier detector gates remain1.0000.
