@@ -1,6 +1,6 @@
 # Definition-of-Done and launch-readiness evidence
 
-Updated2026-10-21. Beta remains locked. Only the current-state handoff supplies current instructions.
+Updated 2026-10-21. Beta remains locked. Only the current-state handoff supplies current instructions.
 Historical release evidence, every master requirement/prohibition mapping, and earlier measurements
 are preserved without deletion in [the pre-continuation record](history/DOD_BEFORE_CONTINUATION.md).
 Those results do not certify new changes. No paid resources or live Gemini calls are authorized.
@@ -48,3 +48,21 @@ six paths403. Two disposable visitors: independent16-product truth/totals, repea
 other visitor empty and guessed IDs404; probe accounts deleted. Console startup shared_before0.
 Browser confirms banner, isolated entry and399-row/16-product current-clock demo. No credentials
 changed. Rotation remains owner-pending. WP4-8 code/operational gaps remain as listed.
+
+## Phase 8 WP4–8 local status (2026-10-21, uncommitted, not deployed)
+
+Statuses follow the owner's wording: nothing below is "done" for launch.
+
+| Package | Implemented, verified locally | Blocked for launch / not verified here |
+| --- | --- | --- |
+| WP4 durable jobs | PostgreSQL queue (SKIP LOCKED, leases, claim tokens, dead-letter, encrypted bounded input), per-user admission cap, real-process SIGKILL recovery test, delete-while-running test | needs Compose two-API test, extractor container isolation proof, browser flows |
+| WP5 scheduling/retention/metrics | retry-only loop, worker as scheduler owner, documented retention purge, token-gated content-free metrics | needs deployed worker and monitoring/alert routing |
+| WP6 AI controls | env + DB kill switch (`python -m app.llm_admin`), global daily request/token caps (tokens estimated), visible offline fallback in API and UI | needs paid-tier Gemini, spend alerts and live evaluation (none authorised) |
+| WP7 email/legal/support | hard-bounce/complaint suppression, signed one-click unsubscribe + RFC 8058 headers, restricted problem reports, versioned legal acceptance (flag off) | needs real sender/DNS, provider event adapter, lawyer-approved texts, incident/support contact |
+| WP8 release | opt-in green-master-only deploy workflow, read-only smoke script, rollback procedure | workflow and smoke never run against Render/Vercel; Vercel still auto-deploys until the owner disables it; no restore/load/ZAP drill |
+
+Commands and counts: backend 457 passed (122 + 181 + 154 in three groups, 28 test files, embedded
+PostgreSQL 16, Python 3.12); frontend vitest 73 passed, eslint/tsc/prettier clean; `ruff check` and
+`ruff format --check` clean; `export_openapi --check` and `types --check` current; detector TP/FP/FN
+16/0/0, 3/0/0, 5/0/0; extraction evaluator runs. `scripts/smoke_deployed.py` passed 21/21 checks
+against a local uvicorn server plus a stub web server only.

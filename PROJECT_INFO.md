@@ -1,6 +1,6 @@
 # SubTrack — current-state handoff
 
-Updated2026-10-21. This section is the only source of current instructions. Historical phase
+Updated 2026-10-21. This section is the only source of current instructions. Historical phase
 records preserve facts, failures and superseded instructions; do not execute their old stop/start rules.
 
 Owner decision: keep free hosting; implement and test WP3–8; beta remains locked. No paid services,
@@ -17,7 +17,14 @@ Render dep-dbcdh3jl550s738devf0 and Vercel21kzXbFuhxHkkZcNatA73hCDSxLn are live 
 Hosted synthetic probes passed: registration/login403, six file paths403,16 independently expected
 products/totals at2026-10-21, loader idempotency, two-visitor isolation/guessed-id404 and cleanup.
 Startup purge shared_before=0/removed=0 establishes no reserved shared account at deployment.
-WP4 implementation begins on codex/phase8-durable-workers; WP4–8 are NOT complete.
+WP4–8 code is written and verified locally only (uncommitted until the commit step below; NOT deployed,
+hosted CI NOT run). Local gates 2026-10-21: 457 backend tests on real PostgreSQL 16 (embedded, no
+Docker), 73 frontend tests, ruff/format, OpenAPI and TypeScript drift, detector and extraction
+evaluators. NOT verified in this environment: Docker Compose, two API containers against one database,
+extractor container isolation (network none/read-only/cap_drop), Playwright browser suites, hosted CI,
+deployed URLs and headers (scripts/smoke_deployed.py was proven only against a local server), real SMTP.
+Owner actions still pending: DB credential rotation, DB expiry 2026-11-19, Vercel git auto-deploy
+off + deploy-hook secrets before enabling .github/workflows/deploy.yml.
 
 Read docs/PHASE8_PLAN.md, docs/PHASE8_ACCOUNT_SECURITY.md, docs/SECURITY_INCIDENT.md and docs/DOD.md.
 The continuation requires full local gates and hosted CI after every package before demo deployment.
