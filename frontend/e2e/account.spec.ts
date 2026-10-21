@@ -54,10 +54,24 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
   await page.getByRole("link", { name: "Back to sign in" }).click();
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(original);
+  const loginResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/v1/auth/login") &&
+      response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Your recurring spend" }),
-  ).toBeVisible();
+  // Assert the actual response without printing bearer tokens or request credentials.
+  expect((await loginResponse).status()).toBe(200);
+  try {
+    await expect(
+      page.getByRole("heading", { name: "Your recurring spend" }),
+    ).toBeVisible();
+  } catch {
+    const notices = await page.getByRole("alert").allTextContents();
+    throw new Error(
+      `Dashboard absent after login; route=${new URL(page.url()).pathname}; alerts=${notices.join(" | ")}`,
+    );
+  }
   const cookies = await page
     .context()
     .cookies("https://api.subtrack.test:8443/api/v1/auth");
