@@ -1,4 +1,4 @@
-.PHONY: dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox chat-eval chat-eval-live evaluate-extraction extraction-fixtures
+.PHONY: llm-status llm-kill llm-restore smoke dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox chat-eval chat-eval-live evaluate-extraction extraction-fixtures
 dev:
 	docker compose up --build --wait
 down:
@@ -48,3 +48,10 @@ outbox:
 invite:
 	docker compose exec -T api python -m app.invites $(ARGS)
 
+# Live-AI kill switch (offline for everyone) and counters; prints flags and counts only.
+llm-status llm-kill llm-restore:
+	docker compose exec -T api python -m app.llm_admin $(patsubst llm-%,%,$@)
+
+# Read-only post-deploy checks: make smoke API=https://host/api/v1 WEB=https://app.example
+smoke:
+	python scripts/smoke_deployed.py --api $(API) --web $(WEB)
