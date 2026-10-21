@@ -58,8 +58,13 @@ descriptions as metric labels. See [launch gates](LAUNCH.md); keep real-user inv
 
 Force the offline assistant for everyone without a redeploy: `python -m app.llm_admin kill`
 (`restore` re-enables, `status` prints flags and today's usage counts). `LLM_KILL_SWITCH=true` does the
-same through the environment. Global daily request/token caps (`LLM_GLOBAL_DAILY_REQUESTS`,
-`LLM_GLOBAL_DAILY_TOKENS`) switch to the visible offline fallback when reached; tokens are estimated.
+same through the environment and is re-checked before every provider request, including later
+rounds of a chat already in progress and transport retries. Global daily caps
+(`LLM_GLOBAL_DAILY_REQUESTS`, `LLM_GLOBAL_DAILY_TOKENS`) are enforced per provider request: one
+request plus an estimated budget (input characters / 4 + `LLM_MAX_TOKENS`) is reserved atomically
+before each call and never refunded, so failed calls and category suggestions count. Requests
+rejected by validation (unknown conversation, busy user) reserve nothing. Reaching a cap switches to
+the visible offline fallback.
 Set `OPS_METRICS_TOKEN` (32+ random characters, platform secret manager only) to enable
 `GET /api/v1/ops/metrics` with header `X-Ops-Token`; without it the route answers 404. Watch queue
 depth and oldest age, `dead_letter_total`, alert failures and the `email` suppression count.
@@ -73,12 +78,27 @@ delivery, bounce handling and SPF/DKIM/DMARC need an owner-provided sending doma
 
 ## Automated release (opt-in) and rollback
 
-`.github/workflows/deploy.yml` deploys only after the `checks` workflow succeeded for the same master
-commit, and only when the owner sets repository variable `DEPLOY_ENABLED=true`, variables
-`DEMO_API_URL` (ending `/api/v1`) and `DEMO_WEB_URL`, and secret `RENDER_DEPLOY_HOOK_URL` (optionally
-`VERCEL_DEPLOY_HOOK_URL`). It waits for readiness, then runs `scripts/smoke_deployed.py`, a read-only
-check of health, security headers, exact-origin CORS and SPA routing; run it by hand the same way.
-Owner action: turn off Vercel's git auto-deploy and use the hook, otherwise Vercel still deploys
-ungated. This workflow has not run against the live services. To roll back, run the workflow
-manually with `rollback_sha` set to the last verified commit (or redeploy the previous deployment in
-each dashboard), then re-run the smoke script. Migrations are additive; never downgrade a database.
+`.github/workflows/deploy.yml` runs only when repository variable `DEPLOY_ENABLED=true`. Before any
+secret is used or any code is checked out it verifies that the commit (a) is on this repository's
+master history, (b) has a successful **push-triggered** `checks` run for that exact SHA, and (c) for
+an automatic run, is still the master head (an older run is skipped as superseded). Pull requests,
+forks and other branches never reach the job; a manual run (`rollback_sha`, full 40-character SHA)
+passes the same checks, so it can only redeploy previously verified master commits.
+
+`scripts/release_demo.py` then releases exactly that commit, API first:
+- Render: the deploy hook is called with `ref=<SHA>`. Render documents that deploying a specific
+  commit through a hook **turns off the service's auto-deploy**, leaving releases to this pipeline.
+  Success requires `/api/v1/health` to report `revision == SHA` (from Render's `RENDER_GIT_COMMIT`)
+  and `/health/ready` to return 200, so an old healthy instance can never pass.
+- Vercel: deploy hooks cannot target a commit, so the script waits for the READY production build
+  Vercel made from git for that SHA and promotes it through the REST API. Success requires the
+  frontend's `/version.json` to report that SHA.
+Then `scripts/smoke_deployed.py` checks headers, exact-origin CORS and routing.
+
+Owner configuration: variables `DEMO_API_URL` (ending `/api/v1`), `DEMO_WEB_URL`, `VERCEL_PROJECT_ID`
+(and `VERCEL_TEAM_ID` for a team), secrets `RENDER_DEPLOY_HOOK_URL` and `VERCEL_TOKEN` (a
+project-scoped token). In Vercel, turn off automatic assignment of the production domain so new
+builds stay staged until promoted; otherwise Vercel still publishes every master build ungated.
+To roll back, run the workflow manually with `rollback_sha` set to the last verified commit.
+The workflow and script are tested against local stand-ins only (`tests/test_release_demo.py`)
+and have never run against the live services. Migrations are additive; never downgrade a database.

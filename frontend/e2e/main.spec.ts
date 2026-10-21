@@ -34,6 +34,10 @@ async function register(page: Page) {
   test.setTimeout(180_000); // Includes a real server-directed auth backoff across browser projects.
   const email = `ui-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.org`;
   await page.goto("/register");
+  // Scan only once the auth bootstrap has rendered the form, never the transient loading shell.
+  await expect(
+    page.getByRole("heading", { name: "Create your account" }),
+  ).toBeVisible();
   await accessibility(page);
   await capture(page, {
     path: path.join(screenshots, "auth.png"),

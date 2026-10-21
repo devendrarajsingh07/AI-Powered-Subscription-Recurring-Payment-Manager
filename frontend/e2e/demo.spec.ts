@@ -287,6 +287,9 @@ test("every page: axe both themes at 360px; responsive 768/1280; dialogs and cha
       "/reset-password",
     ]) {
       await page.goto(route);
+      // Wait for the routed page, not the auth-bootstrap loading shell, before scanning.
+      await expect(page.getByRole("heading").first()).toBeVisible();
+      await page.waitForLoadState("networkidle");
       await audit(page);
     }
   }

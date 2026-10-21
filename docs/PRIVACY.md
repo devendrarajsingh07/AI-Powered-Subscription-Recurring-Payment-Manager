@@ -90,8 +90,19 @@ private data; do not paste it into public issues.
 
 ## PDF and image statement import
 
-Extraction happens on the application's server using local PDF/OCR programs. Original statement
-bytes and PDF passwords are not stored in PostgreSQL, logged or sent to a third party. Upload
+Extraction happens on the application's server using local PDF/OCR programs. PDF passwords are
+never stored, logged or sent to a third party. In the default in-process job mode, statement bytes
+are not stored in PostgreSQL either. In durable job mode (`JOB_MODE=postgres`, used with the
+separate worker), the file to be processed is stored **temporarily and encrypted** in the
+`durable_jobs` table so that another worker can resume it after a crash: a CSV upload, an image, or
+for a PDF the password-free cleaned copy produced by the isolated extractor (a password-protected
+original is never queued). The ciphertext uses a key derived from the server signing secret, is
+bounded in size, and is cleared (set to empty) as soon as the job finishes, fails permanently
+(dead-letter) or is cancelled; the remaining metadata-only job row is purged after
+`RETAIN_JOB_DAYS` (default 7). Deleting the account removes queued jobs immediately, and a worker
+that is still running publishes nothing for a deleted account. A database backup taken while a job
+is queued would contain that ciphertext; no backups exist for the free demo database. Nothing is
+logged or sent to a third party. The public demo disables all file uploads. Upload
 multipart spooling stays in memory within the enforced size limit; extraction can write decrypted
 pages and normalized images only inside a private temporary directory. Files are removed after
 completion, cancellation or timeout. Startup removes abandoned extraction directories after an

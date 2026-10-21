@@ -1,3 +1,5 @@
+import os
+import re
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
@@ -102,6 +104,14 @@ app.openapi = documented_openapi
 
 class Health(BaseModel):
     status: str
+    # Deployed source commit (set by the host, e.g. Render's RENDER_GIT_COMMIT). Lets a release
+    # pipeline prove the NEW revision is serving, not an old instance that is still healthy.
+    revision: str | None = None
+
+
+def revision():
+    value = os.environ.get("RENDER_GIT_COMMIT", "").strip().lower()
+    return value if re.fullmatch(r"[0-9a-f]{40}", value) else None
 
 
 @app.exception_handler(RequestValidationError)
@@ -125,7 +135,7 @@ async def http_error(_request, exc):
 @app.get("/api/v1/health", response_model=Health, tags=["health"])
 def health():
     """Liveness only; readiness additionally checks PostgreSQL and migration state."""
-    return Health(status="ok")
+    return Health(status="ok", revision=revision())
 
 
 @app.get("/api/v1/health/ready", response_model=Health, tags=["health"])
@@ -138,4 +148,4 @@ def ready(db: Session = Depends(get_db)):
             status_code=503,
             content={"error": {"code": "not_ready", "message": "Database is not ready"}},
         )
-    return Health(status="ready")
+    return Health(status="ready", revision=revision())
