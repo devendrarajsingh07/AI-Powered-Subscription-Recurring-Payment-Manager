@@ -2,6 +2,7 @@
 
 import hashlib
 import hmac
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -19,8 +20,14 @@ def sign(user_id):
     return hmac.new(key, b"unsubscribe\0" + str(user_id).encode(), hashlib.sha256).hexdigest()
 
 
+HEX64 = re.compile(r"[0-9a-f]{64}")
+
+
 def verify(user_id, token):
-    return isinstance(token, str) and hmac.compare_digest(sign(user_id), token)
+    # Format first: compare_digest raises TypeError for non-ASCII str, which must never 500.
+    if not isinstance(token, str) or not HEX64.fullmatch(token):
+        return False
+    return hmac.compare_digest(sign(user_id).encode(), token.encode())
 
 
 def unsubscribe_urls(user_id):

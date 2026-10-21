@@ -74,7 +74,10 @@ async def turn(
     messages.append(dict(role="user", content=clean(message, 2000)))
     answer = ""
     blocked = False
-    sent_chars = 0
+    budget = [0]
+    if controls.is_live(client) and hasattr(client, "before_request"):
+        # Transport retries inside one provider call are separate requests: guard each one too.
+        client.before_request = lambda: controls.guard(engine, client, budget[0])
     async with asyncio.timeout(cfg.chat_timeout_seconds):
         for round_index in range(6):
             if controls.is_live(client):
@@ -82,8 +85,10 @@ async def turn(
                     account = repo.get_user(consent_db, user_id)
                     if account is None or not account.live_opt_in:
                         raise LLMError("Live AI consent is required. No further data was sent.")
+                # Re-read the kill switch and reserve shared capacity before EVERY round.
+                budget[0] = controls.estimate(SYSTEM, json.dumps(messages, default=str))
+                controls.guard(engine, client, budget[0])
             calls, answer = [], ""
-            sent_chars += len(SYSTEM) + len(json.dumps(messages, default=str))
             async for item in client.stream(
                 system=SYSTEM, messages=messages, tools=definitions(), force_final=round_index == 5
             ):
@@ -210,8 +215,6 @@ async def turn(
                 created_at=created + timedelta(microseconds=1),
             )
         live = controls.is_live(client)
-        if live:  # Estimated tokens (chars / 4) feed the shared daily cap; not provider billing.
-            controls.note(engine, "tokens", (sent_chars + len(answer)) // 4 + 1)
         yield event(
             "final",
             dict(
@@ -246,6 +249,13 @@ async def stream_turn(
         try:
             try:
                 await run(client, fallback_reason)
+            except controls.Bypass as exc:
+                # Kill switch or cap reached mid-turn: nothing more is sent; answer offline.
+                # No history row exists yet (history commits only with a final).
+                controls.note(engine, "fallbacks")
+                from app.services.llm.fake import OfflineLLM
+
+                await run(OfflineLLM(), exc.reason)
             except (LLMError, TimeoutError) as exc:
                 # A live provider failure degrades visibly to the offline assistant. No history
                 # row exists yet (history commits only with a final), so the retry is clean.
