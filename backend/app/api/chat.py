@@ -75,7 +75,6 @@ async def chat(
     # is answered by the offline assistant, which sends nothing anywhere.
     engine = db.get_bind()
     check_consent(user, client, engine)
-    client, fallback_reason = controls.route(engine, client)
     conversation_id = body.conversation_id or uuid.uuid4()
     if body.conversation_id and not repo.count_owned(
         db, user.id, m.ChatMessage, m.ChatMessage.conversation_id == conversation_id
@@ -84,6 +83,9 @@ async def chat(
     engine, user_id = db.get_bind(), user.id
     db.rollback()  # Release auth/history read transaction before the asynchronous stream.
     lease_token = gate.acquire(user_id, engine=engine)
+    # Only after validation and per-user admission. Routing counts nothing; each provider
+    # request reserves shared capacity itself, so rejected requests never consume quota.
+    client, fallback_reason = controls.route(engine, client)
     return StreamingResponse(
         stream_turn(
             request,
@@ -156,7 +158,6 @@ async def suggest_category(
     category_id: uuid.UUID, user: CurrentUser, db: Db, client=Depends(get_client)
 ):
     check_consent(user, client, db.get_bind())
-    client, _ = controls.route(db.get_bind(), client)
     lock_user(db, user.id)
     row = require_owned(db, user.id, m.MerchantCategory, category_id)
     if row.confirmed or row.category != "unknown" or row.suggestion_attempted:
@@ -174,6 +175,16 @@ async def suggest_category(
     engine = db.get_bind()
     lease_token = gate.acquire(user_id, db=db)
     try:
+        client, _ = controls.route(engine, client)
+        # Reserve before the single provider request, after validation and per-user admission.
+        # A killed or capped provider sends nothing and leaves the one-time attempt unused.
+        if controls.is_live(client) and controls.reserve(engine, controls.estimate(merchant)):
+            controls.note(engine, "fallbacks")
+            return row
+        if controls.is_live(client) and hasattr(client, "before_request"):
+            client.before_request = lambda: controls.guard(
+                engine, client, controls.estimate(merchant)
+            )
         row.suggestion_attempted = True
         db.commit()  # Claim once, including failed requests; no financial data crosses boundary.
         try:
