@@ -9,13 +9,15 @@ Architecture A, PostgreSQL coordination, bcrypt, strict SameSite/CSRF and fail-c
 
 ## Current work
 
-WP2 foundations are deployed at19f0098. Successor hosted CI39401421431 passed (rechecked2026-10-21).
-Branch codex/phase8-account-security contains WP3 account/session work and Step0 public-demo
-hardening. Final local gates passed:408 PostgreSQL tests/67 frontend tests;16 normal browser flows,1 TLS and1 public-demo flow passed.
-The expanded mobile light/dark recovery-page accessibility audit passed. Hosted CI/deployment remain pending.
-Do not describe WP4–8 or the beta as complete.
-Prior foundation:357 PostgreSQL tests,57 frontend tests,16 Linux browser flows; evaluator P/R/F1=1.0000
-on three synthetic/handwritten sets. Those results do not certify current edits.
+WP3 account/session work and Step0 public-demo hardening are committed and deployed at f857f1f.
+Final local gates:408 PostgreSQL/67 frontend tests;16 standard browser flows,1 TLS and1 public-demo
+profile; expanded recovery/mobile/theme axe audit. Hosted branch run39623411405 passed all4 jobs.
+Master successor39624799629 completed/success on the same SHA; all4 jobs green.
+Render dep-dbcdh3jl550s738devf0 and Vercel21kzXbFuhxHkkZcNatA73hCDSxLn are live at that SHA.
+Hosted synthetic probes passed: registration/login403, six file paths403,16 independently expected
+products/totals at2026-10-21, loader idempotency, two-visitor isolation/guessed-id404 and cleanup.
+Startup purge shared_before=0/removed=0 establishes no reserved shared account at deployment.
+WP4 implementation begins on codex/phase8-durable-workers; WP4–8 are NOT complete.
 
 Read docs/PHASE8_PLAN.md, docs/PHASE8_ACCOUNT_SECURITY.md, docs/SECURITY_INCIDENT.md and docs/DOD.md.
 The continuation requires full local gates and hosted CI after every package before demo deployment.
@@ -24,11 +26,11 @@ Production startup remains unconditionally blocked pending operational/implement
 Step0: full-history Gitleaks44 commits clean with3 exact historical synthetic exceptions; current-source
 scan clean. Broad directory scan10 matches in ignored .env/vendor files (no values printed).
 Render dashboard PostgreSQL rules block all external ingress. DB rotation: OWNER ACTION PENDING.
-No secret found in current tracked source requiring removal. CI secret scans added, not yet run hosted.
+No secret found in current tracked source requiring removal. CI full-history/current-source secret scans passed on f857f1f (49 commits).
 
 Public-demo safeguards built and verified locally: disposable generated visitor identity, no password login or registration,
-no file uploads, only synthetic loader,24h expiry and15min/startup purge, persistent warning. Deployment
-must prove controls on the actual hosted instance; local tests alone are insufficient.
+no file uploads, only synthetic loader,24h expiry and15min/startup purge, persistent warning. Hosted API and browser controls were verified2026-10-21. Free sleeping delays physical purge;
+expired identities are rejected immediately and startup catches up.
 
 ## Runtime and limits
 

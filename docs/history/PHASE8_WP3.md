@@ -104,3 +104,31 @@ entering reset from login. Add the reset heading wait too; no security change.
 Both recovery-route waits verified locally:TLS1 passed in15.9s; normal stack restored.
 Navigation audit1 passed in51.8s; TypeScript build clean. Product code remains unchanged from
 the408/67 full gate; hosted checks rerun on the successor test commit before promotion.
+
+## Verified source and deployment receipts
+
+Commits711a82d (certifi), b200d43 (account/public-demo controls),41b9831/0cf4ccb/f857f1f
+(browser diagnostics/navigation fixes). Full local browser rerun16 passed/2 profile-skipped in5.8min;
+TLS1 and public-demo1 passed separately. Full PostgreSQL408/frontend67, lint/typecheck/drift,
+evaluator/build/audits passed. Product code unchanged during the browser test fixes.
+
+Hosted branch run39623411405 at f857f1fd3fa5911300f70d8b8fbb0fc3fae2498f: all4 jobs success.
+Fast-forwarded master after that gate; master run39624799629 completed/success on the same SHA, all4 jobs green.
+Automatic review initially rejected discarding generated screenshot changes without backup. Saved
+20 originals under ignored var/phase8-security/successor-screenshots with SHA256 manifest, then
+review approved restore/fast-forward. No screenshot was lost. No force/history rewrite.
+
+Render deployment dep-dbcdh3jl550s738devf0: Live at f857f1f, startup2026-10-21 20:53 IST,
+public_demo_purge shared_before0/removed0. Vercel automatic promotion was absent in dashboard;
+manually created Production from verified master/f857f1f:21kzXbFuhxHkkZcNatA73hCDSxLn Ready.
+No environment secrets changed. API readiness200 and /auth/config confirms public_demo_only true.
+
+`python var/phase8-security/hosted_public_probe.py`: first probe passed business controls but its
+parser incorrectly expected JSON for plaintext OPTIONS; cleanup still deleted both synthetic
+accounts. Corrected harness, reran exit0: login/register403; six CSV/PDF/PNG file paths403;
+independent relative ground truth16 products/totals at2026-10-21; loader idempotent; two visitor
+isolation/guessed subscription/upload IDs404; exact-origin CORS; synthetic accounts deleted.
+No bearer values, recipients or email bodies printed. Browser loaded399 synthetic rows/16 products
+and persistent warning. Screenshot docs/screenshots/public-demo-hosted.png is synthetic only.
+
+Next: WP4 per PHASE8_DURABLE_PLAN.md. These receipts do not claim WP4-8 or launch complete.
