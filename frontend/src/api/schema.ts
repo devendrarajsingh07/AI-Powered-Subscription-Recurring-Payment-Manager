@@ -1224,6 +1224,8 @@ export interface components {
         };
         /** Health */
         Health: {
+            /** Revision */
+            revision?: string | null;
             /** Status */
             status: string;
         };

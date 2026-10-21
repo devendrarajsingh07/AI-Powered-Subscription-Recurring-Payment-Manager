@@ -30,6 +30,12 @@ def test_signed_unsubscribe_turns_alerts_off_and_forged_links_do_nothing(api_cli
     assert other.status_code == 200 and user_row(db, row.id).alerts_enabled is True
     junk = api_client.post("/api/v1/alerts/unsubscribe?u=not-a-uuid&t=x")
     assert junk.status_code == 200 and junk.json() == bad.json()
+    # Non-ASCII / non-hex / wrong-length signatures are rejected, never a server error.
+    for odd in ("é" * 64, "Ｆ" * 64, lifecycle.sign(row.id).upper(), lifecycle.sign(row.id)[:-1]):
+        weird = api_client.post("/api/v1/alerts/unsubscribe", params={"u": str(row.id), "t": odd})
+        assert weird.status_code == 200 and weird.json() == bad.json(), odd
+        assert user_row(db, row.id).alerts_enabled is True
+    assert lifecycle.verify(row.id, "é" * 64) is False
     good = api_client.post(url + lifecycle.sign(row.id))
     assert good.status_code == 200 and good.json() == bad.json()  # No oracle for valid links.
     assert user_row(db, row.id).alerts_enabled is False

@@ -17,7 +17,15 @@ def client():
 def test_liveness(client):
     response = client.get("/api/v1/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "revision": None}
+
+
+def test_health_reports_only_a_well_formed_deployed_revision(client, monkeypatch):
+    sha = "c91dccc626fb924865625c875ca4cbfcbc495121"
+    monkeypatch.setenv("RENDER_GIT_COMMIT", sha.upper())
+    assert client.get("/api/v1/health").json()["revision"] == sha
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "not-a-sha; <script>")
+    assert client.get("/api/v1/health").json()["revision"] is None
 
 
 def test_openapi_contains_health_contract(client):

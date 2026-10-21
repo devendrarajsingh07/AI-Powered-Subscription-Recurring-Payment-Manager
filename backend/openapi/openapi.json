@@ -1029,6 +1029,17 @@
       },
       "Health": {
         "properties": {
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
           "status": {
             "title": "Status",
             "type": "string"

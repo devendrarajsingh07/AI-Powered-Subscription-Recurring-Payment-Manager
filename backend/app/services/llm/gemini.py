@@ -20,6 +20,8 @@ class GeminiClient:
         self.base_url = (base_url or str(settings.llm_base_url)).rstrip("/")
         # Per-turn client only: preserve signed provider parts exactly for tool round trips.
         self.parts = {}
+        # Set by the caller; invoked before every retry so each extra request is guarded.
+        self.before_request = None
 
     def contents(self, messages):
         contents, names = [], {}
@@ -92,6 +94,8 @@ class GeminiClient:
         )
         for attempt in range(cfg.llm_retries + 1):
             emitted = False
+            if attempt and self.before_request is not None:
+                self.before_request()  # May raise Bypass: the retry is never sent.
             try:
                 async with asyncio.timeout(cfg.llm_timeout_seconds):
                     async with httpx.AsyncClient(timeout=cfg.llm_timeout_seconds) as client:

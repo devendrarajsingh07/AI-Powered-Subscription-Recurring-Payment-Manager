@@ -1,7 +1,11 @@
 name: deploy-demo
-# Opt-in release for the FREE synthetic-data demo only. It never runs unless the owner sets the
-# repository variable DEPLOY_ENABLED=true and the hook secrets below. It deploys a revision only
-# after every job of the `checks` workflow succeeded for that exact commit on master.
+# Opt-in release for the FREE synthetic-data demo only. Nothing runs unless the owner sets the
+# repository variable DEPLOY_ENABLED=true plus the variables/secrets below.
+#
+# Trust model: secrets are only ever used with a commit that (1) is on this repository's master
+# history, (2) has a successful `checks` run triggered by a *push* to this repository for that exact
+# SHA, and (3) for an automatic release, is still the current master head. Pull requests, forks and
+# other branches can never reach this job. Verification happens before any code is checked out.
 on:
   workflow_run:
     workflows: [checks]
@@ -10,46 +14,69 @@ on:
   workflow_dispatch:
     inputs:
       rollback_sha:
-        description: Previously verified commit to redeploy (leave empty for current master)
+        description: Full 40-character SHA of a previously verified master commit (empty = current master)
         required: false
 concurrency:
   group: deploy-demo
   cancel-in-progress: false
 permissions:
   contents: read
+  actions: read
 jobs:
   release:
     if: >-
       vars.DEPLOY_ENABLED == 'true' &&
-      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.event == 'push' &&
+         github.event.workflow_run.head_branch == 'master' &&
+         github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
-    env:
-      API_URL: ${{ vars.DEMO_API_URL }}
-      WEB_URL: ${{ vars.DEMO_WEB_URL }}
-      RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.rollback_sha || github.event.workflow_run.head_sha || github.sha }}
-      - name: Require configuration
-        run: |
-          for name in API_URL WEB_URL; do
-            [ -n "${!name}" ] || { echo "::error::Set repository variable DEMO_${name}"; exit 1; }
-          done
-          [ -n "$RENDER_HOOK" ] || { echo "::error::RENDER_DEPLOY_HOOK_URL missing"; exit 1; }
-      - name: Trigger Render deploy (Alembic runs at boot via the demo entry point)
-        run: curl --fail --silent --show-error --max-time 60 -X POST "$RENDER_HOOK" > /dev/null
-      - name: Trigger Vercel deploy (skipped while Vercel still auto-deploys from git)
+      - name: Verify the commit before touching any secret or code
+        id: verify
         env:
-          VERCEL_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_SHA: ${{ github.event.inputs.rollback_sha }}
         run: |
-          [ -z "$VERCEL_HOOK" ] || curl --fail --silent --show-error --max-time 60 -X POST "$VERCEL_HOOK" > /dev/null
-      - name: Wait for the API to become ready
-        run: |
-          for i in $(seq 1 40); do
-            if curl --fail --silent --max-time 20 "$API_URL/health/ready" > /dev/null; then exit 0; fi
-            sleep 15
-          done
-          echo "::error::API did not become ready within 10 minutes; roll back (docs/RUNBOOK.md)"; exit 1
+          set -euo pipefail
+          head=$(gh api "repos/$REPO/commits/master" --jq .sha)
+          if [ "$EVENT" = workflow_run ]; then sha="$RUN_SHA"; else sha="${INPUT_SHA:-$head}"; fi
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Need a full lowercase 40-character SHA"; exit 1; }
+          relation=$(gh api "repos/$REPO/compare/$sha...$head" --jq .status)
+          case "$relation" in identical|ahead) ;; *) echo "::error::$sha is not on master history ($relation)"; exit 1;; esac
+          green=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$sha&event=push&status=success&per_page=20" \
+            --jq "[.workflow_runs[] | select(.head_repository.full_name == \"$REPO\")] | length")
+          [ "$green" -gt 0 ] || { echo "::error::No successful push-triggered checks run for $sha"; exit 1; }
+          if [ "$EVENT" = workflow_run ] && [ "$sha" != "$head" ]; then
+            echo "::notice::$sha was superseded by $head; that commit's own run releases it."
+            echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.verify.outputs.skip == 'false'
+        with:
+          ref: ${{ steps.verify.outputs.sha }}
+          persist-credentials: false
+      - name: Release exactly the verified commit and prove it is serving
+        if: steps.verify.outputs.skip == 'false'
+        env:
+          SHA: ${{ steps.verify.outputs.sha }}
+          API_URL: ${{ vars.DEMO_API_URL }}
+          WEB_URL: ${{ vars.DEMO_WEB_URL }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: python scripts/release_demo.py
       - name: Smoke test deployed demo (read-only; headers, CORS, routing)
+        if: steps.verify.outputs.skip == 'false'
+        env:
+          API_URL: ${{ vars.DEMO_API_URL }}
+          WEB_URL: ${{ vars.DEMO_WEB_URL }}
         run: python scripts/smoke_deployed.py --api "$API_URL" --web "$WEB_URL"
