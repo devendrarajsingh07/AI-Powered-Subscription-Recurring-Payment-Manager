@@ -89,3 +89,18 @@ retain response200/cookie/revocation assertions. No product security change or t
 Corrected TLS navigation flow rerun locally:1 passed in13.6s (test9.5s); normal Compose
 configuration restored. Hosted checks/secrets passed on both earlier runs, TLS failed as recorded;
 full e2e still running at this checkpoint. No deployment or master promotion occurred.
+
+The full hosted e2e run39620266005 had15 pass/1 failure: the accessibility audit repeatedly
+reloaded every route and exhausted the shared60/min CSRF bootstrap bucket. Parsed failure trace
+statuses (no headers/tokens/content printed) showed seven /auth/csrf429 responses. The page audit
+now uses actual accessible navigation for internal routes, keeps full reloads for theme/width entry
+and404, and asserts every destination URL. Dedicated TLS reload tests remain. Real limits are
+unchanged; no reset, raised cap or extra retry hides abuse controls.
+
+Navigation-based mobile light/dark/all-width audit rerun:1 passed in51.8s. Hosted successor
+39622053051 moved past cookie reload/logout, then exposed the same repeated-email-field race
+entering reset from login. Add the reset heading wait too; no security change.
+
+Both recovery-route waits verified locally:TLS1 passed in15.9s; normal stack restored.
+Navigation audit1 passed in51.8s; TypeScript build clean. Product code remains unchanged from
+the408/67 full gate; hosted checks rerun on the successor test commit before promotion.

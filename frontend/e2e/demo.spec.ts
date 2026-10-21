@@ -309,7 +309,30 @@ test("every page: axe both themes at 360px; responsive 768/1280; dialogs and cha
     for (const width of [360, 768, 1280]) {
       await page.setViewportSize({ width, height: 900 });
       for (const route of routes) {
-        await page.goto(route);
+        if (route === "/" || route === "/not-found") {
+          await page.goto(route);
+        } else {
+          const labels: Record<string, string> = {
+            "/upload": "Upload statement",
+            "/subscriptions": "Subscriptions",
+            "/renewals": "Renewals",
+            "/recommendations": "Recommendations",
+            "/categories": "Categories",
+            "/settings": "Settings",
+          };
+          const link = page
+            .getByRole("navigation", { name: "Main navigation" })
+            .getByRole("link", { name: labels[route], exact: true });
+          if (!(await link.isVisible())) {
+            await page
+              .getByRole("button", { name: "Toggle navigation" })
+              .click();
+          }
+          await link.click();
+        }
+        // Audit real navigation without hammering refresh-cookie bootstrap on every link.
+        // Dedicated TLS/reload flows still verify full-document session restoration.
+        await expect(page).toHaveURL((url) => url.pathname === route);
         await expect(page.locator("main h1")).toBeVisible();
         await expect(
           page.getByText("Loading your data…", { exact: true }),

@@ -99,6 +99,9 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
     page.getByRole("heading", { name: "Good to see you" }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Forgot your password?" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Reset your password" }),
+  ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Send a new code" }).click();
   await expect(
