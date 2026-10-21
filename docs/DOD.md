@@ -34,7 +34,7 @@ Those results do not certify new changes. No paid resources or live Gemini calls
 
 ## Owner launch actions
 
-Rotate DB credential; managed PostgreSQL/PITR before2026-11-19 or accept demo data loss; separate
+DB credential rotation done 2026-10-22 (owner-confirmed); managed PostgreSQL/PITR before2026-11-19 or accept demo data loss; separate
 staging; sibling custom domains; transactional sender/SPF/DKIM/DMARC; paid-tier Gemini key/billing/
 spend alerts; qualified legal review; incident contact; screen-reader pass; private real-statement
 checks; live Gemini eval; chosen MIT copyright-holder/LICENSE application; repository visibility.

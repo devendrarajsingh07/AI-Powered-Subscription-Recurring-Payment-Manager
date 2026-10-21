@@ -1,4 +1,4 @@
-# Credential exposure — owner action pending
+# Credential exposure — rotated 2026-10-22 (owner-confirmed)
 
 Updated 2026-10-21. Do not reproduce the credential or rewrite Git history.
 
@@ -75,4 +75,20 @@ was absent at deployment. New hosted password login/register are403, all six CSV
 upload/preview probes403, and two isolated disposable visitors cannot read each other's IDs.
 The current-clock synthetic loader and independent product/totals expectations passed; probe
 accounts were deleted. Vercel shows the persistent public-demo warning and no password entry.
-Rotation is still OWNER ACTION PENDING; deployment did not rotate or expose any credential.
+Rotation was still pending at that deployment; it did not rotate or expose any credential.
+
+## Rotation completed 2026-10-22
+
+The owner created a new default credential in `subtrack-demo-db`, replaced `DATABASE_URL` on the
+API service and, after the deploy was healthy, deleted/deactivated the old credential (owner
+statement; the dashboard was not inspected by the assistant).
+
+- First attempt: deploy `dep-dbcgiqnf3r2c73baasmg` failed at start-up with
+  `ModuleNotFoundError: No module named 'psycopg2'` because the new URL began with
+  `postgresql://`. The previous deploy kept serving. Required prefix: `postgresql+psycopg://`.
+- Corrected URL: deploy `dep-dbcgmodg1s2s73bhdpb0` (commit c5a1391) went Live. Render logs show
+  Alembic and application start-up completing without error and no error/warning lines afterwards.
+- A live synthetic-visitor flow after the old credential was removed was not run by the assistant;
+  the owner should confirm the demo loads. The credential value was never read or printed.
+- Residual: this was a demo database with synthetic data only. Free PostgreSQL still expires on
+  2026-11-19 and has no point-in-time recovery.
