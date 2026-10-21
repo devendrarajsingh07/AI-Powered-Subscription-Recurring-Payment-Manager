@@ -79,3 +79,13 @@ Final frozen full gate completed:408 PostgreSQL tests passed in259.91s,67 fronte
 make dev/verify/test/lint/evaluate and OpenAPI/TS drift exit0. Expanded recovery-page mobile
 light/dark accessibility/responsive browser audit1 passed in57.9s.
 Commits, new hosted CI and actual deployment/control probes must be recorded before advancing to WP4. The beta is blocked by both remaining code and external prerequisites.
+
+Hosted run39620266005 exposed a TLS test navigation race; diagnostic successor39621040811
+confirmed no login request was sent. Its screenshot shows a blank required email field. Both
+recovery and login pages have an email input, so the test filled the departing recovery field
+before navigation committed. Wait for the sign-in heading before filling the destination form;
+retain response200/cookie/revocation assertions. No product security change or timeout increase.
+
+Corrected TLS navigation flow rerun locally:1 passed in13.6s (test9.5s); normal Compose
+configuration restored. Hosted checks/secrets passed on both earlier runs, TLS failed as recorded;
+full e2e still running at this checkpoint. No deployment or master promotion occurred.

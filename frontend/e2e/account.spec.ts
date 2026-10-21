@@ -52,6 +52,10 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
     page.getByRole("status").filter({ hasText: "Email verified" }),
   ).toContainText("Email verified");
   await page.getByRole("link", { name: "Back to sign in" }).click();
+  // Both routes contain an email field: wait for the destination before filling it.
+  await expect(
+    page.getByRole("heading", { name: "Good to see you" }),
+  ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(original);
   const loginResponse = page.waitForResponse(
@@ -107,6 +111,10 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
     page.getByRole("status").filter({ hasText: "Password changed" }),
   ).toContainText("Password changed");
   await page.getByRole("link", { name: "Back to sign in" }).click();
+  // Both routes contain an email field: wait for the destination before filling it.
+  await expect(
+    page.getByRole("heading", { name: "Good to see you" }),
+  ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(replacement);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
