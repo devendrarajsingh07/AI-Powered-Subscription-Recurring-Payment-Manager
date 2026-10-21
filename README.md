@@ -14,9 +14,13 @@ loader makes the same real ingestion pipeline available without a statement. Gem
 optional live provider, replacing the previous provider at the owner's explicit request. No live eval was run.
 
 Phase 8 is **in progress, not launch-ready**. The owner chose to keep the hosted demo free and the
-real-user beta blocked. Invitation controls, shared PostgreSQL auth throttling, security-event
-records and a private JSON export are implemented; verified email/reset, rotating cookie sessions,
-durable workers and operational launch gates remain unfinished. Production startup fails closed.
+real-user beta blocked. Implemented and verified locally (not yet deployed): invitation controls, shared
+PostgreSQL rate limits, revocable sessions, a durable PostgreSQL job queue with a separate worker and
+credential-free extractor, retention, token-gated content-free metrics, a live-AI kill switch with daily
+caps and visible offline fallback, email suppression/unsubscribe, a problem-report path and versioned
+legal acceptance (off by default). Container isolation, multi-container, browser and hosted-CI
+verification of these packages, real email delivery, backups and legal approval are still outstanding.
+Production startup fails closed.
 See [implementation decisions](docs/PHASE8_PLAN.md), [launch gates](docs/LAUNCH.md),
 [runbook](docs/RUNBOOK.md) and the [evidence table](docs/DOD.md). Existing demo notices remain accurate.
 

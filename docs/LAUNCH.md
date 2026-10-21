@@ -28,3 +28,7 @@ screen-reader pass; private CSV/PDF/image accuracy checks; live Gemini evaluatio
 visibility decision. MIT was selected, but applying a license remains owner-controlled.
 
 See [implementation decisions](PHASE8_PLAN.md) and [operator procedures](RUNBOOK.md).
+
+Status 2026-10-21: suppression/unsubscribe, support reports, legal-version recording, kill switch,
+retention and metrics are implemented and locally tested but remain **blocked for launch** on the
+owner prerequisites above. See DOD.md for the exact evidence and what has not been verified.
