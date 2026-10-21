@@ -32,7 +32,7 @@ Production startup remains unconditionally blocked pending operational/implement
 
 Step0: full-history Gitleaks44 commits clean with3 exact historical synthetic exceptions; current-source
 scan clean. Broad directory scan10 matches in ignored .env/vendor files (no values printed).
-Render dashboard PostgreSQL rules block all external ingress. DB rotation: OWNER ACTION PENDING.
+Render dashboard PostgreSQL rules block all external ingress. DB credential rotated 2026-10-22 (owner-confirmed; see docs/SECURITY_INCIDENT.md).
 No secret found in current tracked source requiring removal. CI full-history/current-source secret scans passed on f857f1f (49 commits).
 
 Public-demo safeguards built and verified locally: disposable generated visitor identity, no password login or registration,

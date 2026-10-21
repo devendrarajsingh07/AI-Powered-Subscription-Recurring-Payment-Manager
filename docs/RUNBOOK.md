@@ -37,7 +37,7 @@ memory-only access sessions, never cross-site refresh cookies.
 Credential changes must be performed by the owner in the platform secret manager, never committed.
 Use separate migration/app roles and per-environment keys before beta. The retained previously
 exposed demo DB credential must be replaced before any real data. Keep external DB ingress blocked.
-See [exact owner rotation steps and incident evidence](SECURITY_INCIDENT.md). Rotation is pending.
+See [exact owner rotation steps and incident evidence](SECURITY_INCIDENT.md). Rotation completed 2026-10-22 (owner-confirmed).
 
 Free PostgreSQL expires 2026-11-19 and has no PITR. There is no verified restore procedure or retention
 promise for this deployment. Provision backed-up staging/production first, then perform a timed
