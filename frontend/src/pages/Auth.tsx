@@ -32,6 +32,7 @@ export function Auth({ register = false }: { register?: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const session = useSession();
@@ -60,6 +61,14 @@ export function Auth({ register = false }: { register?: boolean }) {
       setError(invalid);
       return;
     }
+    const legal =
+      register && mode.data?.legal_acceptance_required
+        ? mode.data.legal_version
+        : "";
+    if (legal && !accepted) {
+      setError("Please accept the terms and privacy notice to continue.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -69,6 +78,7 @@ export function Auth({ register = false }: { register?: boolean }) {
           body: {
             ...body,
             ...(inviteCode.trim() ? { invite_code: inviteCode.trim() } : {}),
+            ...(legal ? { accepted_terms_version: legal } : {}),
           },
         });
         if (registration.data?.verification_required) {
@@ -243,6 +253,17 @@ export function Auth({ register = false }: { register?: boolean }) {
                     At least 12 characters, with three of: lowercase, uppercase,
                     numbers and symbols. Maximum 72 UTF-8 bytes.
                   </small>
+                )}
+                {register && mode.data?.legal_acceptance_required && (
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={accepted}
+                      onChange={(event) => setAccepted(event.target.checked)}
+                    />
+                    I have read the draft Terms and Privacy Notice (version{" "}
+                    {mode.data.legal_version})
+                  </label>
                 )}
                 {error && (
                   <p id="auth-error" role="alert" className="error">

@@ -7,6 +7,7 @@ import { Dialog, ErrorState, Heading, Loading } from "../components/Common";
 import { clearSession, logout } from "../lib/session";
 import { formatMoney } from "../lib/money";
 import { RecentAlerts } from "../components/RecentAlerts";
+import { ReportProblem } from "../components/ReportProblem";
 import { useRefresh } from "../hooks/data";
 export default function SettingsPage() {
   const refresh = useRefresh();
@@ -67,6 +68,15 @@ export default function SettingsPage() {
           ) : (
             <>
               <p className="notice-box">{alerts.data.delivery_notice}</p>
+              {alerts.data.suppressed_reason && (
+                <p role="alert" className="error">
+                  Alert emails are paused because your notification address
+                  {alerts.data.suppressed_reason === "complaint"
+                    ? " reported them as unwanted"
+                    : " could not receive mail"}
+                  . Save a different address to resume.
+                </p>
+              )}
               <AlertForm initial={alerts.data} />
             </>
           )}
@@ -74,6 +84,7 @@ export default function SettingsPage() {
       </div>
       <DemoPanel settings />
       <RecentAlerts />
+      <ReportProblem />
       <section className="panel danger-zone">
         <h2>Your data, your control</h2>
         <ExportData />

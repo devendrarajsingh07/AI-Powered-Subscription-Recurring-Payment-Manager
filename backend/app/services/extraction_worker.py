@@ -28,6 +28,21 @@ def main():
 
         request = json.loads(sys.stdin.buffer.read(15 * 1024 * 1024))
         data = base64.b64decode(request.pop("data"), validate=True)
+        if request.get("operation", "extract") == "preflight":
+            from app.services.statement_extraction import clean_pdf, sniff
+
+            if sniff(data, request["filename"]) != "pdf":
+                raise ExtractionError("invalid_statement", "Password preflight requires a PDF.")
+            cleaned, _ = clean_pdf(data, request.pop("password", ""), request["limits"])
+            if len(cleaned) > 10 * 1024 * 1024:
+                raise ExtractionError("file_too_large", "The cleaned PDF exceeds the input limit.")
+            print(
+                json.dumps(
+                    dict(event="result", result={"pdf": base64.b64encode(cleaned).decode()})
+                ),
+                flush=True,
+            )
+            return
         result = extract(
             data,
             request["filename"],

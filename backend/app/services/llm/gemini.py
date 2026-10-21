@@ -13,6 +13,8 @@ from app.services.llm.schemas import provider_schema
 
 
 class GeminiClient:
+    live = True  # Data leaves the deployment; subject to consent, kill switch and global caps.
+
     def __init__(self, settings, *, base_url=None):
         self.settings = settings
         self.base_url = (base_url or str(settings.llm_base_url)).rstrip("/")

@@ -12,6 +12,8 @@ export const authHandlers = [
       public_demo_only: false,
       session_mode: "strict",
       notice: "Educational use with synthetic data",
+      legal_version: "",
+      legal_acceptance_required: false,
     } satisfies components["schemas"]["AuthConfig"]),
   ),
   http.post("*/api/v1/auth/csrf", () =>

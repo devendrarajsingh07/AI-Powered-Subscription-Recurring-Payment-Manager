@@ -318,7 +318,7 @@ def test_tool_round_cap_and_provider_failure_are_safe(api_client, db):
     assert "event: error" in response.text
     assert "SECRET_PROVIDER" not in response.text and "999.99" not in response.text
     assert repo.count_owned(db, uuid.UUID(user["id"]), m.ChatMessage) == 2
-    assert not gate.busy
+    assert not gate.is_busy(uuid.UUID(user["id"]))
 
 
 def test_disconnect_cancels_upstream_and_no_partial_history(pg_engine, db):
@@ -345,14 +345,14 @@ def test_disconnect_cancels_upstream_and_no_partial_history(pg_engine, db):
             return self.calls > 1
 
     async def run():
-        gate.acquire(user.id)
+        lease_token = gate.acquire(user.id)
         async for _ in stream_turn(
-            Request(), pg_engine, user.id, uuid.uuid4(), "total", DAY, Slow()
+            Request(), pg_engine, user.id, uuid.uuid4(), "total", DAY, Slow(), lease_token
         ):
             pass
 
     asyncio.run(run())
-    assert cancelled and not gate.busy
+    assert cancelled and not gate.is_busy(user.id)
     assert repo.count_owned(db, user.id, m.ChatMessage) == 0
 
 
@@ -367,7 +367,7 @@ def test_concurrent_turn_rejected_and_timeout_cleans_up(api_client, monkeypatch)
 
     app.dependency_overrides[get_client] = lambda: Slow()
     monkeypatch.setattr(get_settings(), "chat_timeout_seconds", 1)
-    headers, _ = account(api_client)
+    headers, user = account(api_client)
     with ThreadPoolExecutor(max_workers=2) as pool:
         first = pool.submit(
             api_client.post, "/api/v1/chat", headers=headers, json={"message": "total"}
@@ -376,7 +376,7 @@ def test_concurrent_turn_rejected_and_timeout_cleans_up(api_client, monkeypatch)
         second = api_client.post("/api/v1/chat", headers=headers, json={"message": "total"})
         assert second.status_code == 429 and second.json()["error"]["code"] == "chat_busy"
         assert "timed out" in first.result().text
-    assert not gate.busy
+    assert not gate.is_busy(uuid.UUID(user["id"]))
 
 
 def test_runtime_read_only_transaction_rejects_a_write(api_client, db, monkeypatch):

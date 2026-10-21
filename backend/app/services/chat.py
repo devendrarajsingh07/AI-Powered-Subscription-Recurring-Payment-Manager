@@ -4,12 +4,8 @@ import asyncio
 import hashlib
 import json
 import logging
-from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
-from threading import Lock
-from time import monotonic
 
-from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import delete, text
 from sqlalchemy.orm import Session
@@ -17,6 +13,8 @@ from sqlalchemy.orm import Session
 from app import models as m
 from app import repositories as repo
 from app.config import get_settings
+from app.services import llm_controls as controls
+from app.services.chat_coordination import ChatGate
 from app.services.chat_tools import SCHEMAS, ChatTools, clean, definitions
 from app.services.grounding import render_data, verify
 from app.services.llm import LLMError
@@ -42,48 +40,6 @@ DISCLOSURE = (
 logger = logging.getLogger("subtrack.chat")
 
 
-class ChatGate:
-    """Same process-local sliding-window approach as auth, with an in-flight guard."""
-
-    def __init__(self):
-        self.lock = Lock()
-        self.events = defaultdict(deque)
-        self.busy = set()
-
-    def clear(self):
-        with self.lock:
-            self.events.clear()
-            self.busy.clear()
-
-    def acquire(self, user_id):
-        cfg, now = get_settings(), monotonic()
-        with self.lock:
-            for key in list(self.events):
-                while self.events[key] and self.events[key][0] <= now - 86400:
-                    self.events[key].popleft()
-                if not self.events[key] and key not in self.busy:
-                    del self.events[key]
-            if user_id not in self.events and len(self.events) >= 10000:
-                raise HTTPException(429, {"code": "rate_limited", "message": "Try again shortly"})
-            values = self.events[user_id]
-            if user_id in self.busy:
-                raise HTTPException(
-                    429, {"code": "chat_busy", "message": "A chat is already running"}
-                )
-            if (
-                len(self.events) > 10000
-                or len(values) >= cfg.chat_daily_limit
-                or sum(value > now - 60 for value in values) >= cfg.chat_minute_limit
-            ):
-                raise HTTPException(429, {"code": "rate_limited", "message": "Try again shortly"})
-            values.append(now)
-            self.busy.add(user_id)
-
-    def release(self, user_id):
-        with self.lock:
-            self.busy.discard(user_id)
-
-
 gate = ChatGate()
 
 
@@ -91,7 +47,9 @@ def event(name, value):
     return "event: " + name + "\ndata: " + json.dumps(value, ensure_ascii=False) + "\n\n"
 
 
-async def turn(engine, user_id, conversation_id, message, as_of, client):
+async def turn(
+    engine, user_id, conversation_id, message, as_of, client, lease_token, fallback_reason=None
+):
     """Yields live statuses; only a verified final or deterministic fallback has answer text."""
     cfg = get_settings()
     results, records, used = [], [], []
@@ -116,14 +74,16 @@ async def turn(engine, user_id, conversation_id, message, as_of, client):
     messages.append(dict(role="user", content=clean(message, 2000)))
     answer = ""
     blocked = False
+    sent_chars = 0
     async with asyncio.timeout(cfg.chat_timeout_seconds):
         for round_index in range(6):
-            if cfg.llm_provider != "fake":
+            if controls.is_live(client):
                 with Session(engine) as consent_db:
                     account = repo.get_user(consent_db, user_id)
                     if account is None or not account.live_opt_in:
                         raise LLMError("Live AI consent is required. No further data was sent.")
             calls, answer = [], ""
+            sent_chars += len(SYSTEM) + len(json.dumps(messages, default=str))
             async for item in client.stream(
                 system=SYSTEM, messages=messages, tools=definitions(), force_final=round_index == 5
             ):
@@ -217,6 +177,17 @@ async def turn(engine, user_id, conversation_id, message, as_of, client):
         with Session(engine) as db, db.begin():
             if repo.get_user(db, user_id, lock=True) is None:
                 raise LLMError()
+            from sqlalchemy import select
+
+            lease = db.scalar(
+                select(m.ChatLease).where(
+                    m.ChatLease.user_id == user_id,
+                    m.ChatLease.claim_token == lease_token,
+                    m.ChatLease.expires_at > datetime.now(timezone.utc),
+                )
+            )
+            if lease is None:
+                raise LLMError("The assistant session expired. Please retry.")
             created = datetime.now(timezone.utc)
             repo.create_owned(
                 db,
@@ -238,6 +209,9 @@ async def turn(engine, user_id, conversation_id, message, as_of, client):
                 tool_calls=records,
                 created_at=created + timedelta(microseconds=1),
             )
+        live = controls.is_live(client)
+        if live:  # Estimated tokens (chars / 4) feed the shared daily cap; not provider billing.
+            controls.note(engine, "tokens", (sent_chars + len(answer)) // 4 + 1)
         yield event(
             "final",
             dict(
@@ -245,15 +219,44 @@ async def turn(engine, user_id, conversation_id, message, as_of, client):
                 verified=verified,
                 tools=list(dict.fromkeys(used)),
                 conversation_id=str(conversation_id),
+                mode="live" if live else "offline",
+                fallback_reason=fallback_reason,
             ),
         )
 
 
-async def stream_turn(request, engine, user_id, conversation_id, message, as_of, client):
+async def stream_turn(
+    request,
+    engine,
+    user_id,
+    conversation_id,
+    message,
+    as_of,
+    client,
+    lease_token,
+    fallback_reason=None,
+):
     async def producer(queue):
-        try:
-            async for chunk in turn(engine, user_id, conversation_id, message, as_of, client):
+        async def run(active, reason):
+            async for chunk in turn(
+                engine, user_id, conversation_id, message, as_of, active, lease_token, reason
+            ):
                 await queue.put(chunk)
+
+        try:
+            try:
+                await run(client, fallback_reason)
+            except (LLMError, TimeoutError) as exc:
+                # A live provider failure degrades visibly to the offline assistant. No history
+                # row exists yet (history commits only with a final), so the retry is clean.
+                consent = isinstance(exc, LLMError) and "consent" in str(exc).lower()
+                if not controls.is_live(client) or consent:
+                    raise
+                controls.note(engine, "errors")
+                controls.note(engine, "fallbacks")
+                from app.services.llm.fake import OfflineLLM
+
+                await run(OfflineLLM(), controls.ERROR)
         except (LLMError, TimeoutError) as exc:
             safe = (
                 str(exc) if isinstance(exc, LLMError) else "The assistant timed out. Please retry."
@@ -286,7 +289,7 @@ async def stream_turn(request, engine, user_id, conversation_id, message, as_of,
             await task
         except asyncio.CancelledError:
             pass
-        gate.release(user_id)
+        gate.release(user_id, lease_token, engine=engine)
 
 
 def clear_history(db, user_id):

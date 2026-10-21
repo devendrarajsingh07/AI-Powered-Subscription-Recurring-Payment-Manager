@@ -94,38 +94,17 @@ class UploadWorker:
                 stage="waiting_for_user_lock",
             )
             with Session(self.engine) as db, db.begin():
-                if repo.get_user(db, user_id, lock=True) is None:
-                    return
-                if repo.get_owned(db, user_id, Upload, upload_id) is None:
-                    return
-                inserted = 0
-                for offset in range(0, len(parsed.transactions), 500):
-                    chunk = parsed.transactions[offset : offset + 500]
-                    inserted += repo.insert_transactions(db, user_id, upload_id, chunk)
-                    self._progress(
-                        user_id,
-                        upload_id,
-                        stage="ingesting",
-                        processed_rows=min(offset + len(chunk), len(parsed.transactions)),
-                    )
-                self._progress(user_id, upload_id, stage="detecting")
-                detected = repo.redetect(db, user_id, as_of=as_of)
-                regenerate(db, user_id, as_of=as_of)
-                from app.services.demo import finalize
-
-                finalize(db, user_id, upload_id, as_of=as_of)
-                repo.update_upload(
+                result = persist_parsed(
                     db,
                     user_id,
                     upload_id,
-                    status="done",
-                    stage="done",
-                    processed_rows=parsed.row_count,
-                    total_rows=parsed.row_count,
-                    inserted_count=inserted,
-                    duplicate_count=len(parsed.transactions) - inserted,
-                    detected_count=detected,
+                    parsed,
+                    as_of=as_of,
+                    progress=lambda **values: self._progress(user_id, upload_id, **values),
                 )
+                if result is None:
+                    return
+                inserted, detected = result
             logger.info(
                 "Upload completed upload_id=%s inserted_count=%d detected_count=%d",
                 upload_id,
@@ -143,6 +122,40 @@ class UploadWorker:
             self.release()
 
 
+def persist_parsed(db, user_id, upload_id, parsed, *, as_of, progress):
+    """Shared financial transaction body. Caller owns commit; no process-local dispatch here."""
+    if repo.get_user(db, user_id, lock=True) is None:
+        return None
+    if repo.get_owned(db, user_id, Upload, upload_id) is None:
+        return None
+    inserted = 0
+    for offset in range(0, len(parsed.transactions), 500):
+        chunk = parsed.transactions[offset : offset + 500]
+        inserted += repo.insert_transactions(db, user_id, upload_id, chunk)
+        progress(
+            stage="ingesting", processed_rows=min(offset + len(chunk), len(parsed.transactions))
+        )
+    progress(stage="detecting")
+    detected = repo.redetect(db, user_id, as_of=as_of)
+    regenerate(db, user_id, as_of=as_of)
+    from app.services.demo import finalize
+
+    finalize(db, user_id, upload_id, as_of=as_of)
+    repo.update_upload(
+        db,
+        user_id,
+        upload_id,
+        status="done",
+        stage="done",
+        processed_rows=parsed.row_count,
+        total_rows=parsed.row_count,
+        inserted_count=inserted,
+        duplicate_count=len(parsed.transactions) - inserted,
+        detected_count=detected,
+    )
+    return inserted, detected
+
+
 def get_worker():
     """Dependency is replaced with an isolated worker in PostgreSQL integration tests."""
     return worker
@@ -153,6 +166,11 @@ worker: UploadWorker | None = None
 
 def start_worker():
     global worker
-    worker = UploadWorker(get_engine())
+    if get_settings().job_mode == "postgres":
+        from app.durable_worker import Dispatcher
+
+        worker = Dispatcher(get_engine())
+    else:
+        worker = UploadWorker(get_engine())
     worker.recover()
     return worker

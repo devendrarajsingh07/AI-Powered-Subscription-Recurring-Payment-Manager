@@ -22,6 +22,7 @@ def main():
     # This entry point is exclusively the hosted public demo; fail closed on file uploads/login.
     os.environ["PUBLIC_DEMO_ONLY"] = "true"
     os.environ["AUTH_SESSION_MODE"] = "demo"
+    os.environ["JOB_MODE"] = "inline"  # Explicit synthetic-only fallback on the free host.
     subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], check=True)
     os.execv(
         sys.executable,

@@ -54,6 +54,8 @@ function demo() {
         public_demo_only: true,
         session_mode: "demo",
         notice: "Public demo — do not upload real statements or personal data",
+        legal_version: "",
+        legal_acceptance_required: false,
       } satisfies components["schemas"]["AuthConfig"]),
     ),
   );
@@ -107,6 +109,26 @@ test("parallel refresh callers share one rotating request with cookie and CSRF",
   ]);
   expect(count).toBe(1);
   expect(getToken()).toBe(token.access_token);
+});
+
+test("each rotation re-reads the CSRF proof so a cookie rotated by another tab still works", async () => {
+  const proofs = ["csrf-tab-a", "csrf-tab-b"];
+  let issued = 0;
+  const seen: (string | null)[] = [];
+  server.use(
+    http.post("*/api/v1/auth/csrf", () =>
+      HttpResponse.json({
+        csrf_token: proofs[issued++],
+      } satisfies components["schemas"]["CsrfResult"]),
+    ),
+    http.post("*/api/v1/auth/refresh", ({ request }) => {
+      seen.push(request.headers.get("X-CSRF-Token"));
+      return HttpResponse.json(token);
+    }),
+  );
+  expect(await refreshSession()).toBe(true);
+  expect(await refreshSession()).toBe(true);
+  expect(seen).toEqual(["csrf-tab-a", "csrf-tab-b"]);
 });
 
 test("demo mode never attempts cookie bootstrap or refresh", async () => {

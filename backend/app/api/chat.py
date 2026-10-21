@@ -12,6 +12,7 @@ from app import schemas as s
 from app.api.routes import CurrentUser, Db, Limit, Offset, fail, lock_user, require_owned, router
 from app.clock import today
 from app.config import get_settings
+from app.services import llm_controls as controls
 from app.services.chat import DISCLOSURE, clear_history, gate, stream_turn
 from app.services.chat_tools import clean
 from app.services.llm import get_client
@@ -19,12 +20,15 @@ from app.services.normalizer import normalize_merchant
 
 
 @router.get("/chat/config", response_model=s.ChatConfig, tags=["chat"])
-def chat_config(user: CurrentUser):
+def chat_config(user: CurrentUser, db: Db):
+    cfg = get_settings()
+    reason = controls.peek(db.get_bind()) if cfg.llm_provider != "fake" else None
     return dict(
-        mode="offline" if get_settings().llm_provider == "fake" else "live",
-        provider=get_settings().llm_provider,
+        mode="offline" if cfg.llm_provider == "fake" or reason else "live",
+        provider=cfg.llm_provider,
         live_opt_in=user.live_opt_in,
         disclosure=DISCLOSURE,
+        fallback_reason=reason,
     )
 
 
@@ -33,11 +37,13 @@ def chat_consent(body: s.ChatConsent, user: CurrentUser, db: Db):
     lock_user(db, user.id)
     user.live_opt_in = body.live_opt_in
     db.commit()
-    return chat_config(user)
+    return chat_config(user, db)
 
 
-def check_consent(user):
-    if get_settings().llm_provider != "fake" and not user.live_opt_in:
+def check_consent(user, client=None, engine=None):
+    live = controls.is_live(client) if client is not None else get_settings().llm_provider != "fake"
+    # A killed or capped provider is answered offline and sends nothing, so it needs no consent.
+    if live and not user.live_opt_in and not (engine is not None and controls.peek(engine)):
         fail(400, "consent_required", "Enable live AI consent before sending data to Google Gemini")
 
 
@@ -65,7 +71,11 @@ async def chat(
 ):
     if not body.message.strip():
         fail(400, "empty_message", "Enter a question about your recurring payments")
-    check_consent(user)
+    # Consent is only required when data would actually leave: a killed or capped live provider
+    # is answered by the offline assistant, which sends nothing anywhere.
+    engine = db.get_bind()
+    check_consent(user, client, engine)
+    client, fallback_reason = controls.route(engine, client)
     conversation_id = body.conversation_id or uuid.uuid4()
     if body.conversation_id and not repo.count_owned(
         db, user.id, m.ChatMessage, m.ChatMessage.conversation_id == conversation_id
@@ -73,9 +83,19 @@ async def chat(
         fail(404, "not_found", "Conversation not found")
     engine, user_id = db.get_bind(), user.id
     db.rollback()  # Release auth/history read transaction before the asynchronous stream.
-    gate.acquire(user_id)
+    lease_token = gate.acquire(user_id, engine=engine)
     return StreamingResponse(
-        stream_turn(request, engine, user_id, conversation_id, body.message, as_of, client),
+        stream_turn(
+            request,
+            engine,
+            user_id,
+            conversation_id,
+            body.message,
+            as_of,
+            client,
+            lease_token,
+            fallback_reason,
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
@@ -124,7 +144,7 @@ def history(
 @router.delete("/chat/history", response_model=s.ClearedHistory, tags=["chat"])
 def delete_history(user: CurrentUser, db: Db):
     lock_user(db, user.id)
-    if user.id in gate.busy:
+    if gate.is_busy(user.id, engine=db.get_bind()):
         fail(409, "chat_busy", "Stop the current answer before clearing history")
     count = clear_history(db, user.id)
     db.commit()
@@ -135,7 +155,8 @@ def delete_history(user: CurrentUser, db: Db):
 async def suggest_category(
     category_id: uuid.UUID, user: CurrentUser, db: Db, client=Depends(get_client)
 ):
-    check_consent(user)
+    check_consent(user, client, db.get_bind())
+    client, _ = controls.route(db.get_bind(), client)
     lock_user(db, user.id)
     row = require_owned(db, user.id, m.MerchantCategory, category_id)
     if row.confirmed or row.category != "unknown" or row.suggestion_attempted:
@@ -150,7 +171,8 @@ async def suggest_category(
         return row
     user_id = user.id
     merchant = clean(normalize_merchant(row.merchant))
-    gate.acquire(user_id)
+    engine = db.get_bind()
+    lease_token = gate.acquire(user_id, db=db)
     try:
         row.suggestion_attempted = True
         db.commit()  # Claim once, including failed requests; no financial data crosses boundary.
@@ -171,4 +193,5 @@ async def suggest_category(
         db.commit()
         return row
     finally:
-        gate.release(user_id)
+        db.rollback()
+        gate.release(user_id, lease_token, engine=engine)

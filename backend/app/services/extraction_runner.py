@@ -29,8 +29,18 @@ def purge_abandoned_temps(root=None):
 
 
 def run_extraction(
-    data, filename, password, *, config, progress=lambda *args: None, cancelled=lambda: False
+    data,
+    filename,
+    password,
+    *,
+    config,
+    progress=lambda *args: None,
+    cancelled=lambda: False,
+    operation="extract",
 ):
+    if operation not in ("extract", "preflight"):
+        raise ValueError("Unsupported extraction operation")
+    output_limit = (15 if operation == "preflight" else 8) * 1024 * 1024
     if os.name != "posix":
         raise ExtractionError(
             "unsupported_runtime",
@@ -45,6 +55,7 @@ def run_extraction(
     )
     request = json.dumps(
         dict(
+            operation=operation,
             data=base64.b64encode(data).decode("ascii"),
             filename=filename,
             password=password,
@@ -100,11 +111,11 @@ def run_extraction(
             size = 0
             try:
                 while not stopped.is_set():
-                    line = process.stdout.readline(8 * 1024 * 1024 + 1)
+                    line = process.stdout.readline(output_limit + 1)
                     if not line:
                         break
                     size += len(line)
-                    if size > 8 * 1024 * 1024:
+                    if size > output_limit:
                         enqueue(
                             {
                                 "event": "error",
