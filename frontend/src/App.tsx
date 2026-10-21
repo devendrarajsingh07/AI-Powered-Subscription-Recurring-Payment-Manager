@@ -39,6 +39,7 @@ import {
 } from "./lib/session";
 import { PublicDemoNotice } from "./components/AuthMode";
 import { AccountRecovery } from "./pages/AccountRecovery";
+import { Unsubscribe } from "./pages/Unsubscribe";
 import { ErrorState, Loading } from "./components/Common";
 import { Auth } from "./pages/Auth";
 import { ChatAssistant } from "./components/ChatAssistant";
@@ -90,6 +91,7 @@ function pageTitle(pathname: string) {
         "/register": "Create account",
         "/verify-email": "Verify email",
         "/reset-password": "Reset password",
+        "/unsubscribe": "Unsubscribe",
       } as Record<string, string>
     )[pathname] ||
     "Page not found"
@@ -321,6 +323,7 @@ export function App() {
               path="/reset-password"
               element={<AccountRecovery kind="reset" />}
             />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route element={<Shell />}>
               <Route index element={<Dashboard />} />
               <Route path="upload" element={<UploadPage />} />

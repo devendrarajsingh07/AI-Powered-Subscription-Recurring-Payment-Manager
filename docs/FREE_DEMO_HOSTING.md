@@ -1,3 +1,7 @@
+> Current deployment2026-10-21: f857f1f on both hosts. Public synthetic-only disposable sessions;
+> registration/password login/file uploads disabled. Earlier smoke results below are historical.
+> Hosted CI39623411405 green; rotation pending. See PROJECT_INFO.md for current instructions.
+
 # Free hosted demo — not a production deployment
 
 The owner approved free Render resources on 2026-10-20. Frontend remains on Vercel. This does
@@ -27,8 +31,8 @@ for production or change ENVIRONMENT merely to bypass production guards.
 
 Root `frontend`, Vite, `npm run build`, output `dist`. The checked-in rewrite serves the SPA for
 client routes and leaves `/api/` paths alone so a missing API base does not masquerade as HTML200.
-Set `VITE_API_BASE_URL` to the hosted API origin plus `/api/v1`, then redeploy. Uploads go directly
-to that API; no statements are proxied through Vercel Functions. No keys belong in VITE variables.
+Set `VITE_API_BASE_URL` to the hosted API origin plus `/api/v1`, then redeploy. Local/private upload mode uses the API directly; the hosted public demo rejects all file uploads
+and accepts only its synthetic loader. No statements are proxied through Vercel Functions. No keys belong in VITE variables.
 
 ## Limits and current verification
 
@@ -60,7 +64,7 @@ These are synthetic-demo observations, not capacity, real-bank or production cer
 
 Historical incident: a database credential was accidentally exposed by the browser accessibility output even after
 the field was hidden. The owner explicitly requested retaining it. External ingress is blocked;
-replacement remains recommended before any non-disposable use. Never reproduce the value.
+rotation is an explicit owner action pending in docs/SECURITY_INCIDENT.md. Never reproduce the value.
 Subsequent secret-bearing UI reads must suppress raw accessibility output and report only state
 or boolean checks. Browser credential-change actions remain a user handoff. The2026-10-21 continuation
 supersedes the earlier retention decision: rotation is now **owner action pending**, with exact steps

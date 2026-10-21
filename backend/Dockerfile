@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY . .
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 RUN mkdir -p /var/subtrack/outbox && chown -R appuser:appuser /var/subtrack
+RUN mkdir -p /var/subtrack/extractor && chown appuser:appuser /var/subtrack/extractor
 ENV OUTBOX_DIR=/var/subtrack/outbox
 USER appuser
 EXPOSE 8000

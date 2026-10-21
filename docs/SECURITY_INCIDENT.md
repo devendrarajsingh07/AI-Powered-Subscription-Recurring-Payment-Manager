@@ -66,3 +66,13 @@ file was uploaded during this audit. The current patch disables password registr
 all CSV/PDF/image upload/preview HTTP paths before body parsing in public-demo mode, replaces entry
 with isolated disposable synthetic visitors, and removes the reserved shared account on startup/
 scheduled purge if present. Deployment and a fresh hosted control probe must still verify this fix.
+
+## Remediation deployed2026-10-21
+
+CI39623411405 passed all4 jobs on f857f1f; full-history secret job covered49 commits. Render
+startup event public_demo_purge reported shared_before0/removed0: the reserved shared account
+was absent at deployment. New hosted password login/register are403, all six CSV/PDF/PNG file
+upload/preview probes403, and two isolated disposable visitors cannot read each other's IDs.
+The current-clock synthetic loader and independent product/totals expectations passed; probe
+accounts were deleted. Vercel shows the persistent public-demo warning and no password entry.
+Rotation is still OWNER ACTION PENDING; deployment did not rotate or expose any credential.

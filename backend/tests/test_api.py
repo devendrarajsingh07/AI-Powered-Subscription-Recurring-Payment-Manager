@@ -664,6 +664,7 @@ def test_no_llm_or_create_all_and_all_business_routes_are_protected():
             "/api/v1/auth/email/confirm",
             "/api/v1/auth/password/request",
             "/api/v1/auth/password/reset",
+            "/api/v1/alerts/unsubscribe",  # Signed one-click link; no session by design.
         ):
             continue
         for operation in methods.values():

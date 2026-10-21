@@ -53,3 +53,32 @@ Do not delete another user's data without their verified request and the operato
 Readiness, queue-age/depth, delivery failure, DB saturation and provider metrics/alerts are beta
 requirements, not currently provisioned monitoring. Never use message bodies, amounts or raw
 descriptions as metric labels. See [launch gates](LAUNCH.md); keep real-user invitations paused.
+
+## Live-AI kill switch, caps and metrics
+
+Force the offline assistant for everyone without a redeploy: `python -m app.llm_admin kill`
+(`restore` re-enables, `status` prints flags and today's usage counts). `LLM_KILL_SWITCH=true` does the
+same through the environment. Global daily request/token caps (`LLM_GLOBAL_DAILY_REQUESTS`,
+`LLM_GLOBAL_DAILY_TOKENS`) switch to the visible offline fallback when reached; tokens are estimated.
+Set `OPS_METRICS_TOKEN` (32+ random characters, platform secret manager only) to enable
+`GET /api/v1/ops/metrics` with header `X-Ops-Token`; without it the route answers 404. Watch queue
+depth and oldest age, `dead_letter_total`, alert failures and the `email` suppression count.
+
+## Email events and unsubscribe
+
+After a provider reports a hard bounce or spam complaint, POST `{"address": ..., "kind":
+"hard_bounce"|"complaint"}` to `/api/v1/ops/email-events` with the ops token. Matching accounts stop
+receiving alert emails and see a Settings notice. No provider adapter is built or verified; real SMTP
+delivery, bounce handling and SPF/DKIM/DMARC need an owner-provided sending domain.
+
+## Automated release (opt-in) and rollback
+
+`.github/workflows/deploy.yml` deploys only after the `checks` workflow succeeded for the same master
+commit, and only when the owner sets repository variable `DEPLOY_ENABLED=true`, variables
+`DEMO_API_URL` (ending `/api/v1`) and `DEMO_WEB_URL`, and secret `RENDER_DEPLOY_HOOK_URL` (optionally
+`VERCEL_DEPLOY_HOOK_URL`). It waits for readiness, then runs `scripts/smoke_deployed.py`, a read-only
+check of health, security headers, exact-origin CORS and SPA routing; run it by hand the same way.
+Owner action: turn off Vercel's git auto-deploy and use the hook, otherwise Vercel still deploys
+ungated. This workflow has not run against the live services. To roll back, run the workflow
+manually with `rollback_sha` set to the last verified commit (or redeploy the previous deployment in
+each dashboard), then re-run the smoke script. Migrations are additive; never downgrade a database.

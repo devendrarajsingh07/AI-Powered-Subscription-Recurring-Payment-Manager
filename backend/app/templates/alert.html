@@ -12,6 +12,6 @@
 <h3>Top contributors</h3><ul>{% for item in payload.contributors %}
 <li>{{ item.merchant }} ({{ item.kind }}): INR {{ item.monthly_equivalent }} per month</li>{% endfor %}</ul>
 {% endif %}
-<p><a href="{{ settings_url }}">Review your alert preferences</a></p>
+<p><a href="{{ settings_url }}">Review your alert preferences</a> · <a href="{{ unsubscribe_url }}">Stop these emails</a></p>
 <p>For demo and educational use with uploaded or simulated data. This is not financial advice.</p>
 </main></body></html>

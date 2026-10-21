@@ -1,6 +1,6 @@
 # SubTrack — current-state handoff
 
-Updated2026-10-21. This section is the only source of current instructions. Historical phase
+Updated 2026-10-21. This section is the only source of current instructions. Historical phase
 records preserve facts, failures and superseded instructions; do not execute their old stop/start rules.
 
 Owner decision: keep free hosting; implement and test WP3–8; beta remains locked. No paid services,
@@ -9,13 +9,22 @@ Architecture A, PostgreSQL coordination, bcrypt, strict SameSite/CSRF and fail-c
 
 ## Current work
 
-WP2 foundations are deployed at19f0098. Successor hosted CI39401421431 passed (rechecked2026-10-21).
-Branch codex/phase8-account-security contains WP3 account/session work and Step0 public-demo
-hardening. Final local gates passed:408 PostgreSQL tests/67 frontend tests;16 normal browser flows,1 TLS and1 public-demo flow passed.
-The expanded mobile light/dark recovery-page accessibility audit passed. Hosted CI/deployment remain pending.
-Do not describe WP4–8 or the beta as complete.
-Prior foundation:357 PostgreSQL tests,57 frontend tests,16 Linux browser flows; evaluator P/R/F1=1.0000
-on three synthetic/handwritten sets. Those results do not certify current edits.
+WP3 account/session work and Step0 public-demo hardening are committed and deployed at f857f1f.
+Final local gates:408 PostgreSQL/67 frontend tests;16 standard browser flows,1 TLS and1 public-demo
+profile; expanded recovery/mobile/theme axe audit. Hosted branch run39623411405 passed all4 jobs.
+Master successor39624799629 completed/success on the same SHA; all4 jobs green.
+Render dep-dbcdh3jl550s738devf0 and Vercel21kzXbFuhxHkkZcNatA73hCDSxLn are live at that SHA.
+Hosted synthetic probes passed: registration/login403, six file paths403,16 independently expected
+products/totals at2026-10-21, loader idempotency, two-visitor isolation/guessed-id404 and cleanup.
+Startup purge shared_before=0/removed=0 establishes no reserved shared account at deployment.
+WP4–8 code is written and verified locally only (uncommitted until the commit step below; NOT deployed,
+hosted CI NOT run). Local gates 2026-10-21: 457 backend tests on real PostgreSQL 16 (embedded, no
+Docker), 73 frontend tests, ruff/format, OpenAPI and TypeScript drift, detector and extraction
+evaluators. NOT verified in this environment: Docker Compose, two API containers against one database,
+extractor container isolation (network none/read-only/cap_drop), Playwright browser suites, hosted CI,
+deployed URLs and headers (scripts/smoke_deployed.py was proven only against a local server), real SMTP.
+Owner actions still pending: DB credential rotation, DB expiry 2026-11-19, Vercel git auto-deploy
+off + deploy-hook secrets before enabling .github/workflows/deploy.yml.
 
 Read docs/PHASE8_PLAN.md, docs/PHASE8_ACCOUNT_SECURITY.md, docs/SECURITY_INCIDENT.md and docs/DOD.md.
 The continuation requires full local gates and hosted CI after every package before demo deployment.
@@ -24,11 +33,11 @@ Production startup remains unconditionally blocked pending operational/implement
 Step0: full-history Gitleaks44 commits clean with3 exact historical synthetic exceptions; current-source
 scan clean. Broad directory scan10 matches in ignored .env/vendor files (no values printed).
 Render dashboard PostgreSQL rules block all external ingress. DB rotation: OWNER ACTION PENDING.
-No secret found in current tracked source requiring removal. CI secret scans added, not yet run hosted.
+No secret found in current tracked source requiring removal. CI full-history/current-source secret scans passed on f857f1f (49 commits).
 
 Public-demo safeguards built and verified locally: disposable generated visitor identity, no password login or registration,
-no file uploads, only synthetic loader,24h expiry and15min/startup purge, persistent warning. Deployment
-must prove controls on the actual hosted instance; local tests alone are insufficient.
+no file uploads, only synthetic loader,24h expiry and15min/startup purge, persistent warning. Hosted API and browser controls were verified2026-10-21. Free sleeping delays physical purge;
+expired identities are rejected immediately and startup catches up.
 
 ## Runtime and limits
 

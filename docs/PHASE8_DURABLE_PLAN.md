@@ -38,3 +38,18 @@ no Redis, paid services, provider calls or real data. This records the next desi
   deletion, actual container network/credential restrictions and existing CSV/PDF/OCR browser flows.
 
 This plan is not a claim that any WP4 control exists. Update DOD with actual commands/results only.
+
+Implementation refinement2026-10-21 (before extraction wiring): use a shared Unix-domain socket,
+not an internal HTTP network. The restricted parser gets network_mode:none, so it has no outbound
+routing or Docker DNS forwarding at all. Worker/API connect only through the socket volume.
+No new infrastructure/dependency. Read-only root, bounded tmpfs/cgroup CPU/memory/PIDs and no
+credentials remain required. A bounded password preflight may reserve a metadata-only staging
+job; it stores neither bytes nor password and is not acknowledged as accepted work until cleaned
+PDF bytes are encrypted and atomically queued. API death during preflight expires the staging
+lease and requires the user to retry; an acknowledged job never depends on a password in RAM.
+
+## Status update 2026-10-21
+
+The controls described above are implemented and covered by local PostgreSQL tests (see the WP4–8
+table in DOD.md). Compose-level multi-container behaviour, extractor container isolation, browser
+flows and hosted CI have not been exercised and remain required before any claim of completion.

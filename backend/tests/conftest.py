@@ -66,6 +66,8 @@ def isolated_app(pg_engine, monkeypatch):
         tables = ", ".join('"' + table.name + '"' for table in Base.metadata.sorted_tables)
         connection.execute(text(f"TRUNCATE {tables} CASCADE"))
     monkeypatch.setenv("BCRYPT_ROUNDS", "4")
+    # Legacy fallback suite; durable tests override explicitly.
+    monkeypatch.setenv("JOB_MODE", "inline")
     if os.environ.get("SUBTRACK_LIVE_EVAL") != "1":
         monkeypatch.setenv("LLM_PROVIDER", "fake")
         monkeypatch.setenv("LLM_API_KEY", "")
@@ -75,6 +77,7 @@ def isolated_app(pg_engine, monkeypatch):
     limiter.clear()
     from app.services.chat import gate
 
+    monkeypatch.setattr(gate, "engine", pg_engine)
     gate.clear()
     worker = UploadWorker(pg_engine)
 

@@ -8,7 +8,8 @@ uses disposable memory-only sessions instead; no refresh cookie is issued. Hashe
 tokens, session expiry/revocation/version and account backoff digests are stored; raw action codes
 appear only in the requested email/private dev outbox. Account deletion cascades authentication
 rows and purges dev outbox copies; anonymous rate buckets are not identity-linked and expire later.
-See PROJECT_INFO for which revision has been verified/deployed; retention jobs remain a later package.
+See PROJECT_INFO for which revision has been verified/deployed. Operational retention periods are
+listed in the next section.
 
 Public-demo-only mode disables file upload/preview and password registration/login. Visitors get
 isolated generated identities and may load synthetic data only. Accounts expire within24 hours and
@@ -111,3 +112,26 @@ is never submitted to an OCR/LLM provider. Later, if the user separately opts in
 existing disclosure still applies: normalized subscription names, amounts and dates returned by
 read-only tools may be sent to Google Gemini; raw transaction descriptions and original files are
 excluded. Offline mode sends neither. See [statement scope and private local check](STATEMENT_IMPORT.md).
+
+## Retention, email lifecycle and problem reports
+
+Finished operational records are purged by a scheduled job (the separate worker owns it in
+PostgreSQL job mode). Periods are configuration; defaults: finished durable jobs 7 days
+(`RETAIN_JOB_DAYS`), chat messages 30 (`RETAIN_CHAT_DAYS`), sent/skipped/failed alerts 180
+(`RETAIN_ALERT_DAYS`), account-linked security events 90 (`RETAIN_AUDIT_DAYS`), expired sessions
+after one day, expired account codes after expiry. Queued statement input is encrypted, bounded and
+cleared when a job finishes. The job logs counts only. Account deletion removes everything at once.
+Database backups and provider-side copies are outside this job; none is verified for this free
+deployment.
+
+Internal metrics (`/api/v1/ops/metrics`) require a private operator token, are absent from the public
+OpenAPI schema, and return counts and ages only: no content, addresses, amounts or identifiers.
+
+Email: a hard bounce or complaint reported by the operator suppresses alert emails for accounts
+delivering to that address until a different address is saved. Alert emails carry a signed one-click
+unsubscribe link and RFC 8058 headers. The link reveals nothing about whether it was valid.
+
+Problem reports (category plus up to 1,000 characters) reject statements, long digit runs and
+currency amounts, are limited per account per day, and are kept until the account is deleted.
+Never ask reporters for financial records. When `LEGAL_ACCEPTANCE_REQUIRED` is on, the accepted draft
+version and time are stored with the account. The drafts in `docs/legal/` are unreviewed and unapproved.

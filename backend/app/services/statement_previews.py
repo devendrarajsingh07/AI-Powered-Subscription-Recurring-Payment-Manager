@@ -51,7 +51,7 @@ def owned(db, user_id, preview_id):
     return row
 
 
-def create(db, user_id, data, filename, worker):
+def create(db, user_id, data, filename, worker, *, as_of=None, preflight=False):
     cfg = get_settings()
     if len(data) > cfg.statement_max_mb * 1024 * 1024:
         fail(413, "file_too_large", "PDF/image exceeds the configured limit (maximum 10 MB)")
@@ -88,6 +88,23 @@ def create(db, user_id, data, filename, worker):
             source_type="pdf_text" if kind == "pdf" else "image_ocr",
             expires_at=now() + timedelta(minutes=cfg.statement_preview_ttl_minutes),
         )
+        if getattr(worker, "durable", False):
+            from app.clock import today
+            from app.services.durable_queue import enqueue
+
+            enqueue(
+                db,
+                user_id,
+                kind="extraction",
+                subject_id=row.id,
+                data=None if preflight else data,
+                mapping=None,
+                as_of=as_of or today(),
+                expires_at=row.expires_at,
+                staging=preflight,
+            )
+            if preflight:
+                row.stage = "checking_password"
         db.commit()
         return row
     except Exception:
@@ -96,7 +113,7 @@ def create(db, user_id, data, filename, worker):
         raise
 
 
-def confirm(db, user_id, preview_id, edits_text, worker):
+def confirm(db, user_id, preview_id, edits_text, worker, *, as_of=None):
     repo.lock_ingestion(db, user_id)
     if repo.get_user(db, user_id, lock=True) is None:
         fail(401, "unauthorized", "Invalid or expired credentials")
@@ -168,6 +185,10 @@ def confirm(db, user_id, preview_id, edits_text, worker):
         )
         row.upload_id, row.status, row.stage, row.payload = upload.id, "confirmed", "importing", {}
         repo.statement_usage(db, user_id, row.created_at.date()).edited_rows += edited
+        if getattr(worker, "durable", False):
+            from app.clock import today
+
+            worker.enqueue(db, user_id, upload.id, data, None, as_of=as_of or today())
         db.commit()
     except Exception:
         worker.release()

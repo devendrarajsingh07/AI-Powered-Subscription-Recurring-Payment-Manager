@@ -20,17 +20,75 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
       APP_TEST_AS_OF: ${APP_TEST_AS_OF:-}
+      JOB_MODE: ${JOB_MODE:-postgres}
+      EXTRACTOR_SOCKET: /var/subtrack/extractor/rpc.sock
     ports:
       - '127.0.0.1:${API_PORT:-8000}:8000'
     depends_on:
       db:
         condition: service_healthy
+      extractor:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - outbox_data:/var/subtrack/outbox
+      - extractor_socket:/var/subtrack/extractor:ro
     command: [sh, -c, 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --no-access-log']
     healthcheck:
       test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://localhost:8000/api/v1/health/ready", timeout=3)']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  worker:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      JOB_MODE: postgres
+      EXTRACTOR_SOCKET: /var/subtrack/extractor/rpc.sock
+    command: [python, -m, app.worker]
+    volumes:
+      - ./backend:/app:ro
+      - outbox_data:/var/subtrack/outbox
+      - extractor_socket:/var/subtrack/extractor:ro
+    read_only: true
+    tmpfs: ['/tmp:size=64m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    init: true
+    restart: on-failure
+    depends_on:
+      api:
+        condition: service_healthy
+      extractor:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -m, app.worker, --health]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+  extractor:
+    build: ./backend
+    # Deliberately no env_file, DB credentials, API keys, ports or network interface.
+    environment:
+      EXTRACTOR_SOCKET: /var/subtrack/extractor/rpc.sock
+    command: [python, -m, app.extractor_service]
+    volumes:
+      - extractor_socket:/var/subtrack/extractor
+    network_mode: none
+    read_only: true
+    tmpfs: ['/tmp:size=128m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    pids_limit: 64
+    cpus: '1.0'
+    mem_limit: 768m
+    init: true
+    restart: on-failure
+    healthcheck:
+      test: [CMD, python, -m, app.extractor_service, --health]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -57,4 +115,5 @@ services:
 volumes:
   postgres_data:
   outbox_data:
+  extractor_socket:
 
