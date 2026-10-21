@@ -10,6 +10,14 @@ type Entry = Pick<
   "role" | "content" | "verified" | "tools"
 >;
 type Final = components["schemas"]["ChatFinal"];
+const FALLBACK: Record<NonNullable<Final["fallback_reason"]>, string> = {
+  kill_switch:
+    "Live AI is switched off right now, so this was answered by the offline assistant. Nothing was sent to an external AI.",
+  daily_cap:
+    "Today's live AI limit was reached, so this was answered by the offline assistant. Nothing was sent to an external AI.",
+  provider_error:
+    "The live AI service had a problem, so this was answered by the offline assistant.",
+};
 const prompts = [
   "What renews this week?",
   "Yearly spend by category",
@@ -154,6 +162,8 @@ export function ChatPanel() {
               },
             ]);
             setConversation(result.conversation_id);
+            if (result.fallback_reason)
+              setNotice(FALLBACK[result.fallback_reason]);
             finished = true;
           } else if (name === "error") {
             throw new Error(

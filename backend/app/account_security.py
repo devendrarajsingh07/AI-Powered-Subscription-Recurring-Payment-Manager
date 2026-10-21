@@ -27,6 +27,9 @@ EVENTS = frozenset(
         "refresh_reuse",
         "account_mail_sent",
         "account_mail_failed",
+        "email_suppressed",
+        "alert_unsubscribed",
+        "support_report",
     }
 )
 

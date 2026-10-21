@@ -199,3 +199,9 @@ class FakeLLM:
                 "token",
                 text="I don't have that information. I can help with your recurring payments.",
             )
+
+
+class OfflineLLM(FakeLLM):
+    """The deterministic offline assistant used as the explicit fallback for a live provider."""
+
+    live = False

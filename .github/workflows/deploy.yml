@@ -1,0 +1,55 @@
+name: deploy-demo
+# Opt-in release for the FREE synthetic-data demo only. It never runs unless the owner sets the
+# repository variable DEPLOY_ENABLED=true and the hook secrets below. It deploys a revision only
+# after every job of the `checks` workflow succeeded for that exact commit on master.
+on:
+  workflow_run:
+    workflows: [checks]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      rollback_sha:
+        description: Previously verified commit to redeploy (leave empty for current master)
+        required: false
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  release:
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    env:
+      API_URL: ${{ vars.DEMO_API_URL }}
+      WEB_URL: ${{ vars.DEMO_WEB_URL }}
+      RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.rollback_sha || github.event.workflow_run.head_sha || github.sha }}
+      - name: Require configuration
+        run: |
+          for name in API_URL WEB_URL; do
+            [ -n "${!name}" ] || { echo "::error::Set repository variable DEMO_${name}"; exit 1; }
+          done
+          [ -n "$RENDER_HOOK" ] || { echo "::error::RENDER_DEPLOY_HOOK_URL missing"; exit 1; }
+      - name: Trigger Render deploy (Alembic runs at boot via the demo entry point)
+        run: curl --fail --silent --show-error --max-time 60 -X POST "$RENDER_HOOK" > /dev/null
+      - name: Trigger Vercel deploy (skipped while Vercel still auto-deploys from git)
+        env:
+          VERCEL_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          [ -z "$VERCEL_HOOK" ] || curl --fail --silent --show-error --max-time 60 -X POST "$VERCEL_HOOK" > /dev/null
+      - name: Wait for the API to become ready
+        run: |
+          for i in $(seq 1 40); do
+            if curl --fail --silent --max-time 20 "$API_URL/health/ready" > /dev/null; then exit 0; fi
+            sleep 15
+          done
+          echo "::error::API did not become ready within 10 minutes; roll back (docs/RUNBOOK.md)"; exit 1
+      - name: Smoke test deployed demo (read-only; headers, CORS, routing)
+        run: python scripts/smoke_deployed.py --api "$API_URL" --web "$WEB_URL"

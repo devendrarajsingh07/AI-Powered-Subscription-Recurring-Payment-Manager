@@ -13,6 +13,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app import uploads
 from app.api import account as account_routes  # noqa: F401 - registers account routes
 from app.api import chat as chat_routes  # noqa: F401 - registers routes on the shared router
+from app.api import lifecycle as lifecycle_routes  # noqa: F401 - unsubscribe, events, reports
+from app.api import ops as ops_routes  # noqa: F401 - internal token-gated metrics
 from app.api.routes import router
 from app.config import get_settings
 from app.db import get_db, get_engine
@@ -37,7 +39,11 @@ async def lifespan(app):
     scheduler = None
     if uploads.get_worker not in app.dependency_overrides:
         instance = uploads.start_worker()
-        if get_settings().scheduler_enabled or get_settings().public_demo_only:
+        # With durable jobs the separate worker is the single scheduler owner; API replicas
+        # never run alert delivery. Inline mode (single-process free demo) keeps its scheduler.
+        if get_settings().job_mode != "postgres" and (
+            get_settings().scheduler_enabled or get_settings().public_demo_only
+        ):
             from app.scheduler import start_scheduler
 
             scheduler = start_scheduler(get_engine())

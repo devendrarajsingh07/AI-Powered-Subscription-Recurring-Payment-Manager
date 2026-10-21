@@ -17,6 +17,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/alerts/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unsubscribe
+         * @description RFC 8058 one-click target. Identical answer for valid and invalid links.
+         */
+        post: operations["unsubscribe_api_v1_alerts_unsubscribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/alerts/{alert_id}": {
         parameters: {
             query?: never;
@@ -471,6 +491,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Processing Jobs
+         * @description Owned metadata only. Original bytes, ciphertext and lease tokens are never returned.
+         */
+        get: operations["processing_jobs_api_v1_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Processing Job */
+        get: operations["processing_job_api_v1_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Cancel Processing Job */
+        patch: operations["cancel_processing_job_api_v1_jobs__job_id__patch"];
+        trace?: never;
+    };
     "/api/v1/me/data": {
         parameters: {
             query?: never;
@@ -663,6 +721,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/support/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report Problem */
+        post: operations["report_problem_api_v1_support_reports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/uploads": {
         parameters: {
             query?: never;
@@ -833,9 +908,21 @@ export interface components {
             lead_time_days: number;
             /** Notification Email */
             notification_email?: string | null;
+            /** Suppressed Reason */
+            suppressed_reason?: ("hard_bounce" | "complaint") | null;
         };
         /** AuthConfig */
         AuthConfig: {
+            /**
+             * Legal Acceptance Required
+             * @default false
+             */
+            legal_acceptance_required: boolean;
+            /**
+             * Legal Version
+             * @default
+             */
+            legal_version: string;
             /** Notice */
             notice: string;
             /** Public Demo Only */
@@ -980,6 +1067,8 @@ export interface components {
         ChatConfig: {
             /** Disclosure */
             disclosure: string;
+            /** Fallback Reason */
+            fallback_reason?: ("kill_switch" | "daily_cap") | null;
             /** Live Opt In */
             live_opt_in: boolean;
             /**
@@ -1008,6 +1097,17 @@ export interface components {
              * Format: uuid
              */
             conversation_id: string;
+            /**
+             * Fallback Reason
+             * @default null
+             */
+            fallback_reason: ("kill_switch" | "daily_cap" | "provider_error") | null;
+            /**
+             * Mode
+             * @default offline
+             * @enum {string}
+             */
+            mode: "offline" | "live";
             /** Tools */
             tools: string[];
             /** Verified */
@@ -1127,6 +1227,57 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** JobAction */
+        JobAction: {
+            /**
+             * Action
+             * @constant
+             */
+            action: "cancel";
+        };
+        /** JobOut */
+        JobOut: {
+            /** Attempt Count */
+            attempt_count: number;
+            /**
+             * Available At
+             * Format: date-time
+             */
+            available_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Failure Code */
+            failure_code: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "csv" | "extraction";
+            /** Max Attempts */
+            max_attempts: number;
+            /** Preview Id */
+            preview_id: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "staging" | "queued" | "running" | "done" | "dead_letter" | "cancelled";
+            /** Upload Id */
+            upload_id: string | null;
+        };
         /**
          * Login
          * @example {
@@ -1177,6 +1328,17 @@ export interface components {
         Page_ChatHistory_: {
             /** Items */
             items: components["schemas"]["ChatHistory"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[JobOut] */
+        Page_JobOut_: {
+            /** Items */
+            items: components["schemas"]["JobOut"][];
             /** Limit */
             limit: number;
             /** Offset */
@@ -1361,6 +1523,8 @@ export interface components {
          *     }
          */
         Register: {
+            /** Accepted Terms Version */
+            accepted_terms_version?: string | null;
             /**
              * Email
              * Format: email
@@ -1704,6 +1868,26 @@ export interface components {
             /** Yearly Total */
             yearly_total: string;
         };
+        /** SupportReportIn */
+        SupportReportIn: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "bug" | "data_issue" | "account" | "other";
+            /** Message */
+            message: string;
+        };
+        /** SupportReportOut */
+        SupportReportOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Received */
+            received: boolean;
+        };
         /** Token */
         Token: {
             /** Access Token */
@@ -1884,6 +2068,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_AlertOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    unsubscribe_api_v1_alerts_unsubscribe_post: {
+        parameters: {
+            query: {
+                u: string;
+                t: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResult"];
                 };
             };
             /** @description Unauthorized */
@@ -4051,6 +4312,240 @@ export interface operations {
             };
         };
     };
+    processing_jobs_api_v1_jobs_get: {
+        parameters: {
+            query?: {
+                status?: ("staging" | "queued" | "running" | "done" | "dead_letter" | "cancelled") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_JobOut_"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    processing_job_api_v1_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    cancel_processing_job_api_v1_jobs__job_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     delete_my_data_api_v1_me_data_delete: {
         parameters: {
             query?: never;
@@ -4998,6 +5493,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Trend"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    report_problem_api_v1_support_reports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportReportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportReportOut"];
                 };
             };
             /** @description Unauthorized */

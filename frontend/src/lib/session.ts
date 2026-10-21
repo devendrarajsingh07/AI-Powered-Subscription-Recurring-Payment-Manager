@@ -59,7 +59,14 @@ export function getToken() {
 export function refreshSession(): Promise<boolean> {
   if (pendingRefresh) return pendingRefresh;
   const started = revision;
-  pendingRefresh = (async () => {
+  // Tabs share one cookie jar. Serialise rotation across tabs so two tabs presenting the same
+  // refresh token cannot look like token theft, and always re-read the CSRF proof for the
+  // cookie that is current *inside* the lock (another tab may have just rotated it).
+  const exclusive = <T>(work: () => Promise<T>): Promise<T> =>
+    typeof navigator !== "undefined" && navigator.locks
+      ? navigator.locks.request("subtrack-refresh", work)
+      : work();
+  pendingRefresh = exclusive(async () => {
     try {
       const config = await fetch(apiOrigin + "/api/v1/auth/config", {
         credentials: "include",
@@ -70,20 +77,18 @@ export function refreshSession(): Promise<boolean> {
           .session_mode === "demo"
       )
         return false;
-      if (!csrf) {
-        const bootstrap = await fetch(apiOrigin + "/api/v1/auth/csrf", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: "{}",
-        });
-        if (!bootstrap.ok) return false;
-        const candidate = (
-          (await bootstrap.json()) as components["schemas"]["CsrfResult"]
-        ).csrf_token;
-        if (!candidate) return false;
-        csrf = candidate;
-      }
+      const bootstrap = await fetch(apiOrigin + "/api/v1/auth/csrf", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      if (!bootstrap.ok) return false;
+      const candidate = (
+        (await bootstrap.json()) as components["schemas"]["CsrfResult"]
+      ).csrf_token;
+      if (!candidate) return false;
+      csrf = candidate;
       const response = await fetch(apiOrigin + "/api/v1/auth/refresh", {
         method: "POST",
         credentials: "include",
@@ -100,7 +105,7 @@ export function refreshSession(): Promise<boolean> {
     } finally {
       pendingRefresh = undefined;
     }
-  })();
+  });
   return pendingRefresh;
 }
 export async function logout(everywhere = false) {

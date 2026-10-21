@@ -14,6 +14,7 @@ from sqlalchemy import (
     ForeignKeyConstraint,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -53,7 +54,20 @@ class User(Identity, Base):
     notification_email: Mapped[str | None] = mapped_column(String(254))
     alerts_enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
     live_opt_in: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
-    __table_args__ = (CheckConstraint("alert_lead_days BETWEEN 1 AND 30", name="ck_alert_lead"),)
+    # Set by a provider bounce/complaint event for the current notification address.
+    alerts_suppressed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    alerts_suppressed_reason: Mapped[str | None] = mapped_column(String(16))
+    # Accepted legal draft version; recorded when supplied, required only if the flag is on.
+    terms_version: Mapped[str | None] = mapped_column(String(32))
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        CheckConstraint("alert_lead_days BETWEEN 1 AND 30", name="ck_alert_lead"),
+        CheckConstraint(
+            "alerts_suppressed_reason IS NULL OR alerts_suppressed_reason IN "
+            "('hard_bounce', 'complaint')",
+            name="ck_alert_suppression_reason",
+        ),
+    )
 
 
 class Upload(Owned, Base):
@@ -98,6 +112,7 @@ class StatementPreview(Owned, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     __table_args__ = (
+        UniqueConstraint("id", "user_id", name="uq_preview_owner"),
         ForeignKeyConstraint(
             ["upload_id", "user_id"], ["uploads.id", "uploads.user_id"], ondelete="CASCADE"
         ),
@@ -384,3 +399,92 @@ class LoginBackoff(Identity, Base):
     failures: Mapped[int] = mapped_column(Integer, server_default="0")
     blocked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class DurableJob(Owned, Base):
+    """Opaque bounded input; the worker never stores a PDF password."""
+
+    __tablename__ = "durable_jobs"
+    upload_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), unique=True)
+    preview_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), unique=True)
+    kind: Mapped[str] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(16), server_default="queued")
+    encrypted_input: Mapped[bytes | None] = mapped_column(LargeBinary)
+    as_of: Mapped[date] = mapped_column(Date)
+    attempt_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(Integer)
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    claim_token: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    failure_code: Mapped[str | None] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["upload_id", "user_id"], ["uploads.id", "uploads.user_id"], ondelete="CASCADE"
+        ),
+        ForeignKeyConstraint(
+            ["preview_id", "user_id"],
+            ["statement_previews.id", "statement_previews.user_id"],
+            ondelete="CASCADE",
+        ),
+        CheckConstraint("num_nonnulls(upload_id, preview_id) = 1", name="ck_job_subject"),
+        CheckConstraint("kind IN ('csv', 'extraction')", name="ck_job_kind"),
+        CheckConstraint(
+            "status IN ('staging', 'queued', 'running', 'done', 'dead_letter', 'cancelled')",
+            name="ck_job_status",
+        ),
+        CheckConstraint(
+            "attempt_count >= 0 AND max_attempts BETWEEN 1 AND 5", name="ck_job_attempts"
+        ),
+        CheckConstraint("octet_length(encrypted_input) <= 14680064", name="ck_job_input_size"),
+        Index("ix_job_claim", "status", "available_at", "lease_until"),
+    )
+
+
+class ChatLease(Owned, Base):
+    __tablename__ = "chat_leases"
+    claim_token: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    minute_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    minute_reset: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    daily_count: Mapped[int] = mapped_column(Integer, server_default="0")
+    daily_day: Mapped[date] = mapped_column(Date, server_default=text("CURRENT_DATE"))
+    __table_args__ = (UniqueConstraint("user_id", name="uq_chat_lease_user"),)
+
+
+class LlmSwitch(Base):
+    """Singleton operator kill switch shared by all instances. System-wide, content-free."""
+
+    __tablename__ = "llm_switch"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, server_default="1")
+    offline_forced: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (CheckConstraint("id = 1", name="ck_llm_switch_singleton"),)
+
+
+class LlmUsage(Base):
+    """Global per-day counters for live-provider caps and metrics. Counts only, no content."""
+
+    __tablename__ = "llm_usage"
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    requests: Mapped[int] = mapped_column(Integer, server_default="0")
+    tokens: Mapped[int] = mapped_column(Integer, server_default="0")
+    fallbacks: Mapped[int] = mapped_column(Integer, server_default="0")
+    errors: Mapped[int] = mapped_column(Integer, server_default="0")
+
+
+class SupportReport(Owned, Base):
+    """Free text problem reports. Statements, account numbers and amounts are refused upstream."""
+
+    __tablename__ = "support_reports"
+    category: Mapped[str] = mapped_column(
+        choices("support_category", "bug", "data_issue", "account", "other")
+    )
+    message: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

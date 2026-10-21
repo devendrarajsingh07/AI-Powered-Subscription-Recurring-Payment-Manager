@@ -30,6 +30,8 @@ const final: components["schemas"]["ChatFinal"] = {
   verified: true,
   tools: ["upcoming_renewals"],
   conversation_id: "00000000-0000-4000-8000-000000000001",
+  mode: "offline",
+  fallback_reason: null,
 };
 const server = setupServer(
   ...authHandlers,
@@ -152,6 +154,22 @@ test("unverified fallback and hostile text render plainly", async () => {
   expect(await screen.findByText(hostile)).toBeVisible();
   expect(screen.getByText(/Could not verify/)).toBeVisible();
   expect(ui.container.querySelector("img")).toBeNull();
+});
+
+test("a live provider answered offline says why, in plain words", async () => {
+  server.use(
+    http.post("*/api/v1/chat", () =>
+      response({ ...final, mode: "offline", fallback_reason: "kill_switch" }),
+    ),
+  );
+  mount();
+  const user = userEvent.setup();
+  await user.type(await screen.findByRole("textbox"), "my renewals");
+  await user.click(screen.getByRole("button", { name: "Send question" }));
+  expect(await screen.findByText(final.answer)).toBeVisible();
+  expect(
+    screen.getByText(/Live AI is switched off right now.*offline assistant/),
+  ).toBeVisible();
 });
 
 test("tool status is live, answer stays buffered, Stop aborts fetch", async () => {

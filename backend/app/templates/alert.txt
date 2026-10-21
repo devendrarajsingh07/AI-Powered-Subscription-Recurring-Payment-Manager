@@ -15,4 +15,5 @@ Top contributors:
 {% endfor %}
 {% endif %}
 Review preferences: {{ settings_url }}
+Stop these emails: {{ unsubscribe_url }}
 For demo and educational use with uploaded or simulated data. This is not financial advice.

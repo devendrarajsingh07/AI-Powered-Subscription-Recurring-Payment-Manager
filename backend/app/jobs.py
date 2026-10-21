@@ -41,7 +41,8 @@ def business_date(now, zone):
     return now.astimezone(ZoneInfo(zone)).date()
 
 
-def run_jobs(engine, *, as_of=None, now=None, notifier=None):
+def run_jobs(engine, *, as_of=None, now=None, notifier=None, retry_only=False):
+    """retry_only: short-interval loop that only re-attempts due `retrying` deliveries."""
     cfg = get_settings()
     if cfg.environment == "production" and (as_of is not None or now is not None):
         raise RuntimeError("Production forbids simulated alert clocks")
@@ -72,21 +73,32 @@ def run_jobs(engine, *, as_of=None, now=None, notifier=None):
         try:
             # System job enumerates IDs only; all financial reads below take a user scope.
             with Session(engine) as db:
-                users = list(db.scalars(select(m.User.id)))
+                users = list(
+                    db.scalars(
+                        select(m.Alert.user_id)
+                        .where(m.Alert.status == "retrying", m.Alert.next_attempt_at <= now)
+                        .distinct()
+                    )
+                    if retry_only
+                    else db.scalars(select(m.User.id))
+                )
             for user_id in users:
                 with Session(engine) as db, db.begin():
                     if repo.get_user(db, user_id, lock=True) is None:
                         continue
-                    stats["sent"] += recover_console(db, user_id, console)
-                    regenerate(db, user_id, as_of=day)
-                    stats["created"] += generate(db, user_id, as_of=day, now=now)
+                    if not retry_only:
+                        stats["sent"] += recover_console(db, user_id, console)
+                        regenerate(db, user_id, as_of=day)
+                        stats["created"] += generate(db, user_id, as_of=day, now=now)
                     ids = [
                         row.id
                         for row in repo.list_owned(
                             db,
                             user_id,
                             m.Alert,
-                            m.Alert.status.in_(["pending", "retrying"]),
+                            m.Alert.status.in_(
+                                ["retrying"] if retry_only else ["pending", "retrying"]
+                            ),
                             m.Alert.send_on <= day,
                             limit=None,
                         )

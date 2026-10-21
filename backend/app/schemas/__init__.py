@@ -78,6 +78,8 @@ class AuthConfig(Schema):
     public_demo_only: bool
     session_mode: Literal["strict", "demo"]
     notice: str
+    legal_version: str = ""
+    legal_acceptance_required: bool = False
 
 
 class ErrorDetail(Schema):
@@ -99,6 +101,7 @@ class Register(Schema):
     email: EmailStr
     password: SecretStr = Field(min_length=12, max_length=72)
     invite_code: SecretStr | None = Field(default=None, min_length=32, max_length=128)
+    accepted_terms_version: str | None = Field(default=None, max_length=32)
 
     @field_validator("email", mode="before")
     @classmethod
@@ -338,6 +341,19 @@ class AlertSettings(Schema):
 class AlertSettingsOut(AlertSettings):
     delivery_mode: Literal["console", "smtp"]
     delivery_notice: str
+    # Set after a provider bounce/complaint for the saved address; changing the address clears it.
+    suppressed_reason: Literal["hard_bounce", "complaint"] | None = None
+
+
+class SupportReportIn(Schema):
+    model_config = ConfigDict(extra="forbid")
+    category: Literal["bug", "data_issue", "account", "other"]
+    message: str = Field(min_length=10, max_length=1000)
+
+
+class SupportReportOut(Schema):
+    id: uuid.UUID
+    received: bool
 
 
 class CategoryOut(Schema):
@@ -490,6 +506,8 @@ class ChatConfig(Schema):
     provider: Literal["fake", "gemini"] = "fake"
     live_opt_in: bool
     disclosure: str
+    # Why a configured live provider is currently answered offline (operator or cap).
+    fallback_reason: Literal["kill_switch", "daily_cap"] | None = None
 
 
 class ChatFinal(Schema):
@@ -497,6 +515,9 @@ class ChatFinal(Schema):
     verified: bool
     tools: list[str]
     conversation_id: uuid.UUID
+    mode: Literal["offline", "live"] = "offline"
+    # Set when a live-capable deployment answered offline: operator switch, global cap, or error.
+    fallback_reason: Literal["kill_switch", "daily_cap", "provider_error"] | None = None
 
 
 class ChatStatus(Schema):
@@ -575,3 +596,24 @@ class RowEdit(Schema):
     type: Literal["debit", "credit"] | None = None
     verified: StrictBool = False
     delete: StrictBool = False
+
+
+JobStatus = Literal["staging", "queued", "running", "done", "dead_letter", "cancelled"]
+
+
+class JobOut(Schema):
+    id: uuid.UUID
+    upload_id: uuid.UUID | None
+    preview_id: uuid.UUID | None
+    kind: Literal["csv", "extraction"]
+    status: JobStatus
+    attempt_count: int
+    max_attempts: int
+    available_at: datetime
+    expires_at: datetime
+    created_at: datetime
+    failure_code: str | None
+
+
+class JobAction(Schema):
+    action: Literal["cancel"]

@@ -8,6 +8,7 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | Method | Route | Auth | Purpose |
 | --- | --- | --- | --- |
 | GET | `/api/v1/alerts` | JWT | Alerts |
+| POST | `/api/v1/alerts/unsubscribe` | Public | Unsubscribe |
 | GET | `/api/v1/alerts/{alert_id}` | JWT | Alert Detail |
 | GET | `/api/v1/auth/config` | Public | Auth Config |
 | POST | `/api/v1/auth/csrf` | JWT | Csrf |
@@ -37,6 +38,9 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | POST | `/api/v1/demo/load` | JWT | Load Demo |
 | GET | `/api/v1/health` | Public | Health |
 | GET | `/api/v1/health/ready` | Public | Ready |
+| GET | `/api/v1/jobs` | JWT | Processing Jobs |
+| GET | `/api/v1/jobs/{job_id}` | JWT | Processing Job |
+| PATCH | `/api/v1/jobs/{job_id}` | JWT | Cancel Processing Job |
 | DELETE | `/api/v1/me/data` | JWT | Delete My Data |
 | GET | `/api/v1/me/export` | JWT | Export Data |
 | GET | `/api/v1/recommendations` | JWT | Recommendations |
@@ -50,6 +54,7 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | GET | `/api/v1/summary` | JWT | Summary |
 | GET | `/api/v1/summary/savings` | JWT | Savings |
 | GET | `/api/v1/summary/trend` | JWT | Summary Trend |
+| POST | `/api/v1/support/reports` | JWT | Report Problem |
 | GET | `/api/v1/uploads` | JWT | Uploads |
 | POST | `/api/v1/uploads` | JWT | Upload |
 | POST | `/api/v1/uploads/preview` | JWT | Preview |

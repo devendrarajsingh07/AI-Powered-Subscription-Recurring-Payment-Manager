@@ -38,8 +38,9 @@ def test_migrations_roundtrip_from_empty(pg_admin):
 def test_model_schema_has_no_drift_and_money_is_numeric(pg_engine):
     with pg_engine.connect() as connection:
         assert not compare_metadata(MigrationContext.configure(connection), m.Base.metadata)
+    system_tables = {"users", "llm_switch", "llm_usage"}  # Global, content-free, no owner.
     for table in m.Base.metadata.sorted_tables:
-        if table.name != "users":
+        if table.name not in system_tables:
             assert "user_id" in table.c
             assert any(index.columns.keys() == ["user_id"] for index in table.indexes)
         for column in table.columns:
