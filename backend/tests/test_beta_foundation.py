@@ -120,6 +120,7 @@ def test_production_defaults_closed_and_rejects_open(monkeypatch):
     values = dict(
         _env_file=None,
         environment="production",
+        job_mode="postgres",
         demo_enabled=False,
         notifier_provider="smtp",
         app_test_as_of="",

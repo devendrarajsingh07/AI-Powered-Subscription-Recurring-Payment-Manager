@@ -436,48 +436,52 @@ def reconcile(rows, metadata):
     )
 
 
+def clean_pdf(data, password, limits):
+    from pypdf import PdfReader, PdfWriter
+
+    reader = PdfReader(io.BytesIO(data), strict=True)
+    if reader.is_encrypted:
+        if not password:
+            raise ExtractionError(
+                "password_required",
+                "This PDF is encrypted. Enter its password in the password field and retry.",
+            )
+        if not reader.decrypt(password):
+            raise ExtractionError(
+                "wrong_password", "PDF password was not accepted; check it and retry."
+            )
+    page_count = len(reader.pages)
+    if not 1 <= page_count <= limits["pages"]:
+        raise ExtractionError(
+            "too_many_pages",
+            "PDF exceeds the configured page limit (maximum 30); split it before upload.",
+        )
+    # Copy pages only: omit document scripts, actions and embedded-file catalog entries.
+    writer = PdfWriter()
+    for page in reader.pages:
+        width, height = float(page.mediabox.width), float(page.mediabox.height)
+        if (
+            width <= 0
+            or height <= 0
+            or width * height * (200 / 72) ** 2 > limits["megapixels"] * 1_000_000
+        ):
+            raise ExtractionError("image_too_large", "A PDF page exceeds the render pixel limit.")
+        writer.add_page(page)
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue(), page_count
+
+
 def extract(data, filename, password, directory, limits, progress=lambda *args: None):
     from PIL import Image
-    from pypdf import PdfReader, PdfWriter
 
     kind = sniff(data, filename)
     Image.MAX_IMAGE_PIXELS = limits["megapixels"] * 1_000_000
     rows, metadata, any_ocr = [], {}, False
     if kind == "pdf":
-        reader = PdfReader(io.BytesIO(data), strict=True)
-        if reader.is_encrypted:
-            if not password:
-                raise ExtractionError(
-                    "password_required",
-                    "This PDF is encrypted. Enter its password in the password field and retry.",
-                )
-            if not reader.decrypt(password):
-                raise ExtractionError(
-                    "wrong_password", "PDF password was not accepted; check it and retry."
-                )
-        page_count = len(reader.pages)
-        if not 1 <= page_count <= limits["pages"]:
-            raise ExtractionError(
-                "too_many_pages",
-                "PDF exceeds the configured page limit (maximum 30); split it before upload.",
-            )
-        # Copy pages only: omit document scripts, actions and embedded-file catalog entries.
-        writer = PdfWriter()
-        for page in reader.pages:
-            width, height = float(page.mediabox.width), float(page.mediabox.height)
-            if (
-                width <= 0
-                or height <= 0
-                or width * height * (200 / 72) ** 2 > limits["megapixels"] * 1_000_000
-            ):
-                raise ExtractionError(
-                    "image_too_large", "A PDF page exceeds the render pixel limit."
-                )
-            writer.add_page(page)
-        buffer = io.BytesIO()
-        writer.write(buffer)
+        cleaned, page_count = clean_pdf(data, password, limits)
         source = Path(directory) / "statement.pdf"
-        source.write_bytes(buffer.getvalue())
+        source.write_bytes(cleaned)
         progress(0, page_count)
         for number, page in timed_pages(source, page_count, limits["page_seconds"]):
             words = text_words(page)

@@ -73,11 +73,17 @@ def lock_user(db, user_id):
 def register(body: s.Register, request: Request, db: Db, background: BackgroundTasks):
     if get_settings().public_demo_only:
         fail(403, "demo_data_only", "Use an isolated public demo session; registration is disabled")
+    cfg = get_settings()
+    if cfg.legal_acceptance_required and body.accepted_terms_version != cfg.legal_version:
+        fail(400, "terms_required", "Accept the current terms and privacy notice to register")
     try:
         consume_invite(
             db, str(body.email), body.invite_code.get_secret_value() if body.invite_code else None
         )
         user = auth.register_user(db, str(body.email).lower(), body.password.get_secret_value())
+        if body.accepted_terms_version == cfg.legal_version:
+            user.terms_version = cfg.legal_version
+            user.terms_accepted_at = datetime.now(timezone.utc)
         audit(db, user.id, "registered")
         raw = None
         if get_settings().require_email_verification:
@@ -213,6 +219,7 @@ async def preview(
     file: UploadFile = File(...),
     password: SecretStr = Form(default=SecretStr(""), max_length=256),
     worker=Depends(get_worker),
+    as_of=Depends(today),
 ):
     """CSV returns a mapping preview. PDF/JPEG/PNG return a 202 extraction job.
 
@@ -234,14 +241,35 @@ async def preview(
         auth.limiter.check(request, "statement-preview:" + str(user.id))
         if worker is None:
             fail(503, "preview_unavailable", "Statement preview worker is unavailable")
-        row = create(db, user.id, data, filename, worker)
+        secret = password.get_secret_value()
+        row = create(db, user.id, data, filename, worker, as_of=as_of, preflight=bool(secret))
+        task = None
+        if getattr(worker, "durable", False):
+            if secret:
+                import anyio
+                from starlette.concurrency import run_in_threadpool
+
+                preview_id, user_id = row.id, user.id
+                await run_in_threadpool(
+                    worker.preflight,
+                    user_id,
+                    preview_id,
+                    data,
+                    filename,
+                    secret,
+                    cancelled=lambda: anyio.from_thread.run(request.is_disconnected),
+                )
+                db.expire_all()
+                from app.models import StatementPreview
+
+                row = require_owned(db, user_id, StatementPreview, preview_id)
+        else:
+            task = BackgroundTask(worker.previews.submit, user.id, row.id, data, filename, secret)
         response = s.StatementPreviewOut.model_validate(output(row))
         return JSONResponse(
             status_code=202,
             content=response.model_dump(mode="json"),
-            background=BackgroundTask(
-                worker.previews.submit, user.id, row.id, data, filename, password.get_secret_value()
-            ),
+            background=task,
         )
     if filename.lower().endswith((".xlsx", ".xls")):
         fail(422, "unsupported_file", "Excel statements are unsupported; export CSV or PDF")
@@ -319,11 +347,11 @@ async def upload(
             fail(422, "invalid_review", "Choose either CSV file/mapping or a statement preview")
         if worker is None:
             fail(503, "preview_unavailable", "Statement worker is unavailable")
-        record, data = confirm(db, user.id, preview_id, edits, worker)
+        record, data = confirm(db, user.id, preview_id, edits, worker, as_of=as_of)
         response = s.UploadOut.model_validate(record)
         task = (
             None
-            if data is None
+            if data is None or getattr(worker, "durable", False)
             else BackgroundTask(worker.submit, user.id, record.id, data, None, as_of=as_of)
         )
         return JSONResponse(
@@ -367,6 +395,8 @@ async def upload(
             total_rows=parsed.row_count,
             row_count=parsed.row_count,
         )
+        if getattr(worker, "durable", False):
+            worker.enqueue(db, user.id, record.id, data, selected, as_of=as_of)
         db.commit()
         response = s.UploadOut.model_validate(record)
     except IntegrityError:
@@ -381,7 +411,11 @@ async def upload(
     from fastapi.responses import JSONResponse
     from starlette.background import BackgroundTask
 
-    task = BackgroundTask(worker.submit, user.id, record.id, data, selected, as_of=as_of)
+    task = (
+        None
+        if getattr(worker, "durable", False)
+        else BackgroundTask(worker.submit, user.id, record.id, data, selected, as_of=as_of)
+    )
     return JSONResponse(status_code=202, content=response.model_dump(mode="json"), background=task)
 
 
@@ -402,6 +436,55 @@ def upload_detail(upload_id: uuid.UUID, user: CurrentUser, db: Db):
     return require_owned(db, user.id, Upload, upload_id)
 
 
+@router.get("/jobs", response_model=s.Page[s.JobOut], tags=["jobs"])
+def processing_jobs(
+    user: CurrentUser,
+    db: Db,
+    status: s.JobStatus | None = None,
+    limit: Limit = 20,
+    offset: Offset = 0,
+):
+    """Owned metadata only. Original bytes, ciphertext and lease tokens are never returned."""
+    from app.models import DurableJob
+
+    conditions = [DurableJob.status == status] if status else []
+    return dict(
+        items=repo.list_owned(
+            db,
+            user.id,
+            DurableJob,
+            *conditions,
+            limit=limit,
+            offset=offset,
+            order_by=DurableJob.created_at.desc(),
+        ),
+        total=repo.count_owned(db, user.id, DurableJob, *conditions),
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/jobs/{job_id}", response_model=s.JobOut, tags=["jobs"])
+def processing_job(job_id: uuid.UUID, user: CurrentUser, db: Db):
+    from app.models import DurableJob
+
+    return require_owned(db, user.id, DurableJob, job_id)
+
+
+@router.patch("/jobs/{job_id}", response_model=s.JobOut, tags=["jobs"])
+def cancel_processing_job(job_id: uuid.UUID, body: s.JobAction, user: CurrentUser, db: Db):
+    from app.models import DurableJob
+    from app.services.durable_queue import cancel
+
+    lock_user(db, user.id)
+    row = require_owned(db, user.id, DurableJob, job_id)
+    if row.status not in ("staging", "queued", "running"):
+        fail(409, "job_terminal", "Processing has finished; completed financial data is kept")
+    cancel(db, user.id, job_id)
+    db.commit()
+    return row
+
+
 @router.get(
     "/uploads/previews/{preview_id}", response_model=s.StatementPreviewOut, tags=["uploads"]
 )
@@ -420,6 +503,11 @@ def cancel_statement_preview(preview_id: uuid.UUID, user: CurrentUser, db: Db):
     repo.lock_ingestion(db, user.id)
     row = owned(db, user.id, preview_id)
     if row.status != "confirmed":
+        from app.models import DurableJob
+        from app.services.durable_queue import cancel
+
+        for job in repo.list_owned(db, user.id, DurableJob, DurableJob.preview_id == preview_id):
+            cancel(db, user.id, job.id)
         row.status, row.stage, row.payload = "cancelled", "cancelled", {}
         row.error_code, row.error_message = None, None
         db.commit()
@@ -447,6 +535,8 @@ def load_demo(
     try:
         data, _ = demo.dataset(as_of)
         validate_csv(data, demo.MAPPING)
+        if getattr(worker, "durable", False):
+            worker.enqueue(db, user.id, record.id, data, demo.MAPPING, as_of=as_of)
         db.commit()
         result = s.UploadOut.model_validate(record)
     except Exception:
@@ -456,9 +546,9 @@ def load_demo(
     return JSONResponse(
         status_code=202,
         content=result.model_dump(mode="json"),
-        background=BackgroundTask(
-            worker.submit, user.id, record.id, data, demo.MAPPING, as_of=as_of
-        ),
+        background=None
+        if getattr(worker, "durable", False)
+        else BackgroundTask(worker.submit, user.id, record.id, data, demo.MAPPING, as_of=as_of),
     )
 
 
@@ -629,6 +719,7 @@ def settings(user: CurrentUser):
             if cfg.notifier_provider == "console"
             else "Email delivery is configured via SMTP. Check recent alerts for delivery status."
         ),
+        suppressed_reason=user.alerts_suppressed_reason,
     )
 
 
@@ -636,9 +727,10 @@ def settings(user: CurrentUser):
 def put_settings(body: s.AlertSettings, user: CurrentUser, db: Db, as_of=Depends(today)):
     lock_user(db, user.id)
     user.alert_lead_days = body.lead_time_days
-    user.notification_email = (
-        str(body.notification_email).lower() if body.notification_email else None
-    )
+    new_address = str(body.notification_email).lower() if body.notification_email else None
+    if new_address != user.notification_email:  # A new address starts with a clean record.
+        user.alerts_suppressed_at = user.alerts_suppressed_reason = None
+    user.notification_email = new_address
     user.alerts_enabled = body.enabled
     generate_alerts(db, user.id, as_of=as_of, now=datetime.now(timezone.utc))
     db.commit()

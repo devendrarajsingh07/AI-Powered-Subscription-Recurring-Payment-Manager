@@ -27,6 +27,8 @@ def auth_config():
         notice="Public demo — do not upload real statements or personal data"
         if cfg.public_demo_only
         else "Educational use with uploaded or simulated data",
+        legal_version=cfg.legal_version,
+        legal_acceptance_required=cfg.legal_acceptance_required,
     )
 
 

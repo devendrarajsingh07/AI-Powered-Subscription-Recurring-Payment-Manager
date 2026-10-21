@@ -159,6 +159,7 @@ def production(**extra):
     return Settings(
         _env_file=None,
         environment="production",
+        job_mode="postgres",
         app_test_as_of="",
         demo_enabled=False,
         registration_mode="closed",
@@ -178,6 +179,7 @@ def production(**extra):
 def test_production_guards(field, value):
     values = dict(
         environment="production",
+        job_mode="postgres",
         app_test_as_of="",
         demo_enabled=False,
         registration_mode="closed",

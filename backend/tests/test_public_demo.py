@@ -165,6 +165,7 @@ def test_production_rejects_demo_or_cross_site_session_configuration(changes, mo
     monkeypatch.delenv("REGISTRATION_MODE", raising=False)
     values = dict(
         environment="production",
+        job_mode="postgres",
         jwt_secret=secrets.token_urlsafe(48),
         web_origin="https://app.example.org",
         api_origin="https://api.example.org",

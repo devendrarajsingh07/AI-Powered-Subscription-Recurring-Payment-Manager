@@ -54,10 +54,14 @@ def render(alert, *, settings=None) -> Mail:
         autoescape=True,
         undefined=StrictUndefined,
     )
+    from app.services.email_lifecycle import unsubscribe_urls
+
+    one_click, page = unsubscribe_urls(alert.user_id)
     context = dict(
         kind=alert.kind,
         payload=alert.payload,
         settings_url=settings.web_origin.rstrip("/") + "/settings",
+        unsubscribe_url=page,
     )
     message = EmailMessage()
     message["From"] = address(settings.smtp_from or "subtrack@example.org")
@@ -65,6 +69,8 @@ def render(alert, *, settings=None) -> Mail:
     message["Subject"] = (
         "SubTrack renewal reminder" if alert.kind == "renewal" else "SubTrack budget reminder"
     )
+    message["List-Unsubscribe"] = f"<{one_click}>"
+    message["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
     message["Message-ID"] = f"<{alert.id}@subtrack.local>"
     message["Date"] = format_datetime(datetime.fromisoformat(alert.payload["generated_at"]))
     message.set_content(environment.get_template("alert.txt").render(**context))

@@ -81,6 +81,8 @@ def generate(db, user_id, *, as_of, now):
         reason = (
             "Alerts are disabled"
             if not user.alerts_enabled
+            else "Email delivery suppressed after a bounce or complaint; update your address"
+            if user.alerts_suppressed_at
             else "No notification email configured"
             if not user.notification_email
             else None

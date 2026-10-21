@@ -36,6 +36,21 @@ class Settings(BaseSettings):
     app_timezone: str = "Asia/Kolkata"
     upload_workers: int = Field(default=2, ge=1, le=4)
     upload_queue_limit: int = Field(default=8, ge=1, le=32)
+    job_mode: Literal["inline", "postgres"] = "inline"
+    job_lease_seconds: int = Field(default=60, ge=3, le=300)
+    job_ttl_minutes: int = Field(default=30, ge=1, le=60)
+    job_max_attempts: int = Field(default=3, ge=1, le=5)
+    job_user_limit: int = Field(default=3, ge=1, le=8)
+    alert_retry_poll_seconds: int = Field(default=60, ge=10, le=900)
+    # Documented retention periods (days); see docs/PRIVACY.md. Account deletion purges at once.
+    retain_job_days: int = Field(default=7, ge=1, le=30)
+    retain_chat_days: int = Field(default=30, ge=1, le=365)
+    retain_alert_days: int = Field(default=180, ge=30, le=730)
+    retain_audit_days: int = Field(default=90, ge=30, le=365)
+    # Internal metrics are disabled (404) unless an operator sets a long random token.
+    ops_metrics_token: SecretStr = SecretStr("")
+    job_retry_seconds: int = Field(default=5, ge=1, le=300)
+    extractor_socket: Path = Path("/var/subtrack/extractor/rpc.sock")
     statement_max_mb: int = Field(default=10, ge=1, le=10)
     statement_max_pages: int = Field(default=30, ge=1, le=30)
     statement_max_megapixels: int = Field(default=25, ge=1, le=25)
@@ -69,6 +84,15 @@ class Settings(BaseSettings):
     llm_max_tokens: int = Field(default=1024, ge=64, le=4096)
     llm_timeout_seconds: int = Field(default=20, ge=1, le=120)
     llm_retries: int = Field(default=2, ge=0, le=3)
+    # Operator kill switch (env, needs restart) plus the shared DB switch (immediate, see
+    # `python -m app.llm_admin`). Global caps are shared by every API instance via PostgreSQL.
+    llm_kill_switch: bool = False
+    # Legal drafts are unapproved: acceptance is recorded when sent, never required unless enabled.
+    legal_version: str = Field(default="draft-2026-10-20", max_length=32)
+    legal_acceptance_required: bool = False
+    support_reports_per_day: int = Field(default=5, ge=1, le=50)
+    llm_global_daily_requests: int = Field(default=500, ge=1, le=1_000_000)
+    llm_global_daily_tokens: int = Field(default=500_000, ge=1000, le=100_000_000)
     chat_timeout_seconds: int = Field(default=60, ge=1, le=180)
     chat_history_window: int = Field(default=8, ge=0, le=20)
     chat_minute_limit: int = Field(default=10, ge=1, le=100)
@@ -104,6 +128,10 @@ class Settings(BaseSettings):
         if self.environment == "production":
             from app.sites import same_site_siblings
 
+            if self.job_mode != "postgres":
+                raise ValueError(
+                    "Production requires durable PostgreSQL jobs and a separate worker"
+                )
             if self.public_demo_only or self.auth_session_mode != "strict":
                 raise ValueError("Production forbids public demo sessions")
             site = self.auth_cookie_site.lower().strip()
