@@ -1,3 +1,4 @@
+import { observeAuth, observedToken } from "./auth";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
@@ -19,7 +20,7 @@ const corpus = JSON.parse(
 };
 async function headers(page: Page) {
   return {
-    Authorization: `Bearer ${await page.evaluate(() => JSON.parse(sessionStorage.getItem("subtrack.session")!).token as string)}`,
+    Authorization: `Bearer ${await observedToken(page)}`,
   };
 }
 async function read<T>(page: Page, route: string) {
@@ -111,9 +112,7 @@ async function audit(page: Page) {
       await (
         window as unknown as {
           axe: {
-            run: (
-              document: Document,
-            ) => Promise<{
+            run: (document: Document) => Promise<{
               violations: { id: string; nodes: { target: string[] }[] }[];
             }>;
           };
@@ -144,9 +143,7 @@ async function remove(page: Page) {
   ).toBeVisible();
 }
 test.afterEach(async ({ page }) => {
-  const token = await page
-    .evaluate(() => sessionStorage.getItem("subtrack.session"))
-    .catch(() => null);
+  const token = await observedToken(page).catch(() => null);
   if (token)
     await page.request.delete("/api/v1/me/data", {
       headers: await headers(page),
@@ -170,7 +167,9 @@ test("text PDF real review imports all ground-truth products; axe light/dark/mob
     await page.getByLabel("Theme preference").selectOption(theme);
     await page.setViewportSize({ width: 360, height: 900 });
     await audit(page);
-    await page.getByRole("heading", { name: "Review every extracted row" }).scrollIntoViewIfNeeded();
+    await page
+      .getByRole("heading", { name: "Review every extracted row" })
+      .scrollIntoViewIfNeeded();
     await capture(page, {
       path: path.resolve(
         `../docs/screenshots/statement-review-${theme}-mobile.png`,
@@ -254,9 +253,15 @@ test("scanned PDF and corrected JPEG match independent totals; PNG local preview
   await capture(page, {
     path: path.resolve("../docs/screenshots/statement-local-image.png"),
   });
+  const cancellation = page.waitForResponse(
+    (response) =>
+      response.request().method() === "DELETE" &&
+      response.url().endsWith("/uploads/previews/" + png.id),
+  );
   await page
     .getByRole("button", { name: "Cancel preview", exact: true })
     .click();
+  expect((await cancellation).ok()).toBeTruthy();
   const cancelled = await read<components["schemas"]["StatementPreviewOut"]>(
     page,
     "/uploads/previews/" + png.id,
@@ -301,4 +306,8 @@ test("encrypted PDF password retry, unreadable guidance and hostile text remain 
   );
   expect((await importReviewed(page)).inserted_count).toBe(399);
   await remove(page);
+});
+
+test.beforeEach(async ({ page }) => {
+  observeAuth(page);
 });

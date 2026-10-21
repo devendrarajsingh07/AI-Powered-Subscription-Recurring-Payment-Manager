@@ -1,6 +1,7 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import { clearSession, getToken } from "../lib/session";
+import { apiOrigin } from "./base";
 
 export class ApiError extends Error {
   constructor(
@@ -10,14 +11,9 @@ export class ApiError extends Error {
     super(message);
   }
 }
-const configuredBase = (import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(
-  /\/api\/v1\/?$/,
-  "",
-);
 export const api = createClient<paths>({
-  baseUrl: configuredBase.startsWith("http")
-    ? configuredBase
-    : window.location.origin + configuredBase,
+  baseUrl: apiOrigin,
+  credentials: "include",
   fetch: (request) => globalThis.fetch(request),
 });
 api.use({

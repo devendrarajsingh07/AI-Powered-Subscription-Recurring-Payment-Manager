@@ -124,6 +124,8 @@ def test_production_defaults_closed_and_rejects_open(monkeypatch):
         notifier_provider="smtp",
         app_test_as_of="",
         web_origin="https://web.example.org",
+        api_origin="https://api.example.org",
+        auth_cookie_site="example.org",
         jwt_secret=secrets.token_urlsafe(48),
     )
     assert Settings(**values).registration_mode == "closed"

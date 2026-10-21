@@ -3,7 +3,18 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+)
 from fastapi.responses import StreamingResponse
 from pydantic import SecretStr
 from sqlalchemy.exc import IntegrityError
@@ -59,37 +70,79 @@ def lock_user(db, user_id):
 
 
 @router.post("/auth/register", response_model=s.UserOut, status_code=201, tags=["auth"])
-def register(body: s.Register, request: Request, db: Db):
+def register(body: s.Register, request: Request, db: Db, background: BackgroundTasks):
+    if get_settings().public_demo_only:
+        fail(403, "demo_data_only", "Use an isolated public demo session; registration is disabled")
     try:
         consume_invite(
             db, str(body.email), body.invite_code.get_secret_value() if body.invite_code else None
         )
         user = auth.register_user(db, str(body.email).lower(), body.password.get_secret_value())
         audit(db, user.id, "registered")
+        raw = None
+        if get_settings().require_email_verification:
+            from app.services.account_actions import issue
+
+            raw = issue(db, user.id, "verify")
         db.commit()
     except IntegrityError:
         db.rollback()
         fail(409, "registration_conflict", "Unable to register with that email")
-    return user
+    if raw:
+        from app.services.account_actions import deliver
+
+        background.add_task(deliver, db.get_bind(), user.id, "verify", raw)
+    return user_result(user)
+
+
+def user_result(user):
+    return dict(
+        id=user.id,
+        email=user.email,
+        created_at=user.created_at,
+        email_verified=user.email_verified_at is not None,
+        verification_required=get_settings().require_email_verification
+        and user.email_verified_at is None,
+    )
 
 
 @router.post("/auth/login", response_model=s.Token, tags=["auth"])
-def login(body: s.Login, request: Request, db: Db):
+def login(body: s.Login, request: Request, db: Db, response: Response):
+    from app.services import login_backoff, sessions
+
+    if get_settings().public_demo_only:
+        fail(
+            403, "demo_data_only", "Use an isolated public demo session; password login is disabled"
+        )
+
+    if request.headers.get("origin") and request.headers["origin"] != get_settings().web_origin:
+        fail(403, "csrf_failed", "Request origin could not be verified")
+    throttle = login_backoff.locked(db, str(body.email))
     user = auth.credentials_user(db, str(body.email).lower(), body.password.get_secret_value())
     if user is None:
+        login_backoff.failed(throttle)
         audit(db, None, "login_failed")
         db.commit()
         fail(401, "invalid_credentials", "Invalid email or password")
+    throttle.failures, throttle.blocked_until = 0, None
+    throttle.user_id = user.id
+    if get_settings().require_email_verification and user.email_verified_at is None:
+        db.commit()
+        fail(403, "verification_required", "Verify your email before signing in")
+    session, raw = sessions.start(db, user)
     audit(db, user.id, "login")
     db.commit()
+    sessions.cookie(response, raw)
     return s.Token(
-        access_token=auth.issue_token(user.id), expires_in=get_settings().jwt_access_minutes * 60
+        access_token=auth.issue_token(user.id, session_id=session.id, version=user.auth_version),
+        expires_in=get_settings().jwt_access_minutes * 60,
+        csrf_token=sessions.csrf(raw),
     )
 
 
 @router.get("/auth/me", response_model=s.UserOut, tags=["auth"])
 def me(user: CurrentUser):
-    return user
+    return user_result(user)
 
 
 @router.get(

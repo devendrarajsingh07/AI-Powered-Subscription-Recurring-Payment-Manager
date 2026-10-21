@@ -1,41 +1,29 @@
 import { useSyncExternalStore } from "react";
 import type { components } from "../api/schema";
+import { apiOrigin } from "../api/base";
 
-const key = "subtrack.session";
 type Session = { token: string; expires: number };
-type SignOutNotice = { message: string; deleted?: Record<string, number> };
-let signOutNotice: SignOutNotice | undefined;
-export const getSignOutNotice = () => signOutNotice;
-function read(): Session | null {
-  try {
-    const value = JSON.parse(
-      sessionStorage.getItem(key) || "null",
-    ) as Session | null;
-    if (
-      value &&
-      typeof value.token === "string" &&
-      Number.isFinite(value.expires) &&
-      value.expires > Date.now()
-    )
-      return value;
-    if (value) {
-      sessionStorage.removeItem(key);
-      signOutNotice = {
-        message: "Your session expired. Please sign in again.",
-      };
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-let current = read();
+type Notice = { message: string; deleted?: Record<string, number> };
+let current: Session | null = null;
+let signOutNotice: Notice | undefined;
+let csrf: string | undefined;
+let revision = 0;
+let pendingRefresh: Promise<boolean> | undefined;
 const listeners = new Set<() => void>();
+// Remove credentials left by older app versions; access tokens live only in this module.
+try {
+  sessionStorage.removeItem("subtrack.session");
+} catch {
+  /* Storage may be disabled. */
+}
+export const getSignOutNotice = () => signOutNotice;
 export function clearSession(
   expired = false,
   deleted?: Record<string, number>,
 ) {
+  revision += 1;
   current = null;
+  csrf = undefined;
   signOutNotice = {
     message: deleted
       ? "Your account and data were deleted."
@@ -44,24 +32,110 @@ export function clearSession(
         : "You have been signed out.",
     deleted,
   };
-  sessionStorage.removeItem(key);
+  try {
+    sessionStorage.removeItem("subtrack.session");
+  } catch {
+    /* Memory remains cleared. */
+  }
   window.dispatchEvent(
     new CustomEvent("subtrack:logout", { detail: { expired } }),
   );
   listeners.forEach((listener) => listener());
 }
 export function saveSession(value: components["schemas"]["Token"]) {
+  revision += 1;
   signOutNotice = undefined;
+  csrf = value.csrf_token || undefined;
   current = {
     token: value.access_token,
     expires: Date.now() + value.expires_in * 1000,
   };
-  sessionStorage.setItem(key, JSON.stringify(current));
   listeners.forEach((listener) => listener());
 }
 export function getToken() {
   if (current && current.expires <= Date.now()) clearSession(true);
   return current?.token;
+}
+export function refreshSession(): Promise<boolean> {
+  if (pendingRefresh) return pendingRefresh;
+  const started = revision;
+  pendingRefresh = (async () => {
+    try {
+      const config = await fetch(apiOrigin + "/api/v1/auth/config", {
+        credentials: "include",
+      });
+      if (
+        !config.ok ||
+        ((await config.json()) as components["schemas"]["AuthConfig"])
+          .session_mode === "demo"
+      )
+        return false;
+      if (!csrf) {
+        const bootstrap = await fetch(apiOrigin + "/api/v1/auth/csrf", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+        if (!bootstrap.ok) return false;
+        const candidate = (
+          (await bootstrap.json()) as components["schemas"]["CsrfResult"]
+        ).csrf_token;
+        if (!candidate) return false;
+        csrf = candidate;
+      }
+      const response = await fetch(apiOrigin + "/api/v1/auth/refresh", {
+        method: "POST",
+        credentials: "include",
+        headers: { "X-CSRF-Token": csrf!, "Content-Type": "application/json" },
+        body: "{}",
+      });
+      if (!response.ok) return false;
+      const token = (await response.json()) as components["schemas"]["Token"];
+      if (revision !== started) return false;
+      saveSession(token);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      pendingRefresh = undefined;
+    }
+  })();
+  return pendingRefresh;
+}
+export async function logout(everywhere = false) {
+  try {
+    if (everywhere && current && current.expires <= Date.now()) {
+      if (!(await refreshSession()))
+        throw new Error("Reauthentication required");
+    }
+    const token = current?.token;
+    const cookieLogout = !everywhere && Boolean(csrf);
+    if (token || cookieLogout) {
+      const response = await fetch(
+        apiOrigin +
+          "/api/v1/auth/" +
+          (everywhere
+            ? "logout-all"
+            : cookieLogout
+              ? "logout-cookie"
+              : "logout"),
+        {
+          method: "POST",
+          credentials: "include",
+          headers: cookieLogout
+            ? { "X-CSRF-Token": csrf!, "Content-Type": "application/json" }
+            : { Authorization: `Bearer ${token}` },
+          body: cookieLogout ? "{}" : undefined,
+        },
+      );
+      if (!response.ok) throw new Error("Revocation failed");
+    }
+    clearSession();
+  } catch {
+    // Keep the UI signed in so failed server revocation can be retried explicitly.
+    throw new Error("Could not sign out securely. Please retry.");
+  }
 }
 export function useSession() {
   return useSyncExternalStore(

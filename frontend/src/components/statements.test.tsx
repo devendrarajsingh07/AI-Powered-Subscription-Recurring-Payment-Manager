@@ -1,3 +1,4 @@
+import { authHandlers } from "../auth-test-handlers";
 import { StrictMode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -59,6 +60,7 @@ const job: Job = {
   },
 };
 const server = setupServer(
+  ...authHandlers,
   http.get("*/api/v1/uploads/previews/:id", () => HttpResponse.json(job)),
   http.delete("*/api/v1/uploads/previews/:id", () =>
     HttpResponse.json({

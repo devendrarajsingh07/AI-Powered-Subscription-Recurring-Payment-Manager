@@ -29,6 +29,8 @@ class AuthLimiter:
     def check(self, request, action):
         cfg = get_settings()
         maximum = cfg.auth_register_limit if action == "register" else cfg.auth_login_limit
+        if action in ("csrf", "refresh"):
+            maximum = cfg.auth_session_limit
         window = cfg.auth_window_seconds
         peer = request.client.host if request.client else "unknown"
         key = digest(action + "\0" + peer, "rate-limit")

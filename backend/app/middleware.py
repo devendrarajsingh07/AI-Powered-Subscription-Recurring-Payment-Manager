@@ -8,6 +8,7 @@ from starlette.formparsers import MultiPartParser
 from starlette.requests import Request
 
 from app.auth import limiter
+from app.config import get_settings
 
 logger = logging.getLogger("subtrack.api")
 MAX_MULTIPART_BYTES = 5 * 1024 * 1024 + 64 * 1024
@@ -30,6 +31,27 @@ class SafetyMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        if (
+            get_settings().public_demo_only
+            and scope["method"] == "POST"
+            and scope["path"]
+            in (
+                "/api/v1/uploads",
+                "/api/v1/uploads/preview",
+            )
+        ):
+            # Refuse before reading bytes or parsing multipart, including chunked requests.
+            return await JSONResponse(
+                status_code=403,
+                headers=EARLY_HEADERS,
+                content={
+                    "error": {
+                        "code": "demo_data_only",
+                        "message": "File uploads are disabled in the public demo. "
+                        "Load synthetic demo data instead.",
+                    }
+                },
+            )(scope, receive, send)
         if scope["method"] == "POST" and scope["path"] in (
             "/api/v1/auth/register",
             "/api/v1/auth/login",

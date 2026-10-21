@@ -1,3 +1,4 @@
+import { observeAuth, observedToken } from "./auth";
 import { capture } from "./evidence";
 import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
@@ -37,10 +38,7 @@ function expectedMusicSaving() {
   return `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
 }
 async function token(page: Page) {
-  return page.evaluate(
-    () =>
-      JSON.parse(sessionStorage.getItem("subtrack.session")!).token as string,
-  );
+  return observedToken(page);
 }
 async function read<T>(page: Page, endpoint: string): Promise<T> {
   const result = await page.request.get("/api/v1" + endpoint, {
@@ -272,4 +270,8 @@ test("real insights, renewal and budget delivery are grounded and idempotent", a
   ).toBeVisible();
   expect(outbox(user.id)).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+test.beforeEach(async ({ page }) => {
+  observeAuth(page);
 });

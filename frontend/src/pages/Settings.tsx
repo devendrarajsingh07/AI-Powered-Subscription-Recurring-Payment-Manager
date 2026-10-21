@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, errorMessage } from "../api/client";
 import type { components } from "../api/schema";
 import { Dialog, ErrorState, Heading, Loading } from "../components/Common";
-import { clearSession } from "../lib/session";
+import { clearSession, logout } from "../lib/session";
 import { formatMoney } from "../lib/money";
 import { RecentAlerts } from "../components/RecentAlerts";
 import { useRefresh } from "../hooks/data";
@@ -28,6 +28,7 @@ export default function SettingsPage() {
         subtitle="Set a budget, choose your preferences and stay in control of your data."
       />
       <div className="settings-grid">
+        <SessionControls />
         <section className="panel">
           <h2>Monthly recurring budget</h2>
           <p className="muted">
@@ -88,6 +89,33 @@ export default function SettingsPage() {
       </section>
       {deleting && <DeleteDialog onClose={() => setDeleting(false)} />}
     </>
+  );
+}
+function SessionControls() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  return (
+    <section className="panel">
+      <h2>Account security</h2>
+      <p>Sign out on every device. Access tokens are kept in memory only.</p>
+      <button
+        disabled={busy}
+        onClick={() => {
+          setBusy(true);
+          setError("");
+          void logout(true)
+            .catch((caught) => setError(errorMessage(caught)))
+            .finally(() => setBusy(false));
+        }}
+      >
+        {busy ? "Signing out…" : "Sign out everywhere"}
+      </button>
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 export function ExportData() {

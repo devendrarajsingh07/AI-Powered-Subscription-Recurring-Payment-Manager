@@ -12,7 +12,22 @@ from app.config import get_settings
 from app.models import RegistrationInvite, SecurityEvent, User
 
 EVENTS = frozenset(
-    {"registered", "login", "login_failed", "export", "invite_created", "invite_revoked"}
+    {
+        "registered",
+        "login",
+        "login_failed",
+        "export",
+        "invite_created",
+        "invite_revoked",
+        "email_verified",
+        "reset_requested",
+        "password_changed",
+        "logout",
+        "logout_all",
+        "refresh_reuse",
+        "account_mail_sent",
+        "account_mail_failed",
+    }
 )
 
 

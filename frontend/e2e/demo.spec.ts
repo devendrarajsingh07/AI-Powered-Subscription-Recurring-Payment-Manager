@@ -1,3 +1,4 @@
+import { observeAuth, observedToken } from "./auth";
 import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -9,7 +10,7 @@ import type { components } from "../src/api/schema";
 const root = path.resolve("..");
 async function headers(page: Page) {
   return {
-    Authorization: `Bearer ${await page.evaluate(() => JSON.parse(sessionStorage.getItem("subtrack.session")!).token as string)}`,
+    Authorization: `Bearer ${await observedToken(page)}`,
   };
 }
 async function read<T>(page: Page, route: string): Promise<T> {
@@ -279,7 +280,12 @@ test("every page: axe both themes at 360px; responsive 768/1280; dialogs and cha
       theme,
     );
     await page.setViewportSize({ width: 360, height: 800 });
-    for (const route of ["/login", "/register"]) {
+    for (const route of [
+      "/login",
+      "/register",
+      "/verify-email",
+      "/reset-password",
+    ]) {
       await page.goto(route);
       await audit(page);
     }
@@ -335,4 +341,8 @@ test("every page: axe both themes at 360px; responsive 768/1280; dialogs and cha
   await expect(page.getByText(/Demo data removed/)).toBeVisible();
   await deleteAccount(page);
   expect(errors).toEqual([]);
+});
+
+test.beforeEach(async ({ page }) => {
+  observeAuth(page);
 });

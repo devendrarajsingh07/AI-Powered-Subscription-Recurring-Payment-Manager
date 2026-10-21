@@ -9,6 +9,7 @@ import { api, errorMessage } from "../api/client";
 import type { components } from "../api/schema";
 import { Empty, ErrorState, Heading, Loading } from "../components/Common";
 import { useRefresh } from "../hooks/data";
+import { useAuthMode } from "../components/AuthMode";
 type Preview = components["schemas"]["Preview"];
 
 export type Layout = "single" | "split";
@@ -38,6 +39,31 @@ export function mappingValid(mapping: Record<string, string>, layout: Layout) {
   );
 }
 export default function UploadPage() {
+  const mode = useAuthMode();
+  if (mode.isPending) return <Loading />;
+  if (mode.isError)
+    return (
+      <ErrorState
+        error={mode.error}
+        retry={() => {
+          void mode.refetch();
+        }}
+      />
+    );
+  if (mode.data.public_demo_only)
+    return (
+      <>
+        <Heading
+          title="Synthetic demo data"
+          subtitle="File uploads are disabled on the public demo."
+        />
+        <p>Public demo — do not upload real statements or personal data.</p>
+        <DemoPanel />
+      </>
+    );
+  return <UploadWorkspace />;
+}
+function UploadWorkspace() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -159,10 +185,14 @@ export default function UploadPage() {
       />
       {!statementJobId && !uploadId && <DemoPanel />}
       <div className="steps" aria-label="Upload steps">
-        <span className={!preview && !uploadId && !statementJobId ? "current" : ""}>
+        <span
+          className={!preview && !uploadId && !statementJobId ? "current" : ""}
+        >
           1 · Choose a file
         </span>
-        <span className={preview || statementJobId ? "current" : ""}>2 · Check columns</span>
+        <span className={preview || statementJobId ? "current" : ""}>
+          2 · Check columns
+        </span>
         <span className={uploadId ? "current" : ""}>3 · Process & review</span>
       </div>
       {statementJobId && file && (
@@ -215,7 +245,8 @@ export default function UploadPage() {
         <p className="muted">
           Simple date / description / amount / type exports and Indian bank
           debit / credit layouts are supported. Other currencies are rejected by
-          the server for CSV. For extracted statements, verify the currency yourself; only INR is supported.
+          the server for CSV. For extracted statements, verify the currency
+          yourself; only INR is supported.
         </p>
         <p className="muted">
           PDF/image extraction runs locally on our server and requires review.

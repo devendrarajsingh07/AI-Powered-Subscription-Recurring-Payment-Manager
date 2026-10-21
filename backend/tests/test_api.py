@@ -658,6 +658,12 @@ def test_no_llm_or_create_all_and_all_business_routes_are_protected():
         if path.startswith("/api/v1/health") or path in (
             "/api/v1/auth/register",
             "/api/v1/auth/login",
+            "/api/v1/auth/config",
+            "/api/v1/auth/demo",
+            "/api/v1/auth/email/request",
+            "/api/v1/auth/email/confirm",
+            "/api/v1/auth/password/request",
+            "/api/v1/auth/password/reset",
         ):
             continue
         for operation in methods.values():

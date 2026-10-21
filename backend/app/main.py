@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import uploads
+from app.api import account as account_routes  # noqa: F401 - registers account routes
 from app.api import chat as chat_routes  # noqa: F401 - registers routes on the shared router
 from app.api.routes import router
 from app.config import get_settings
@@ -28,11 +29,15 @@ async def lifespan(app):
         )
     if len(get_settings().jwt_secret.get_secret_value()) < 32:
         raise RuntimeError("JWT_SECRET must contain at least 32 characters")
+    if get_settings().public_demo_only:
+        from app.services.demo_retention import purge_demo_accounts
+
+        purge_demo_accounts(get_engine())
     instance = None
     scheduler = None
     if uploads.get_worker not in app.dependency_overrides:
         instance = uploads.start_worker()
-        if get_settings().scheduler_enabled:
+        if get_settings().scheduler_enabled or get_settings().public_demo_only:
             from app.scheduler import start_scheduler
 
             scheduler = start_scheduler(get_engine())
@@ -59,7 +64,7 @@ app.add_middleware(
     allow_origins=[get_settings().web_origin],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
 )
 app.include_router(router)
 

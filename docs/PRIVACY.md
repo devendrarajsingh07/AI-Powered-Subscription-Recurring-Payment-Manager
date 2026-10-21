@@ -2,6 +2,19 @@
 
 Use synthetic or locally redacted data. This is an educational/demo application, not a bank connection.
 
+Account-security build: access tokens remain in browser memory only. Strict same-site deployments
+use a host-only Secure/HttpOnly/SameSite=Strict rotating refresh cookie. The current cross-site demo
+uses disposable memory-only sessions instead; no refresh cookie is issued. Hashed refresh/action
+tokens, session expiry/revocation/version and account backoff digests are stored; raw action codes
+appear only in the requested email/private dev outbox. Account deletion cascades authentication
+rows and purges dev outbox copies; anonymous rate buckets are not identity-linked and expire later.
+See PROJECT_INFO for which revision has been verified/deployed; retention jobs remain a later package.
+
+Public-demo-only mode disables file upload/preview and password registration/login. Visitors get
+isolated generated identities and may load synthetic data only. Accounts expire within24 hours and
+are purged on startup/every15 minutes while the free service is awake. Expired access is rejected
+even before the physical purge; sleeping/free-service downtime can delay physical deletion.
+
 The hosted free instance is synthetic-only; Phase 8 beta remains blocked. It additionally stores
 HMAC invitation/email digests, invite expiry/use/revocation times, minimal security-event UUIDs/kinds/
 timestamps, and HMAC peer-address fixed-window rate counters. Signing-key rotation invalidates the

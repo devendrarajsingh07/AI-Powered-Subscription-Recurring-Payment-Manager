@@ -19,6 +19,9 @@ def main():
         raise SystemExit("PORT must be an integer between 1 and 65535.") from None
     root = Path(__file__).resolve().parents[1]
     os.chdir(root)
+    # This entry point is exclusively the hosted public demo; fail closed on file uploads/login.
+    os.environ["PUBLIC_DEMO_ONLY"] = "true"
+    os.environ["AUTH_SESSION_MODE"] = "demo"
     subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], check=True)
     os.execv(
         sys.executable,

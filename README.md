@@ -59,9 +59,15 @@ make seed
 ```
 
 PowerShell without Make: the second command is `docker compose exec api python scripts/seed_demo.py`.
-Open [SubTrack](http://localhost:5173). Dev demo login: **subtrack-demo@example.org / SubTrackDemo2026!**.
+Open [SubTrack](http://localhost:5173). **Local development only**, never hosted:
+**subtrack-demo@example.org / SubTrackDemo2026!**.
 The seed command refuses non-development environments and never resets another account's password.
 Use Register for your own empty account and select **Load demo data** to follow the full demo.
+The public-demo build (`PUBLIC_DEMO_ONLY=true`) offers **Start isolated demo** with no email/password: disposable
+synthetic-only sessions, no file uploads, a visible privacy warning and automatic account expiry.
+Do not upload real statements or personal data. The deployed cross-site demo keeps its short-lived
+access token in memory and issues no refresh cookie; reloading starts a new session. This does not
+relax the strict same-site session design or make the demo beta-ready.
 [API docs](http://localhost:8000/docs) and [OpenAPI JSON](backend/openapi/openapi.json) document the real API.
 
 Normal demo data is generated relative to application today in APP_TIMEZONE. The badge shows its
@@ -106,7 +112,8 @@ their retention purge is still pending. These are minimal audit records, not ful
 Auth/auxiliary request throttling now uses shared PostgreSQL fixed windows. It fails closed on store
 outage, uses HMAC peer-address keys and expires inactive buckets on subsequent limited requests.
 It does not trust forwarded headers; the deployed proxy/client-address policy needs beta validation.
-Account-level backoff, shared chat guards and global job caps are still outstanding.
+Account-level backoff is now PostgreSQL-backed for known and unknown emails. Shared chat guards
+and durable global job caps remain outstanding; do not confuse account security with their completion.
 
 ```mermaid
 flowchart LR
@@ -172,7 +179,10 @@ Ubuntu CI installs all dependencies and runs all three engines. No failing brows
 The API's `/api/v1/openapi.json` is checked in with an endpoint summary under backend/openapi.
 `make types` uses openapi-typescript; never hand-edit src/api/schema.ts. Build/test fail on drift.
 Money stays decimal strings with Indian grouping; charts only derive dimensionless BigInt coordinates.
-Tokens use memory/sessionStorage, clear on logout/401/expiry, and never appear in URLs/logs.
+Access tokens use memory only; older sessionStorage credentials are removed. Strict same-site mode
+uses rotating Secure/HttpOnly/SameSite=Strict host-only refresh cookies with CSRF protection and
+server revocation; the cross-site public demo issues no refresh cookie. Tokens/codes never enter URLs
+or application logs. See [account-security decisions and TLS stand-in](docs/PHASE8_ACCOUNT_SECURITY.md).
 Theme light/dark/system is a non-sensitive guarded localStorage preference applied before paint.
 Browser axe covers every page in both themes at 360px; 360/768/1280 overflow checks are automated.
 A real screen-reader pass remains a human task.
@@ -325,6 +335,15 @@ Values below reflect .env.example; restart after changes. SMTP and live Gemini a
 | `AUTH_REGISTER_LIMIT` | `5` |
 | `AUTH_LOGIN_LIMIT` | `10` |
 | `AUTH_WINDOW_SECONDS` | `60` |
+| `AUTH_SESSION_LIMIT` | `60` per peer/window, separate bootstrap/refresh buckets |
+| `AUTH_REFRESH_DAYS` | `14`, rotating host-only cookies in strict mode |
+| `ACCOUNT_TOKEN_MINUTES` | `15`, hashed single-use email/reset code |
+| `ACCOUNT_BACKOFF_THRESHOLD` | `3`, PostgreSQL account-keyed exponential backoff |
+| `REQUIRE_EMAIL_VERIFICATION` | `false` only for development; mandatory in production |
+| `AUTH_SESSION_MODE` | `strict`; `demo` requires all public-demo-only safeguards |
+| `PUBLIC_DEMO_ONLY` | `false` locally; forced true by the hosted demo entry point |
+| `DEMO_ACCOUNT_TTL_HOURS` | `24` maximum; 15-minute awake/startup purge |
+| `API_ORIGIN`, `AUTH_COOKIE_SITE` | Explicit HTTPS sibling API origin and registrable owned site for production |
 | `APP_TIMEZONE` | `Asia/Kolkata` |
 | `UPLOAD_WORKERS` | `2` |
 | `UPLOAD_QUEUE_LIMIT` | `8` |

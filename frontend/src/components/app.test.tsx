@@ -1,3 +1,4 @@
+import { authHandlers } from "../auth-test-handlers";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -21,6 +22,7 @@ import { api } from "../api/client";
 import { App } from "../App";
 import Categories from "../pages/Categories";
 const server = setupServer(
+  ...authHandlers,
   http.get("*/api/v1/uploads", () =>
     HttpResponse.json({
       items: [],
@@ -132,7 +134,7 @@ test("registration submits an optional invite privately and explains closed regi
     }),
   );
   const view = wrapper(<Auth register />, "/register");
-  fireEvent.change(screen.getByLabelText("Email address"), {
+  fireEvent.change(await screen.findByLabelText("Email address"), {
     target: { value: "invited@example.org" },
   });
   fireEvent.change(screen.getByLabelText("Password", { exact: true }), {
@@ -188,7 +190,7 @@ test("login handles generic invalid credentials via real network client", async 
   );
   wrapper(<Auth />);
   await userEvent.type(
-    screen.getByLabelText("Email address"),
+    await screen.findByLabelText("Email address"),
     "person@example.org",
   );
   await userEvent.type(screen.getByLabelText("Password"), "WrongPassword42!");
@@ -209,7 +211,7 @@ test("rate limiting gets friendly retry wording", async () => {
     ),
   );
   wrapper(<Auth />);
-  fireEvent.change(screen.getByLabelText("Email address"), {
+  fireEvent.change(await screen.findByLabelText("Email address"), {
     target: { value: "person@example.org" },
   });
   fireEvent.change(screen.getByLabelText("Password"), {
@@ -230,6 +232,8 @@ test("register then login uses normalized email and preserves intended destinati
           id: "user",
           email: body.email,
           created_at: "2026-10-18T00:00:00Z",
+          email_verified: false,
+          verification_required: false,
         } satisfies components["schemas"]["UserOut"],
         { status: 201 },
       );
@@ -249,7 +253,7 @@ test("register then login uses normalized email and preserves intended destinati
     </Routes>,
     "/register",
   );
-  fireEvent.change(screen.getByLabelText("Email address"), {
+  fireEvent.change(await screen.findByLabelText("Email address"), {
     target: { value: "PERSON@example.org" },
   });
   fireEvent.change(screen.getByLabelText("Password"), {
@@ -417,7 +421,7 @@ test("upload preview uses generated network types and lets user switch amount la
   );
   wrapper(<UploadPage />);
   await userEvent.upload(
-    screen.getByLabelText("Choose statement file"),
+    await screen.findByLabelText("Choose statement file"),
     new File(["date,description\n"], "sample.csv", { type: "text/csv" }),
   );
   expect(await screen.findByLabelText("Map debit")).toHaveValue("Withdrawal");
@@ -466,6 +470,8 @@ test("delete receipt survives protected-route redirect and cache is cleared", as
         id: "user",
         email: "person@example.org",
         created_at: "2026-10-18T00:00:00Z",
+        email_verified: false,
+        verification_required: false,
       } satisfies components["schemas"]["UserOut"]),
     ),
     http.get("*/api/v1/budget", () =>
@@ -522,6 +528,8 @@ test("protected routes keep the intended destination for sign-in", async () => {
         id: "user",
         email: "person@example.org",
         created_at: "2026-10-18T00:00:00Z",
+        email_verified: false,
+        verification_required: false,
       } satisfies components["schemas"]["UserOut"]),
     ),
     http.get("*/api/v1/subscriptions", ({ request }) => {
@@ -535,7 +543,7 @@ test("protected routes keep the intended destination for sign-in", async () => {
     }),
   );
   await userEvent.type(
-    screen.getByLabelText("Email address"),
+    await screen.findByLabelText("Email address"),
     "person@example.org",
   );
   await userEvent.type(screen.getByLabelText("Password"), "ValidPassword42!");

@@ -1,3 +1,4 @@
+import { authHandlers } from "../auth-test-handlers";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -35,7 +36,7 @@ const record: Recommendation = {
   created_at: "2026-10-18T00:00:00Z",
   updated_at: "2026-10-18T00:00:00Z",
 };
-const server = setupServer();
+const server = setupServer(...authHandlers);
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

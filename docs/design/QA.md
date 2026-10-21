@@ -215,3 +215,20 @@ and Make were used in a local-only image; no production dependency/image change 
 
 Manual screen-reader testing, live Gemini, real statements and deployed beta accessibility remain
 unperformed. This supplement certifies only the tested synthetic demo foundation.
+
+## Phase8 account-security continuation (2026-10-21)
+
+New views/actions: verification and recovery forms (request/confirm loading, generic response,
+safe error/success; labelled password/code controls; no code URLs), logout retry and logout-everywhere,
+public-demo-only entry/notice and upload replacement. Typed MSW checks cover memory-only tokens,
+single-flight refresh, cookie logout after access expiry, verification navigation, page titles and
+recovery axe. The existing full browser audit remains required on each final revision.
+
+Local sibling HTTPS browser flow passed1/1 in17.2s: app/api.subtrack.test, real registration,
+console verification code, secure host-only cookie, reload/rotation, reset and revocation. Initial
+TLS attempt correctly exposed dev CSP blocking the configured API; fixed with its exact origin,
+not a wildcard. Certificates are ignored, short-lived local fixtures only; no system trust change.
+The first normal-browser attempt exposed anonymous-bootstrap401 console noise and a reused login
+rate bucket causing a11y navigation to lose its session. Fixed in product code and rerunning all
+engines; no console assertions or browser projects were removed. Public-demo enforcement and
+hosted verification remain separate gates. No manual screen-reader or live-service claim.

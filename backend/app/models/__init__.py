@@ -45,6 +45,9 @@ class User(Identity, Base):
     __tablename__ = "users"
     email: Mapped[str] = mapped_column(String(254), unique=True)
     password_hash: Mapped[str] = mapped_column(String(128))
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    auth_version: Mapped[int] = mapped_column(Integer, server_default="0")
+    demo_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     alert_lead_days: Mapped[int] = mapped_column(Integer, server_default="3")
     notification_email: Mapped[str | None] = mapped_column(String(254))
@@ -338,4 +341,46 @@ class RateLimitBucket(Identity, Base):
     )
     key_digest: Mapped[str] = mapped_column(String(64), unique=True)
     count: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class AuthSession(Owned, Base):
+    __tablename__ = "auth_sessions"
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (UniqueConstraint("id", "user_id", name="uq_auth_session_owner"),)
+
+
+class RefreshToken(Owned, Base):
+    __tablename__ = "refresh_tokens"
+    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    token_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["session_id", "user_id"],
+            ["auth_sessions.id", "auth_sessions.user_id"],
+            ondelete="CASCADE",
+        ),
+    )
+
+
+class AccountToken(Owned, Base):
+    __tablename__ = "account_tokens"
+    kind: Mapped[str] = mapped_column(String(16))
+    token_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class LoginBackoff(Identity, Base):
+    __tablename__ = "login_backoffs"
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    key_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    failures: Mapped[int] = mapped_column(Integer, server_default="0")
+    blocked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

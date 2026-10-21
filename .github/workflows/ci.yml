@@ -1,6 +1,20 @@
 name: checks
 on: [push, pull_request]
 jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install official Gitleaks release
+        run: |
+          curl --fail --location --output /tmp/gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+      - name: Scan entire history and current source (redacted)
+        run: |
+          /tmp/gitleaks git . --redact
+          python scripts/scan_worktree.py /tmp/gitleaks
   checks:
     runs-on: ubuntu-latest
     steps:
@@ -54,6 +68,14 @@ jobs:
       - run: node node_modules/@playwright/test/cli.js install --with-deps chromium firefox webkit
         working-directory: frontend
       - run: make verify && make e2e
+      - name: Enforced public-demo-only browser flow
+        env:
+          APP_TEST_AS_OF: '2026-10-18'
+          E2E_PUBLIC_DEMO: '1'
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.public-demo-test.yml up -d --wait api
+          cd frontend
+          node node_modules/@playwright/test/cli.js test public-demo.spec.ts --project=chromium
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -63,4 +85,32 @@ jobs:
             docs/screenshots
       - if: always()
         run: docker compose down
+  auth-same-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: cp .env.example .env
+      - run: python scripts/prepare_auth_tls.py
+      - name: Local test hostnames only
+        run: echo '127.0.0.1 app.subtrack.test api.subtrack.test' | sudo tee -a /etc/hosts
+      - run: docker compose -f docker-compose.yml -f docker-compose.auth-test.yml up --build --wait
+      - run: npm ci
+        working-directory: frontend
+      - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
+        working-directory: frontend
+      - run: node node_modules/@playwright/test/cli.js test account.spec.ts --project=chromium
+        working-directory: frontend
+        env:
+          E2E_LOCAL_TLS: '1'
+          E2E_BASE_URL: https://app.subtrack.test:8443
+      - if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.auth-test.yml down
 

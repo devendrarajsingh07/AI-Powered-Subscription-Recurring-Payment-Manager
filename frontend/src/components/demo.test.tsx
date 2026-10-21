@@ -1,3 +1,4 @@
+import { authHandlers } from "../auth-test-handlers";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -38,6 +39,7 @@ const empty: components["schemas"]["Page_UploadOut_"] = {
   offset: 0,
 };
 const server = setupServer(
+  ...authHandlers,
   http.get("*/api/v1/uploads", () => HttpResponse.json(empty)),
 );
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));

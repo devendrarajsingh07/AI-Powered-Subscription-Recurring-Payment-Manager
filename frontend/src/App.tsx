@@ -30,7 +30,15 @@ import {
   Upload,
 } from "lucide-react";
 import { api } from "./api/client";
-import { clearSession, getSignOutNotice, useSession } from "./lib/session";
+import {
+  clearSession,
+  getSignOutNotice,
+  logout,
+  refreshSession,
+  useSession,
+} from "./lib/session";
+import { PublicDemoNotice } from "./components/AuthMode";
+import { AccountRecovery } from "./pages/AccountRecovery";
 import { ErrorState, Loading } from "./components/Common";
 import { Auth } from "./pages/Auth";
 import { ChatAssistant } from "./components/ChatAssistant";
@@ -73,10 +81,25 @@ const navigation = [
   ["/categories", "Categories", Tags],
   ["/settings", "Settings", Settings],
 ] as const;
+function pageTitle(pathname: string) {
+  return (
+    navigation.find(([path]) => path === pathname)?.[1] ||
+    (
+      {
+        "/login": "Sign in",
+        "/register": "Create account",
+        "/verify-email": "Verify email",
+        "/reset-password": "Reset password",
+      } as Record<string, string>
+    )[pathname] ||
+    "Page not found"
+  );
+}
 function Shell() {
   const session = useSession();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
   const [dark, setDark] = useState(
     () => document.documentElement.dataset.theme === "dark",
   );
@@ -159,7 +182,11 @@ function Shell() {
           </p>
           <div className="user-email">{me.data?.email || "Your account"}</div>
           <div className="user-actions">
-            <button onClick={() => clearSession()}>
+            <button
+              onClick={() => {
+                void logout().catch((error) => setLogoutError(error.message));
+              }}
+            >
               <LogOut size={17} />
               Log out
             </button>
@@ -186,6 +213,11 @@ function Shell() {
         </div>
       </aside>
       <main id="content" tabIndex={-1}>
+        {logoutError && (
+          <p role="alert" className="error">
+            {logoutError}
+          </p>
+        )}
         {demo && !["/", "/upload", "/settings"].includes(location.pathname) && (
           <p className="notice-box">
             <span className="badge">Demo data</span> Synthetic history as of{" "}
@@ -217,14 +249,20 @@ export function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const session = useSession();
+  const [booted, setBooted] = useState(!!session);
   useEffect(() => {
-    const title =
-      navigation.find(([path]) => path === location.pathname)?.[1] ||
-      (location.pathname === "/login"
-        ? "Sign in"
-        : location.pathname === "/register"
-          ? "Create account"
-          : "Page not found");
+    let active = true;
+    if (!session)
+      void refreshSession().finally(() => {
+        if (active) setBooted(true);
+      });
+    else setBooted(true);
+    return () => {
+      active = false;
+    };
+  }, [session]);
+  useEffect(() => {
+    const title = pageTitle(location.pathname);
     document.title = `${title} · SubTrack`;
     document.getElementById("content")?.focus();
   }, [location.pathname]);
@@ -251,43 +289,59 @@ export function App() {
   useEffect(() => {
     if (!session) return;
     const timeout = window.setTimeout(
-      () => clearSession(true),
+      () => {
+        void refreshSession().then((ok) => {
+          if (!ok) clearSession(true);
+        });
+      },
       Math.max(0, session.expires - Date.now()),
     );
     return () => clearTimeout(timeout);
   }, [session]);
   return (
     <ErrorBoundary>
-      <span className="sr-only" role="status" aria-live="polite">
-        {navigation.find(([path]) => path === location.pathname)?.[1] ||
-          (location.pathname === "/login"
-            ? "Sign in"
-            : location.pathname === "/register"
-              ? "Create account"
-              : "Page not found")}
-      </span>
-      <Routes>
-        <Route path="/login" element={<Auth />} />
-        <Route path="/register" element={<Auth register />} />
-        <Route element={<Shell />}>
-          <Route index element={<Dashboard />} />
-          <Route path="upload" element={<UploadPage />} />
-          <Route path="subscriptions" element={<Subscriptions />} />
-          <Route path="renewals" element={<Renewals />} />
-          <Route path="recommendations" element={<Recommendations />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route
-            path="*"
-            element={
-              <>
-                <h1>Page not found</h1>
-                <NavLink to="/">Back to overview</NavLink>
-              </>
-            }
-          />
-        </Route>
-      </Routes>
+      <PublicDemoNotice />
+      {!booted ? (
+        <main>
+          <Loading />
+        </main>
+      ) : (
+        <>
+          <span className="sr-only" role="status" aria-live="polite">
+            {pageTitle(location.pathname)}
+          </span>
+          <Routes>
+            <Route path="/login" element={<Auth />} />
+            <Route path="/register" element={<Auth register />} />
+            <Route
+              path="/verify-email"
+              element={<AccountRecovery kind="verify" />}
+            />
+            <Route
+              path="/reset-password"
+              element={<AccountRecovery kind="reset" />}
+            />
+            <Route element={<Shell />}>
+              <Route index element={<Dashboard />} />
+              <Route path="upload" element={<UploadPage />} />
+              <Route path="subscriptions" element={<Subscriptions />} />
+              <Route path="renewals" element={<Renewals />} />
+              <Route path="recommendations" element={<Recommendations />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route
+                path="*"
+                element={
+                  <>
+                    <h1>Page not found</h1>
+                    <NavLink to="/">Back to overview</NavLink>
+                  </>
+                }
+              />
+            </Route>
+          </Routes>
+        </>
+      )}
     </ErrorBoundary>
   );
 }

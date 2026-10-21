@@ -21,8 +21,8 @@ PASSWORD = "SubTrackDemo2026!"
 
 
 def seed(engine=None, *, as_of=None):
-    if get_settings().environment != "development":
-        raise RuntimeError("Demo seed is permitted only in development")
+    if get_settings().environment != "development" or get_settings().public_demo_only:
+        raise RuntimeError("Shared demo seed is permitted only in local development")
     demo.ensure_enabled()
     engine = engine or get_engine()
     as_of = as_of or today()

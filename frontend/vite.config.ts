@@ -2,12 +2,16 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+const configuredApi = process.env.VITE_API_BASE_URL || "/api/v1";
+const apiConnect = /^https?:\/\//.test(configuredApi)
+  ? new URL(configuredApi).origin
+  : "";
+
 const headers = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "no-referrer",
   "X-Frame-Options": "DENY",
-  "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self' ws:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+  "Content-Security-Policy": `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self' ws: wss: ${apiConnect}; frame-ancestors 'none'; base-uri 'self'; object-src 'none'`,
 };
 export default defineConfig({
   preview: { headers },

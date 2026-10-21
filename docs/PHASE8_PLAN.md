@@ -60,8 +60,9 @@ Free-host testing cannot establish real-user launch readiness.
 Implemented work-package2 invitation/export/audit foundations and shared auth counters, plus basic
 hosting headers. All remaining code work is listed explicitly in PROJECT_INFO and DOD; external
 prerequisites do not imply that unimplemented code is complete. The owner has not approved a paid
-upgrade or real-user launch. Existing free demo registration can remain open only in development;
-the actual beta must use invite mode after all account security and operational gates pass.
+upgrade or real-user launch. The earlier development registration allowance is superseded:
+hosted public demo mode must disable password registration/login and file uploads, using isolated
+disposable synthetic sessions. The actual beta must use invite mode after all launch gates pass.
 
 make dev/verify/test/lint/evaluate pass;357 PostgreSQL tests and57 frontend tests. Production build,
 npm/pip audits and existing OpenAPI/TS/evaluator gates pass. A real CLI create/revoke smoke test and

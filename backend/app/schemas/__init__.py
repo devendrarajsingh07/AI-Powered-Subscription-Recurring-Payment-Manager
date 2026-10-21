@@ -74,6 +74,12 @@ class Schema(BaseModel):
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
 
+class AuthConfig(Schema):
+    public_demo_only: bool
+    session_mode: Literal["strict", "demo"]
+    notice: str
+
+
 class ErrorDetail(Schema):
     code: str
     message: str
@@ -103,6 +109,14 @@ class Register(Schema):
     @classmethod
     def strong_password(cls, value):
         password = value.get_secret_value()
+        compact = re.sub(r"[^a-z0-9]", "", password.casefold())
+        common = {
+            stem + suffix
+            for stem in ("password", "qwerty", "welcome", "letmein", "admin", "changeme")
+            for suffix in ("", "123", "1234", "12345", "123456", "2025", "2026", "2027")
+        }
+        if compact in common:
+            raise ValueError("Choose a less common password")
         classes = [r"[a-z]", r"[A-Z]", r"[0-9]", r"[^a-zA-Z0-9]"]
         if (
             len(password.encode()) > 72
@@ -137,12 +151,37 @@ class UserOut(Schema):
     id: uuid.UUID
     email: str
     created_at: datetime
+    email_verified: bool = False
+    verification_required: bool = False
 
 
 class Token(Schema):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
     expires_in: int
+    csrf_token: str | None = None
+
+
+class EmailRequest(Schema):
+    email: EmailStr
+    normalize_email = field_validator("email", mode="before")(Register.normalize_email.__func__)
+
+
+class AccountCode(Schema):
+    token: SecretStr = Field(min_length=32, max_length=128)
+
+
+class ResetPassword(AccountCode):
+    password: SecretStr = Field(min_length=12, max_length=72)
+    validate_password = field_validator("password")(Register.strong_password.__func__)
+
+
+class MessageResult(Schema):
+    message: str
+
+
+class CsrfResult(Schema):
+    csrf_token: str | None
 
 
 class RowWarning(Schema):

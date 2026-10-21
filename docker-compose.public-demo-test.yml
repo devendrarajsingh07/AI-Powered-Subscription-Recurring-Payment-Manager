@@ -1,0 +1,10 @@
+# Local verification of the same restrictions as the free hosted entry point.
+services:
+  api:
+    environment:
+      PUBLIC_DEMO_ONLY: 'true'
+      AUTH_SESSION_MODE: demo
+      REQUIRE_EMAIL_VERIFICATION: 'false'
+      LLM_PROVIDER: fake
+      NOTIFIER_PROVIDER: console
+      DEMO_ENABLED: 'true'

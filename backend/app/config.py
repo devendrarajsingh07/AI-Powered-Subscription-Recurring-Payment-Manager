@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     environment: Literal["development", "test", "production"] = "development"
     demo_enabled: bool = True
+    public_demo_only: bool = False
+    auth_session_mode: Literal["strict", "demo"] = "strict"
+    api_origin: str = "http://localhost:8000"
+    auth_cookie_site: str = ""
+    demo_account_ttl_hours: int = Field(default=24, ge=1, le=24)
     database_url: str = "postgresql+psycopg://subtrack@localhost:5432/subtrack"
     web_origin: str = "http://localhost:5173"
     jwt_secret: SecretStr = SecretStr("")
@@ -23,6 +28,11 @@ class Settings(BaseSettings):
     auth_login_limit: int = Field(default=10, ge=1, le=1000)
     auth_window_seconds: int = Field(default=60, ge=1)
     registration_mode: Literal["open", "invite", "closed"] = "open"
+    require_email_verification: bool = False
+    auth_refresh_days: int = Field(default=14, ge=1, le=30)
+    account_token_minutes: int = Field(default=15, ge=1, le=60)
+    account_backoff_threshold: int = Field(default=3, ge=1, le=20)
+    auth_session_limit: int = Field(default=60, ge=1, le=1000)
     app_timezone: str = "Asia/Kolkata"
     upload_workers: int = Field(default=2, ge=1, le=4)
     upload_queue_limit: int = Field(default=8, ge=1, le=32)
@@ -72,6 +82,7 @@ class Settings(BaseSettings):
             values = dict(values)
             values.setdefault("demo_enabled", False)
             values.setdefault("registration_mode", "closed")
+            values.setdefault("require_email_verification", True)
         return values
 
     @model_validator(mode="after")
@@ -91,10 +102,32 @@ class Settings(BaseSettings):
             if "web_origin" not in self.model_fields_set or "*" in self.web_origin:
                 raise ValueError("An explicit WEB_ORIGIN is required")
         if self.environment == "production":
+            from app.sites import same_site_siblings
+
+            if self.public_demo_only or self.auth_session_mode != "strict":
+                raise ValueError("Production forbids public demo sessions")
+            site = self.auth_cookie_site.lower().strip()
+            if not same_site_siblings(self.web_origin, self.api_origin, site):
+                raise ValueError("Production requires explicit same-site sibling HTTPS origins")
+            if not self.require_email_verification:
+                raise ValueError("Production requires email verification")
             if self.registration_mode == "open":
                 raise ValueError("Production forbids open registration")
             if self.demo_enabled or self.app_test_as_of or self.notifier_provider == "console":
                 raise ValueError("Production forbids demo data, test clocks and console notifier")
+        if self.public_demo_only and (
+            self.environment != "development"
+            or not self.demo_enabled
+            or self.auth_session_mode != "demo"
+            or self.llm_provider != "fake"
+            or self.notifier_provider != "console"
+            or self.require_email_verification
+        ):
+            raise ValueError(
+                "Public demo requires offline, synthetic-only development session mode"
+            )
+        if self.auth_session_mode == "demo" and not self.public_demo_only:
+            raise ValueError("Demo session mode requires public demo-only safeguards")
         if self.llm_provider == "gemini" and (
             not self.llm_api_key.get_secret_value() or not self.llm_model.strip()
         ):

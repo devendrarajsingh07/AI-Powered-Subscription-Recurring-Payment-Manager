@@ -58,9 +58,21 @@ Alembic migrations own schema creation; startup checks the database against the 
 Users own uploads, transactions, subscriptions, charge links, category cache, budgets,
 recommendations, alerts and chat messages. Composite ownership foreign keys reject cross-user
 links; every repository function accepts authenticated user_id. The model never chooses identity.
-Passwords use bcrypt, email identity is normalized, and short-lived HS256 JWTs have no refresh token.
-The browser uses memory and per-tab sessionStorage; XSS could steal a bearer token. Plain text
-rendering, CSP and no raw HTML reduce risk but do not eliminate that trade-off.
+Passwords use bcrypt plus an offline common-password denylist; email identity is normalized.
+Short-lived HS256 access JWTs bind a revocable family and account version, checked on each request.
+The browser keeps access/CSRF tokens in memory only. XSS could still steal a current access token;
+plain text rendering, CSP and no raw HTML reduce risk without eliminating it. Strict same-site mode
+rotates hashed refresh tokens in Secure/HttpOnly/SameSite=Strict host-only cookies. Cookie endpoints
+require exact Origin and a derived CSRF proof; reuse revokes the family. Logout can revoke through
+the cookie even after access expiry; logout-everywhere and password reset revoke all families.
+Hashed single-use email/reset codes expire and are atomically consumed; notifications use the
+Notifier. Real sender/domain/inbox checks remain owner-blocked. The offline PSL validates production
+HTTPS sibling origins, and production still refuses startup pending the independent beta gate.
+
+The public cross-site demo uses no refresh cookie: isolated disposable synthetic sessions, no
+password registration/login or file uploads, a persistent privacy warning, and24-hour account TTL.
+Expired accounts cannot authenticate; physical purge runs at startup/every15 minutes while awake.
+Free-service sleeping can delay purge. Original-upload and durable-job isolation remain WP4 work.
 
 Money is Decimal/NUMERIC and API decimal strings. Individual amounts use NUMERIC(12,2);
 aggregate recommendation values use NUMERIC(24,2). Annual factors are 52/12/4/1 for

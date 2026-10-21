@@ -9,8 +9,19 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | --- | --- | --- | --- |
 | GET | `/api/v1/alerts` | JWT | Alerts |
 | GET | `/api/v1/alerts/{alert_id}` | JWT | Alert Detail |
+| GET | `/api/v1/auth/config` | Public | Auth Config |
+| POST | `/api/v1/auth/csrf` | JWT | Csrf |
+| POST | `/api/v1/auth/demo` | Public | Disposable Demo |
+| POST | `/api/v1/auth/email/confirm` | Public | Confirm Email |
+| POST | `/api/v1/auth/email/request` | Public | Request Verification |
 | POST | `/api/v1/auth/login` | Public | Login |
+| POST | `/api/v1/auth/logout` | JWT | Logout |
+| POST | `/api/v1/auth/logout-all` | JWT | Logout All |
+| POST | `/api/v1/auth/logout-cookie` | JWT | Cookie Logout |
 | GET | `/api/v1/auth/me` | JWT | Me |
+| POST | `/api/v1/auth/password/request` | Public | Request Reset |
+| POST | `/api/v1/auth/password/reset` | Public | Reset Password |
+| POST | `/api/v1/auth/refresh` | JWT | Refresh |
 | POST | `/api/v1/auth/register` | Public | Register |
 | GET | `/api/v1/budget` | JWT | Budget |
 | PUT | `/api/v1/budget` | JWT | Put Budget |

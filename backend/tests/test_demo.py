@@ -164,6 +164,8 @@ def production(**extra):
         registration_mode="closed",
         notifier_provider="smtp",
         web_origin="https://subtrack.example.org",
+        api_origin="https://api.example.org",
+        auth_cookie_site="example.org",
         jwt_secret=secrets.token_urlsafe(48),
         **extra,
     )
@@ -181,6 +183,8 @@ def test_production_guards(field, value):
         registration_mode="closed",
         notifier_provider="smtp",
         web_origin="https://subtrack.example.org",
+        api_origin="https://api.example.org",
+        auth_cookie_site="example.org",
         jwt_secret=secrets.token_urlsafe(48),
     )
     values[field] = value

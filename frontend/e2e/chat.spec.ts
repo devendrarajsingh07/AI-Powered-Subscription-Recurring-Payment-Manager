@@ -1,3 +1,4 @@
+import { observeAuth, observedToken } from "./auth";
 import { capture } from "./evidence";
 import { test, expect, type Page } from "@playwright/test";
 import path from "node:path";
@@ -5,7 +6,7 @@ import type { components } from "../src/api/schema";
 
 async function auth(page: Page) {
   return {
-    Authorization: `Bearer ${await page.evaluate(() => JSON.parse(sessionStorage.getItem("subtrack.session")!).token as string)}`,
+    Authorization: `Bearer ${await observedToken(page)}`,
   };
 }
 async function axe(page: Page) {
@@ -169,4 +170,8 @@ test("offline chat verifies real renewals, rejects injection and deletes history
     page.getByText("Your account and data were deleted.", { exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test.beforeEach(async ({ page }) => {
+  observeAuth(page);
 });

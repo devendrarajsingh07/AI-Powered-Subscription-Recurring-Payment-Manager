@@ -1,3 +1,4 @@
+import { observeAuth, observedToken } from "./auth";
 import { capture } from "./evidence";
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
@@ -97,10 +98,7 @@ async function upload(page: Page, filename: string) {
   return started;
 }
 async function authed(page: Page, endpoint: string) {
-  const token = await page.evaluate(
-    () =>
-      JSON.parse(sessionStorage.getItem("subtrack.session")!).token as string,
-  );
+  const token = await observedToken(page);
   const result = await page.request.get(`/api/v1${endpoint}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -399,4 +397,8 @@ test("malformed CSV shows a safe server error and supports retry", async ({
   ).not.toBeVisible();
   await upload(page, "handwritten_bank.csv");
   await deleteAccount(page);
+});
+
+test.beforeEach(async ({ page }) => {
+  observeAuth(page);
 });

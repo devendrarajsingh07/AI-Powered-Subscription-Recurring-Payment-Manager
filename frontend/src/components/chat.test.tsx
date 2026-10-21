@@ -1,3 +1,4 @@
+import { authHandlers } from "../auth-test-handlers";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -31,6 +32,7 @@ const final: components["schemas"]["ChatFinal"] = {
   conversation_id: "00000000-0000-4000-8000-000000000001",
 };
 const server = setupServer(
+  ...authHandlers,
   http.get("*/api/v1/chat/config", () => HttpResponse.json(config)),
   http.get("*/api/v1/chat/history", () => HttpResponse.json(history)),
 );

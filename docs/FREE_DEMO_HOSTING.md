@@ -58,8 +58,21 @@ cleanup. The deployed browser also registered successfully and loaded the curren
 subscription monthly4015.80, fixed-bill monthly22297.05 and potential savings343.00 (INR).
 These are synthetic-demo observations, not capacity, real-bank or production certification.
 
-A database credential was accidentally exposed by the browser accessibility output even after
+Historical incident: a database credential was accidentally exposed by the browser accessibility output even after
 the field was hidden. The owner explicitly requested retaining it. External ingress is blocked;
 replacement remains recommended before any non-disposable use. Never reproduce the value.
 Subsequent secret-bearing UI reads must suppress raw accessibility output and report only state
-or boolean checks. Browser credential-change actions remain a user handoff.
+or boolean checks. Browser credential-change actions remain a user handoff. The2026-10-21 continuation
+supersedes the earlier retention decision: rotation is now **owner action pending**, with exact steps
+and scan/network evidence in [SECURITY_INCIDENT.md](SECURITY_INCIDENT.md). Never print the value.
+
+## Public-demo hardening build
+
+The new account-security build disables hosted password registration/login and every CSV/PDF/image
+upload/preview path. Visitors start isolated disposable sessions and load synthetic data only.
+No refresh cookie crosses the Vercel/Render sites; tokens are memory-only and reload loses the session.
+The persistent banner warns against real statements/personal data. Accounts expire within24 hours;
+startup/15-minute purge removes expired visitors and the reserved shared development account.
+Free-service sleeping can delay physical purge; expired access is still rejected immediately.
+Console outbox remains ephemeral and no real-user beta/email/backup reliability is promised.
+These controls have local browser/API evidence; see PROJECT_INFO for actual deployment verification.

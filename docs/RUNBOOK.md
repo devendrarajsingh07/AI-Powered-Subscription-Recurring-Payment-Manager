@@ -5,8 +5,8 @@ Incident contact: **OWNER TO SUPPLY**. Grievance/support contact: **OWNER TO SUP
 
 ## Deploy and verify
 
-Run the documented Make gates; push a logical commit and inspect both GitHub jobs. Current hosted
-services auto-deploy pushes to master, so they do **not** yet enforce a green-CI deployment gate.
+Run the documented Make gates; push a logical commit and inspect every GitHub job. Vercel currently
+auto-deploys master; Render is manual. Together they do **not** yet enforce a green-CI deployment gate.
 Do not call this production CI/CD. For beta, disable that trigger and implement an authenticated
 post-CI release with a separate migration step, staging smoke and backward-compatible migrations.
 Verify `/api/v1/health` and `/api/v1/health/ready`, then the frontend registration/login and offline
@@ -26,15 +26,18 @@ and obtain legal guidance on notifications. Do not paste statements, connection 
 public issues. Record timeline, containment, verified remediation and follow-up privately.
 
 The deployed assistant uses `LLM_PROVIDER=fake`. Do not enable Gemini with real data until paid-tier
-terms/billing, consent and Phase 8 controls are verified. The existing access JWTs cannot currently
-be individually revoked: deletion invalidates the account; signing-key rotation invalidates every
-token and forces every user to sign in again. Per-session revocation is still to be implemented.
+terms/billing, consent and Phase 8 controls are verified. Account-security changes bind JWTs to a
+revocable session/account version. Logout revokes the current family; logout-everywhere and reset
+revoke all families. Check PROJECT_INFO for deployment evidence before relying on a hosted revision.
+Signing-key rotation invalidates tokens/digests and forces sign-in. Public demos use disposable
+memory-only access sessions, never cross-site refresh cookies.
 
 ## Credentials, backups and deletion
 
 Credential changes must be performed by the owner in the platform secret manager, never committed.
 Use separate migration/app roles and per-environment keys before beta. The retained previously
 exposed demo DB credential must be replaced before any real data. Keep external DB ingress blocked.
+See [exact owner rotation steps and incident evidence](SECURITY_INCIDENT.md). Rotation is pending.
 
 Free PostgreSQL expires 2026-11-19 and has no PITR. There is no verified restore procedure or retention
 promise for this deployment. Provision backed-up staging/production first, then perform a timed
