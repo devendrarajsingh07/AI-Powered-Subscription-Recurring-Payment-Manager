@@ -102,3 +102,14 @@ builds stay staged until promoted; otherwise Vercel still publishes every master
 To roll back, run the workflow manually with `rollback_sha` set to the last verified commit.
 The workflow and script are tested against local stand-ins only (`tests/test_release_demo.py`)
 and have never run against the live services. Migrations are additive; never downgrade a database.
+
+## Client address behind a proxy
+
+Auth rate limits key on the connecting address. Behind Render's proxy that is the proxy itself unless
+`TRUSTED_PROXY_HOPS` is set (default `0`: `X-Forwarded-For` is ignored). Set it to the number of
+proxies you control (check one real request's header first; on Render start with `1`). The limiter then
+uses only the entry those proxies appended, never a client-supplied earlier one, and falls back to the
+peer address if it is missing or not an IP.
+
+`DATABASE_URL` may be given as `postgres://` or `postgresql://`; the app rewrites it to the installed
+`postgresql+psycopg://` driver.

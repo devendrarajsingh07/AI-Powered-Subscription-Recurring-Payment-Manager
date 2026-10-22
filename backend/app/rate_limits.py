@@ -1,5 +1,10 @@
-"""Atomic PostgreSQL fixed windows shared by API instances; never trust forwarded IP headers."""
+"""Atomic PostgreSQL fixed windows shared by API instances.
 
+Forwarded headers are ignored unless TRUSTED_PROXY_HOPS says how many proxies the operator
+controls; then only the entry those proxies appended is used, never a client-supplied one.
+"""
+
+import ipaddress
 import uuid
 from datetime import timedelta
 
@@ -13,6 +18,19 @@ from app.account_security import digest
 from app.config import get_settings
 from app.db import get_engine
 from app.models import RateLimitBucket
+
+
+def client_address(request, hops: int) -> str:
+    peer = request.client.host if request.client else "unknown"
+    if hops < 1:
+        return peer
+    parts = [part.strip() for part in request.headers.get("x-forwarded-for", "").split(",")]
+    if len(parts) < hops:
+        return peer
+    try:
+        return str(ipaddress.ip_address(parts[-hops]))
+    except ValueError:
+        return peer
 
 
 class AuthLimiter:
@@ -32,7 +50,7 @@ class AuthLimiter:
         if action in ("csrf", "refresh"):
             maximum = cfg.auth_session_limit
         window = cfg.auth_window_seconds
-        peer = request.client.host if request.client else "unknown"
+        peer = client_address(request, cfg.trusted_proxy_hops)
         key = digest(action + "\0" + peer, "rate-limit")
         expired = RateLimitBucket.expires_at <= func.now()
         expiry = func.now() + timedelta(seconds=window)

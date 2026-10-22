@@ -16,6 +16,16 @@ FACTORS = {
 }
 
 
+def current_amount(sub) -> Decimal:
+    """Latest charge once a price change was detected, otherwise the historical average."""
+    increase = getattr(sub, "price_increase", None)  # API schema objects
+    if increase is not None:
+        return increase.new_amount
+    if getattr(sub, "price_previous_amount", None) is not None and sub.price_new_amount is not None:
+        return sub.price_new_amount  # ORM rows
+    return sub.avg_amount
+
+
 def money(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
@@ -31,7 +41,7 @@ def summarize(db, user_id, *, period: str):
     subscriptions = repo.active_subscriptions(db, user_id)
     grouped = defaultdict(lambda: [ZERO, ZERO, 0])
     for sub in subscriptions:
-        month, year = equivalents(sub.avg_amount, sub.cadence)
+        month, year = equivalents(current_amount(sub), sub.cadence)
         values = grouped[sub.kind, sub.category]
         values[0] += month
         values[1] += year

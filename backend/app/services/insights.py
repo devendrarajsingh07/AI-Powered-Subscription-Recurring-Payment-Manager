@@ -9,7 +9,7 @@ from datetime import date
 from decimal import Decimal
 from statistics import median
 
-from app.services.summary import ZERO, equivalents, money
+from app.services.summary import ZERO, current_amount, equivalents, money
 
 
 @dataclass(frozen=True)
@@ -56,7 +56,7 @@ def rules(
     active = sorted(
         (s for s in inputs if s.status == "active" and s.kind == "subscription"), key=lambda s: s.id
     )
-    monthly = {s.id: equivalents(s.avg_amount, s.cadence)[0] for s in active}
+    monthly = {s.id: equivalents(current_amount(s), s.cadence)[0] for s in active}
     total = sum(monthly.values(), ZERO)
     midpoint = median(monthly.values()) if active else ZERO
     groups = defaultdict(list)
@@ -75,7 +75,7 @@ def rules(
     for sub in active:
         if sub.category in ("music", "streaming", "cloud"):
             groups[sub.category].append(sub)
-        annual = equivalents(sub.avg_amount, sub.cadence)[1]
+        annual = equivalents(current_amount(sub), sub.cadence)[1]
         high_share = (
             total > ZERO
             and monthly[sub.id] / total > share_threshold

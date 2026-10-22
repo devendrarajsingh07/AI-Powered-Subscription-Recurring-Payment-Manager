@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from app import repositories as repo
 from app import schemas as s
-from app.services.detector import CADENCES
+from app.services.detector import project
 
 
 def sub_out(record, *, as_of=None):
@@ -16,10 +16,7 @@ def sub_out(record, *, as_of=None):
             detected_on=record.price_detected_on,
         )
     if as_of is not None:
-        interval = CADENCES[record.cadence][0]
-        initial = record.last_charge + timedelta(days=interval)
-        missed = max(0, ((as_of - initial).days + interval - 1) // interval)
-        result.next_expected = initial + timedelta(days=missed * interval)
+        result.next_expected, missed = project(record.last_charge, record.cadence, as_of)
         result.missed_cycles, result.possibly_cancelled = missed, missed >= 2
     return result
 
