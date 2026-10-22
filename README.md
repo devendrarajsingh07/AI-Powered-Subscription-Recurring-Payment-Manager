@@ -501,7 +501,7 @@ Never commit `.env` files, real statements, outbox copies, keys or browser trace
 
 ## 📄 Assets and Licensing
 
-All screenshots use synthetic demo data. No project-level `LICENSE` file is committed yet, so this README does not grant an MIT or any other licence. Dependencies keep their own licences.
+ ` MIT LICENSE`
 
 ---
 
