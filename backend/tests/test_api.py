@@ -87,7 +87,8 @@ def expected_totals(patterns, kind=None):
     }
     yearly = sum(
         (
-            Decimal(p["avg_amount"]) * factors[p["cadence"]]
+            Decimal(p["new_amount"] if p.get("price_increase") else p["avg_amount"])
+            * factors[p["cadence"]]
             for p in patterns
             if kind is None or p["kind"] == kind
         ),

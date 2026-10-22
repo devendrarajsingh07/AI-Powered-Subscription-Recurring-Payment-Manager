@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from app import models as m
 from app import repositories as repo
-from app.services.summary import equivalents, money, summarize
+from app.services.summary import current_amount, equivalents, money, summarize
 
 
 def generate(db, user_id, *, as_of, now):
@@ -26,7 +26,7 @@ def generate(db, user_id, *, as_of, now):
                 send_on=sub.next_expected - timedelta(days=user.alert_lead_days),
                 payload=dict(
                     merchant=sub.merchant,
-                    amount=format(sub.avg_amount, ".2f"),
+                    amount=format(current_amount(sub), ".2f"),
                     currency=sub.currency,
                     renewal_date=sub.next_expected.isoformat(),
                 ),
@@ -36,7 +36,7 @@ def generate(db, user_id, *, as_of, now):
     total = summarize(db, user_id, period="month")["monthly_equivalent"]
     if budgets and total > budgets[0].monthly_limit:
         contributors = sorted(
-            subscriptions, key=lambda s: (-equivalents(s.avg_amount, s.cadence)[0], str(s.id))
+            subscriptions, key=lambda s: (-equivalents(current_amount(s), s.cadence)[0], str(s.id))
         )[:3]
         plans.append(
             dict(
@@ -53,7 +53,7 @@ def generate(db, user_id, *, as_of, now):
                             merchant=s.merchant,
                             kind=s.kind,
                             monthly_equivalent=format(
-                                money(equivalents(s.avg_amount, s.cadence)[0]), ".2f"
+                                money(equivalents(current_amount(s), s.cadence)[0]), ".2f"
                             ),
                         )
                         for s in contributors

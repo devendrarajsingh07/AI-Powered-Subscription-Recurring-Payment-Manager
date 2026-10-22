@@ -52,27 +52,40 @@ def expected():
         "quarterly": Decimal(4),
         "yearly": Decimal(1),
     }
-    nominal = {"weekly": 7, "monthly": 30, "quarterly": 91, "yearly": 365}
+    months = {"monthly": 1, "quarterly": 3, "yearly": 12}
+
+    def amount(p):
+        # Independent of service code: the latest price once an increase was labelled.
+        return Decimal(p["new_amount"] if p["price_increase"] else p["avg_amount"])
+
+    def after(start, cycles, cadence):
+        if cadence == "weekly":
+            return start + timedelta(days=7 * cycles)
+        total = start.month - 1 + months[cadence] * cycles
+        year, month = start.year + total // 12, total % 12 + 1
+        last = (date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)).day
+        return date(year, month, min(start.day, last))
+
     day = date.fromisoformat(truth["as_of"])
 
     def rounded(value):
         return value.quantize(Decimal(".01"), rounding=ROUND_HALF_UP)
 
     def annual(rows):
-        return sum((Decimal(p["avg_amount"]) * factors[p["cadence"]] for p in rows), Decimal(0))
+        return sum((amount(p) * factors[p["cadence"]] for p in rows), Decimal(0))
 
     def renewal(p):
-        nxt = date.fromisoformat(p["last_charge"]) + timedelta(days=nominal[p["cadence"]])
-        while nxt < day:
-            nxt += timedelta(days=nominal[p["cadence"]])
-        return nxt
+        last, cycles = date.fromisoformat(p["last_charge"]), 1
+        while after(last, cycles, p["cadence"]) < day:
+            cycles += 1
+        return after(last, cycles, p["cadence"])
 
     duplicates = {
         category: rounded(sum(costs) - max(costs))
         for category in ("music", "streaming", "cloud")
         for costs in [
             [
-                Decimal(p["avg_amount"]) * factors[p["cadence"]] / 12
+                amount(p) * factors[p["cadence"]] / 12
                 for p in patterns
                 if p["category"] == category and p["kind"] == "subscription"
             ]
@@ -89,9 +102,7 @@ def expected():
         sum(duplicates.values()),
     }
     for p in patterns:
-        allowed_money.update(
-            [Decimal(p["avg_amount"]), rounded(annual([p])), rounded(annual([p]) / 12)]
-        )
+        allowed_money.update([amount(p), rounded(annual([p])), rounded(annual([p]) / 12)])
         if p["price_increase"]:
             previous, new = Decimal(p["previous_amount"]), Decimal(p["new_amount"])
             allowed_money.update(
@@ -128,7 +139,7 @@ def run_known_answers(client, headers):
                 days = 7 if "week" in question else 30
                 due = [p for p in rows if e["renewal"](p) <= day + timedelta(days=days)]
                 assert dates == {e["renewal"](p).isoformat() for p in due}
-                assert figures == {Decimal(p["avg_amount"]) for p in due}
+                assert figures == {e["amount"](p) for p in due}
             if "monthly total" in question:
                 assert f"₹{e['month']:.2f}" in text
             if "yearly total" in question:

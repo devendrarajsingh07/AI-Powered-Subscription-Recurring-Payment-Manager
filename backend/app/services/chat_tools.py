@@ -14,7 +14,7 @@ from app import repositories as repo
 from app.schemas import Category, RecommendationStatus, Status
 from app.services.insights import potential_savings
 from app.services.renewals import sub_out, upcoming
-from app.services.summary import ZERO, equivalents, money, summarize
+from app.services.summary import ZERO, current_amount, equivalents, money, summarize
 
 CAP = 30
 
@@ -80,13 +80,13 @@ def definitions():
 
 def subscription(row, as_of):
     item = sub_out(row, as_of=as_of)
-    month, year = equivalents(item.avg_amount, item.cadence)
+    month, year = equivalents(current_amount(item), item.cadence)
     return dict(
         merchant=data_text(item.merchant),
         category=item.category,
         kind=item.kind,
         cadence=item.cadence,
-        amount=item.avg_amount,
+        amount=current_amount(item),
         monthly_equivalent=money(month),
         yearly_total=money(year),
         currency=item.currency,
@@ -157,7 +157,7 @@ class ChatTools:
         )
         plans = [row for row in rows if row.kind == "subscription"]
         most = (
-            max(plans, key=lambda row: equivalents(row.avg_amount, row.cadence)[0])
+            max(plans, key=lambda row: equivalents(current_amount(row), row.cadence)[0])
             if plans
             else None
         )
@@ -174,7 +174,7 @@ class ChatTools:
             groups = {}
             for row in repo.active_subscriptions(self.db, self._identity):
                 group = groups.setdefault(row.merchant, [ZERO, ZERO, 0])
-                month, year = equivalents(row.avg_amount, row.cadence)
+                month, year = equivalents(current_amount(row), row.cadence)
                 group[0] += month
                 group[1] += year
                 group[2] += 1
