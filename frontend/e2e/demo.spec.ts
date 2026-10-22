@@ -114,6 +114,8 @@ test("written three-minute demo: register, load, review, grounded chat, emails, 
   ) as {
     patterns: {
       avg_amount: string;
+      price_increase: boolean;
+      new_amount: string | null;
       cadence: string;
       merchant: string;
       category: string;
@@ -127,7 +129,12 @@ test("written three-minute demo: register, load, review, grounded chat, emails, 
   };
   const annual = truth.patterns.reduce(
     (sum, p) =>
-      sum + BigInt(p.avg_amount.replace(".", "")) * factors[p.cadence],
+      sum +
+      // Latest price once the label marks an increase, else the average.
+      BigInt(
+        (p.price_increase ? p.new_amount! : p.avg_amount).replace(".", ""),
+      ) *
+        factors[p.cadence],
     0n,
   );
   const monthly = (annual + 6n) / 12n;
@@ -219,7 +226,8 @@ test("written three-minute demo: register, load, review, grounded chat, emails, 
   );
   for (const item of upcoming.items) {
     await expect(answer).toContainText(item.next_expected);
-    await expect(answer).toContainText(`₹${item.avg_amount}`);
+    const amount = item.price_increase?.new_amount ?? item.avg_amount;
+    await expect(answer).toContainText(`₹${amount}`);
   }
   await expect(answer).toContainText("Based on: upcoming renewals");
   await page.keyboard.press("Escape");

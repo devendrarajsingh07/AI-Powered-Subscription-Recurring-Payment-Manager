@@ -93,7 +93,9 @@ test("offline chat verifies real renewals, rejects injection and deletes history
   await expect(answer).toContainText("Based on: upcoming renewals");
   for (const item of expected.items) {
     await expect(answer).toContainText(item.next_expected);
-    await expect(answer).toContainText(`₹${item.avg_amount}`);
+    // After a detected price increase, figures use the latest charge.
+    const amount = item.price_increase?.new_amount ?? item.avg_amount;
+    await expect(answer).toContainText(`₹${amount}`);
   }
   const content = await answer.innerText();
   const dates = [...content.matchAll(/\d{4}-\d{2}-\d{2}/g)]
