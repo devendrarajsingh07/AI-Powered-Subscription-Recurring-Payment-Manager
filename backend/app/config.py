@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, HttpUrl, SecretStr, ValidationError, model_validator
+from pydantic import Field, HttpUrl, SecretStr, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     account_token_minutes: int = Field(default=15, ge=1, le=60)
     account_backoff_threshold: int = Field(default=3, ge=1, le=20)
     auth_session_limit: int = Field(default=60, ge=1, le=1000)
+    # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For entirely.
+    trusted_proxy_hops: int = Field(default=0, ge=0, le=5)
     app_timezone: str = "Asia/Kolkata"
     upload_workers: int = Field(default=2, ge=1, le=4)
     upload_queue_limit: int = Field(default=8, ge=1, le=32)
@@ -98,6 +100,15 @@ class Settings(BaseSettings):
     chat_minute_limit: int = Field(default=10, ge=1, le=100)
     chat_daily_limit: int = Field(default=100, ge=1, le=1000)
     app_test_as_of: str = ""
+
+    @field_validator("database_url")
+    @classmethod
+    def psycopg_driver(cls, value: str) -> str:
+        """Hosts hand out plain postgres:// URLs; the installed driver is psycopg (v3)."""
+        for plain in ("postgres://", "postgresql://"):
+            if value.startswith(plain):
+                return "postgresql+psycopg://" + value[len(plain) :]
+        return value
 
     @model_validator(mode="before")
     @classmethod

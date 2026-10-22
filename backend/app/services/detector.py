@@ -1,5 +1,6 @@
 """Pure recurrence detection. All money/statistics use Decimal, never binary floats."""
 
+from calendar import monthrange
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -19,6 +20,28 @@ CADENCES = {
     "quarterly": (91, 6, 3),
     "yearly": (365, 10, 2),
 }
+
+
+MONTHS = {"monthly": 1, "quarterly": 3, "yearly": 12}
+
+
+def step(start: date, cadence: str, cycles: int) -> date:
+    """`cycles` billing periods after `start`: weekly by days, others by calendar month."""
+    if cadence == "weekly":
+        return start + timedelta(days=7 * cycles)
+    total = start.month - 1 + MONTHS[cadence] * cycles
+    year, month = start.year + total // 12, total % 12 + 1
+    return date(year, month, min(start.day, monthrange(year, month)[1]))
+
+
+def project(last_charge: date, cadence: str, as_of: date) -> tuple[date, int]:
+    """Next expected charge and missed cycles; always measured from the last real charge."""
+    if step(last_charge, cadence, 1) >= as_of:
+        return step(last_charge, cadence, 1), 0
+    missed = 0
+    while step(last_charge, cadence, missed + 1) < as_of:
+        missed += 1
+    return step(last_charge, cadence, missed + 1), missed
 
 
 @dataclass(frozen=True)
@@ -101,9 +124,7 @@ def _candidate(charges: Sequence[Transaction], as_of: date) -> Detection | None:
     cv = (sum(((amount - mean) ** 2 for amount in amounts), ZERO) / len(amounts)).sqrt() / mean
     if regularity < Decimal("0.7") or cv > MAX_CV:
         return None
-    initial_next = charges[-1].date + timedelta(days=days)
-    missed = ((as_of - initial_next).days + days - 1) // days if initial_next < as_of else 0
-    next_expected = initial_next + timedelta(days=days * missed)
+    next_expected, missed = project(charges[-1].date, cadence, as_of)
     confidence = (
         Decimal("0.5") * regularity
         + Decimal("0.3") * max(ZERO, ONE - cv / MAX_CV)
