@@ -13,7 +13,7 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.147-009688?style=for-the-badge&logo=fastapi&logoColor=white)](backend/requirements.in)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](backend/Dockerfile)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-550_automated-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
+[![Tests](https://img.shields.io/badge/Tests-561_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
 
 <br />
 
@@ -304,8 +304,8 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 
 | Suite | Scope |
 |---|---|
-| **Backend: 477 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
-| **Frontend: 73 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
+| **Backend: 486 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Frontend: 75 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
 | **Browser e2e** | Playwright against the real Compose stack (never mocked happy paths) in Chromium, Firefox and WebKit, plus axe scans of every page in both themes at 360 px |
 
 ```sh
@@ -481,7 +481,7 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 | Area | Status |
 |---|---|
 | Phases 1–7 (core product, statements, assistant, alerts, UI) | ✅ Complete for demo scope |
-| Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | ✅ Merged, hosted CI green, deployed to the free demo |
+| Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | Implemented; stand-in tests and historical CI receipts in PROJECT_INFO. The free demo uses its configured inline mode; multi-instance, restore/load/ZAP and release/rollback drills remain unverified. |
 | Phase 8 drills (two API instances on one database, backup restore, load test, ZAP scan) | ⏳ Not yet run |
 | Real-user beta | 🚫 Blocked: needs the drills, a backed-up database, real email delivery and approved legal documents |
 
@@ -512,3 +512,13 @@ Never commit `.env` files, real statements, outbox copies, keys or browser trace
 Created by [Devendra Raj Singh](https://github.com/devendrarajsingh07)
 
 </div>
+
+### October 25 correctness/security review
+
+Billing projections persist independently of temporary price-increase notices; historical charge
+averages remain visible. Additive migration 0016 backfills existing linked histories without
+changing user decisions. Alerts and the renewals API share the explicit-clock overdue projection.
+Live-provider retries recheck consent and account existence before sending. The PDF parser lock
+uses pypdf 6.21.2, and Vercel static headers include CSP (scripts self; connections self plus the
+existing Render demo API). Current test/deployment receipts and launch blockers are in
+[PROJECT_INFO](PROJECT_INFO.md) and [DOD](docs/DOD.md).

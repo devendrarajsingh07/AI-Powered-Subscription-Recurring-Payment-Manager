@@ -6,8 +6,8 @@ The Compose deployment is a local dev/demo environment with Vite and API reload 
 ## Additive statement-import path (Phase 7.5)
 
 PDF/image multipart intake checks size, magic and extension. A user-scoped preview job runs local
-extraction in a credential-free subprocess. pypdf decrypts/copies pages without document-level active
-content; pdfminer reads positioned text. Scanned pages use poppler at 200 dpi and Tesseract TSV after
+extraction through the durable worker and credential-free extractor service in Compose. pypdf
+decrypts/copies pages without document-level active content; pdfminer reads positioned text. Scanned pages use poppler at 200 dpi and Tesseract TSV after
 grayscale/metadata removal, bounded upscale, median denoise and conservative deskew. Positioned
 words share table/line reconstruction. No JavaScript or attachment is executed. Malformed parsers
 are bounded by per-page/total deadlines, resource limits and process-group termination.
@@ -26,10 +26,11 @@ payloads immediately; metadata expires; startup/periodic/access cleanup handles 
 previews. Account deletion cascades. Original bytes/passwords are transient; review uses a local
 browser object URL. Responses containing authenticated data use Cache-Control: no-store.
 
-The worker pool is in-process and single-instance; a restart marks interrupted jobs failed. Parser
-subprocess limits are not an OS sandbox/network policy, and API/parser share a container. Before
-real users, Phase8 must isolate extraction in a no-network worker container with durable jobs,
-shared caps and cgroup limits. Formats, defaults, component licenses, measured OCR failures and
+Compose uses PostgreSQL durable jobs with leases/claim tokens, a separate worker, and a
+no-network extractor container with no database credentials and bounded cgroup resources.
+The free hosted demo uses its configured inline fallback; do not infer Compose isolation or
+always-on worker guarantees on that deployment. Two-API crash/failover drills remain outstanding.
+Formats, defaults, component licenses, measured OCR failures and
 private terminal-only testing are in [Statement import](STATEMENT_IMPORT.md). Real-bank layout
 coverage, phone photos and handwriting remain unmeasured/unsupported; English and INR only.
 
@@ -84,8 +85,9 @@ Uploads are limited to 5 MB and 50,000 rows, with a separately bounded multipart
 Preview values are formula-safe; stored raw descriptions are unchanged. Broken CSV quoting
 preserves preceding complete records and counts the unreadable remainder as one malformed row.
 DB uniqueness on user/date/raw description/amount makes repeated and concurrent imports idempotent.
-Financial writes commit atomically; progress is separately persisted, and interrupted workers
-become failed at startup. Submission policy has a separate PostgreSQL advisory lock, preserving
+Financial writes commit atomically; progress is separately persisted. Durable jobs use expiring
+leases, retry/backoff and dead-letter states; the inline fallback marks interrupted work failed
+at startup. Submission policy has a separate PostgreSQL advisory lock, preserving
 the ability to queue while another detection holds the user row lock.
 
 ## Detection
@@ -114,7 +116,9 @@ review intent and never cancels a subscription. Messages and emails remain deter
 
 Daily APScheduler and CLI share one implementation. A PostgreSQL advisory lock serializes jobs.
 Renewals include active subscriptions only, excluding fixed bills, uncertain stopped plans and
-past renewals. Stable subscription/cycle identity survives lead-time changes. Budget identity is
+cycles with at least two missed charges. Overdue expected dates roll forward using the same
+explicit-clock projection as the renewals API; known future dates remain unchanged. Stable
+subscription/cycle identity survives lead-time changes. Budget identity is
 user/local calendar month; summary code supplies totals, overage and top contributors.
 Disabled alerts or no recipient are skipped. Unsent snapshots are reconciled before sending.
 Persist claim/attempt/retry deadlines; bounded exponential retries end in a visible failed state.
@@ -176,9 +180,9 @@ Production refuses demo/test-clock/console/adversarial settings; seed is develop
 - Similar merchant/product prices may merge; large price changes can fail stability; unknown/non-Latin
   descriptions need review. INR only; no FX conversion or multi-currency totals.
 - A recurring payment is not proof of use, redundancy, cancellation or suitability of a purchase.
-- One API instance: upload pool, scheduler and chat gate remain in-process. Auth/auxiliary limits use
-  shared PostgreSQL fixed windows; shared chat limits, durable queue, failover and restore testing
-  remain outstanding. The operator runbook is a preparation document, not tested recovery evidence.
+- Shared PostgreSQL limits, chat leases and durable jobs are implemented and unit/integration tested.
+  Two-API Compose crash/limit drills and restore/load/ZAP evidence remain outstanding. The free hosted
+  demo has no separately deployed worker. The runbook is preparation, not tested recovery evidence.
 - Figure verification does not verify prose. Offline assistant handles recognized patterns only.
   Automated chat redaction is not a complete PII classifier. External retention follows the live provider.
 - SMTP has the send/commit ambiguity described above. Exported files and delivered email cannot be recalled.
@@ -186,6 +190,20 @@ Production refuses demo/test-clock/console/adversarial settings; seed is develop
   no AI service, key, bank connection or SMTP server. Offline builds require pre-cached dependencies/images.
 - Browser axe is automated evidence, not a screen-reader certification. Human screen-reader pass pending.
 - Production additionally needs TLS/reverse proxy, a production web build/server and strict CSP,
-  secret management/rotation, DB backups, monitoring, durable jobs/limits, retention policy, access
-  review and deployment-specific security testing. This repository supplies no cloud deployment tooling.
+  secret management/rotation, managed DB backups, monitoring, always-on workers, retention validation,
+  access review and deployment-specific security testing. An opt-in demo release workflow exists;
+  its stand-in tests do not prove provider release/rollback readiness.
 - No stretch features: forecasting, cancellation helper, Gmail parsing, web push or multiple currencies.
+
+## October 25 review corrections
+
+Migration 0016 adds a nullable NUMERIC billing projection. A detected current increase uses its
+latest charge; repetition establishes the new price beyond the lifetime of its increase notice.
+Historical averages remain available; ordinary usage/FX histories keep their averaging policy.
+Summary, budget, insights, alerts and tools reuse this projection. Migration backfill reads linked
+charge history without changing confirmations, statuses or category overrides.
+
+Before each live HTTP attempt (including retries), fresh user-scoped state checks account existence
+and consent, then the shared kill switch/quota. Revocation prevents later attempts; it cannot recall
+a request already sent. Vercel static headers now restrict scripts to self and connections to self
+and the explicit existing Render demo API. Inline styles support chart positioning.
