@@ -89,6 +89,9 @@ def main(argv=None):
     check("web SPA route 200", status == 200 and b'<div id="root"' in body, str(status))
     for key, value in WEB_HEADERS.items():
         check(f"web header {key}", headers.get(key) == value, str(headers.get(key)))
+    policy = headers.get("content-security-policy", "")
+    check("web CSP restricts scripts", "script-src 'self'" in policy)
+    check("web CSP forbids framing", "frame-ancestors 'none'" in policy)
     status, _, body = call(web + "/unsubscribe?u=x&t=y")
     check("web unsubscribe route serves the SPA", status == 200 and b'<div id="root"' in body)
     status, headers, _ = call(web + "/api/v1/health")
