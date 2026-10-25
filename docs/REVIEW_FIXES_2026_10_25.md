@@ -27,10 +27,10 @@ infrastructure, live Gemini calls, real data, or beta activation is authorized.
 
 Full PostgreSQL suite: 486 passed (425.83s); frontend: 75 passed. Full lint/typecheck,
 OpenAPI/type drift, detector/extraction gates and production build pass. Python and npm audits
-are clean. Gitleaks all 72 reachable commits/current source clean. Hash-verified pypdf patch
+are clean. Gitleaks all 73 reachable local commits/current source clean. Hash-verified pypdf patch
 installation passed. Mobile production-CSP browser probe passed real registration/demo load,
 charts/renewals and deletion without CSP violations/page errors. Standard browser suite 16 passed across Chromium/Firefox/WebKit; strict TLS and public-demo
-profiles each passed separately. Hosted CI receipts follow after push.
+profiles each passed separately. [Hosted CI 40215376979](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40215376979) passed all four jobs on 007e76d.
 
 The first focused run exposed alert fixtures that relied on old overdue behavior; fixtures now
 represent two genuinely missed cycles, and new regressions assert the correct rolling behavior.
@@ -41,3 +41,10 @@ control passed. Browser runner clock/origin setup was corrected before the final
 Final edge-case refinement: consecutive detected higher charges establish the price even when
 FX/usage variation prevents exact equality. A lone spike still falls back to averaging. The
 frozen backfill and pure regression use the same rule; the complete final gates passed afterward.
+
+Published commits: 5338f0c correctness/migration/tests, 644681f parser/CSP security,
+007e76d documentation. Both demo revisions verified at 007e76d; Render deployment
+ dep-dbf3ks29lscs738mgjjg succeeded/live after CI. Deployed smoke 23/23 passed. Vercel's
+existing auto-deployment occurred before CI; enforced provider gating remains a documented gap.
+The following documentation-only receipt does not change application code or require a new
+schema migration. No beta, paid resources, live Gemini, credential changes or history rewrite.

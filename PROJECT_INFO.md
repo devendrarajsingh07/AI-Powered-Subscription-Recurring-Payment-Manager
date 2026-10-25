@@ -21,10 +21,11 @@ attempts, including retries. Renewal alerts use the shared explicit-clock projec
 Local full gates pass: 486 PostgreSQL tests (425.83s, one upstream deprecation warning),
 75 frontend tests, OpenAPI/type drift, lint/typecheck/build, detector and extraction evaluators.
 Detector P/R/F1 is 1.0000 on synthetic and both handwritten groups. Python/npm audits are clean
-with pypdf 6.21.2; Gitleaks scanned all 72 reachable commits plus current source, no leaks.
+with pypdf 6.21.2; Gitleaks scanned all 73 reachable local commits plus current source, no leaks.
 Production-CSP mobile Chromium probe passed registration/demo ingestion/charts/renewals/deletion
 without page errors or CSP violations. Browser suite: 16 passed (Chromium 10, Firefox 3, WebKit 3), plus strict sibling-host TLS 1
-and isolated public-demo 1 passed. Hosted CI must certify the direct-push commit after publication.
+and isolated public-demo 1 passed. Direct push completed at 007e76d; [hosted CI](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40215376979)
+passed all four jobs for that exact commit. The subsequent receipt update changes documentation only.
 Exact commands and results are in docs/DOD.md; baseline was 477 backend and 73 frontend tests.
 
 ## Owner decisions and release gates
@@ -36,8 +37,10 @@ remain mandatory. Hosted mode is fake/offline, isolated disposable visitors, syn
 no password registration/login or file uploads, with the persistent public-demo warning.
 
 Push only after local gates pass. Existing demo deployment requires green hosted CI for the exact
-commit. `deploy-demo` is opt-in and was skipped on base 91007a4. Hosted base checks run 39989916999
-passed all four jobs; this does not certify subsequent fixes or an automated release.
+commit. Implementation 007e76d passed run 40215376979 (all four jobs). Render was then deployed
+manually at that exact commit; the opt-in deploy workflow is not certified by this manual release.
+Vercel's existing Git integration deployed before CI completed; enforced provider gating remains
+an operational gap, not a completed requirement. No hosting/security configuration was weakened.
 
 ## Runtime, deployments and limits
 
@@ -47,9 +50,11 @@ tested against local HTTP stand-ins only. Fake remains the default and hosted mo
 
 Frontend: https://ai-powered-subscription-recurring-p.vercel.app
 API: https://ai-powered-subscription-recurring.onrender.com/api/v1
-Observed in the read-only October 25 review: frontend revision 91007a4, API revision f1b901e;
-public_demo_only=true, session_mode=demo, legal acceptance disabled. No claim that newer fixes
-are deployed until revision/header/readiness checks establish it.
+Verified 2026-10-25 after green implementation CI: frontend and API both serve 007e76d.
+Render deploy dep-dbf3ks29lscs738mgjjg succeeded/live (61s); readiness passed after migration 0016.
+public_demo_only=true, session_mode=demo, legal acceptance disabled. Shared demo accounts at
+startup: 0. Deployed smoke passed 23/23 checks, including the new CSP and exact-origin CORS.
+No shared-account credential or private uploaded data was used for hosted verification.
 
 Render's free database expires **2026-11-19**, without PITR. Owner-confirmed database credential
 rotation completed 2026-10-22; see `docs/SECURITY_INCIDENT.md`. Do not reproduce secrets.
@@ -94,5 +99,7 @@ after the FX edge-case refinement. Linux Playwright ran 16 standard plus both sp
 against real Compose, preserving the strict configured origin and restoring the clock/mode.
 The production-CSP probe used the built artifact and Vercel header config, not Vite headers.
 Dependency audits and complete history/current-source scans passed. No live-provider call was made.
-Exact-commit hosted CI status is reported through the master checks workflow; the preceding base
-run is historical evidence only. Demo deployment remains gated on successful exact-commit CI.
+Implementation CI 40215376979 succeeded; hosted logs confirm 486 backend tests (161.63s),
+16 normal browser tests plus public-demo profile, and the separate strict TLS job passed.
+The receipt-only commit's latest status is available in the master checks workflow; deployment
+receipts above identify the actual application commit rather than assuming a push deploys it.
