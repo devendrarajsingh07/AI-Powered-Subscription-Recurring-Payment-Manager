@@ -162,6 +162,7 @@ class Subscription(Owned, Base):
         choices("cadence", "weekly", "monthly", "quarterly", "yearly")
     )
     avg_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    billing_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     confidence: Mapped[Decimal] = mapped_column(Numeric(8, 6))
     regularity: Mapped[Decimal] = mapped_column(Numeric(8, 6))
     amount_cv: Mapped[Decimal] = mapped_column(Numeric(8, 6))

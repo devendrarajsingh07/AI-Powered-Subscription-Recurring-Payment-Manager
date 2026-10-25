@@ -10,8 +10,9 @@ from sqlalchemy.orm import Session
 
 from app import models as m
 from app.services.categories import kind_for_category
-from app.services.detector import Detection, Transaction, detect_recurring
+from app.services.detector import CADENCES, Detection, Transaction, detect_recurring
 from app.services.normalizer import normalize_merchant
+from app.services.pricing import billing_projection
 
 
 def get_user(db: Session, user_id: uuid.UUID, *, lock: bool = False):
@@ -205,6 +206,9 @@ def persist_detections(db, user_id, detections: list[Detection], *, as_of):
         record.price_previous_amount = price.previous_median if price else None
         record.price_new_amount = price.latest_amount if price else None
         record.price_detected_on = detected_on if price else None
+        record.billing_amount = billing_projection(
+            (tx.amount for tx in detection.charges), CADENCES[detection.cadence][2]
+        )
         db.execute(
             delete(m.SubscriptionCharge).where(
                 m.SubscriptionCharge.user_id == user_id,

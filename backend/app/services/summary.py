@@ -17,7 +17,10 @@ FACTORS = {
 
 
 def current_amount(sub) -> Decimal:
-    """Latest charge once a price change was detected, otherwise the historical average."""
+    """Persisted billing projection, with compatibility for older schema/test objects."""
+    billing = getattr(sub, "billing_amount", None)
+    if billing is not None:
+        return billing
     increase = getattr(sub, "price_increase", None)  # API schema objects
     if increase is not None:
         return increase.new_amount

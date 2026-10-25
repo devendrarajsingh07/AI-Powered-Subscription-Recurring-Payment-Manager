@@ -192,7 +192,7 @@ export function RenewalRows({
                 <small>Estimated from past charges</small>
               </td>
               <td className="money">
-                {formatMoney(item.avg_amount, item.currency)}
+                {formatMoney(item.billing_amount ?? item.avg_amount, item.currency)}
               </td>
             </tr>
           ))}

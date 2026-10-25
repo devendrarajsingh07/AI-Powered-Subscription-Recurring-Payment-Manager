@@ -15,7 +15,9 @@ def sub_out(record, *, as_of=None):
             new_amount=record.price_new_amount,
             detected_on=record.price_detected_on,
         )
-    if as_of is not None:
+    # Keep the already predicted current cycle until it passes. Only overdue records
+    # need rolling; this also preserves a known future billing date for alert planning.
+    if as_of is not None and record.next_expected < as_of:
         result.next_expected, missed = project(record.last_charge, record.cadence, as_of)
         result.missed_cycles, result.possibly_cancelled = missed, missed >= 2
     return result

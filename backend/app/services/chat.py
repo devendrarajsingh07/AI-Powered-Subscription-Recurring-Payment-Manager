@@ -77,17 +77,13 @@ async def turn(
     budget = [0]
     if controls.is_live(client) and hasattr(client, "before_request"):
         # Transport retries inside one provider call are separate requests: guard each one too.
-        client.before_request = lambda: controls.guard(engine, client, budget[0])
+        client.before_request = lambda: controls.guard_user(engine, client, budget[0], user_id)
     async with asyncio.timeout(cfg.chat_timeout_seconds):
         for round_index in range(6):
             if controls.is_live(client):
-                with Session(engine) as consent_db:
-                    account = repo.get_user(consent_db, user_id)
-                    if account is None or not account.live_opt_in:
-                        raise LLMError("Live AI consent is required. No further data was sent.")
                 # Re-read the kill switch and reserve shared capacity before EVERY round.
                 budget[0] = controls.estimate(SYSTEM, json.dumps(messages, default=str))
-                controls.guard(engine, client, budget[0])
+                controls.guard_user(engine, client, budget[0], user_id)
             calls, answer = [], ""
             async for item in client.stream(
                 system=SYSTEM, messages=messages, tools=definitions(), force_final=round_index == 5

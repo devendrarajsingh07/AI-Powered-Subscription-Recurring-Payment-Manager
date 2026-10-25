@@ -267,6 +267,7 @@ class SubscriptionOut(Schema):
     currency: str
     cadence: Cadence
     avg_amount: Money
+    billing_amount: Money | None = None
     confidence: Decimal
     regularity: Decimal
     amount_cv: Decimal

@@ -2191,6 +2191,21 @@
             "title": "Avg Amount",
             "type": "string"
           },
+          "billing_amount": {
+            "anyOf": [
+              {
+                "examples": [
+                  "199.00"
+                ],
+                "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Amount"
+          },
           "cadence": {
             "enum": [
               "weekly",
@@ -2384,6 +2399,21 @@
             "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
             "title": "Avg Amount",
             "type": "string"
+          },
+          "billing_amount": {
+            "anyOf": [
+              {
+                "examples": [
+                  "199.00"
+                ],
+                "pattern": "^\\d{1,10}(\\.\\d{1,2})?$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Amount"
           },
           "cadence": {
             "enum": [

@@ -122,6 +122,20 @@ def guard(engine, client, tokens):
         raise Bypass(reason)
 
 
+def guard_user(engine, client, tokens, authenticated_user_id):
+    """Recheck consent/account existence before *each* attempt, including transport retries."""
+    if not is_live(client):
+        return
+    from app import repositories as repo
+    from app.services.llm import LLMError
+
+    with Session(engine) as db:
+        account = repo.get_user(db, authenticated_user_id)
+        if account is None or not account.live_opt_in:
+            raise LLMError("Live AI consent is required. No further data was sent.")
+    guard(engine, client, tokens)
+
+
 def route(engine, client):
     """Return (client, fallback_reason) for a new request. Counts nothing: an invalid request
     that is rejected afterwards consumes no shared quota. Reservation happens per provider call."""

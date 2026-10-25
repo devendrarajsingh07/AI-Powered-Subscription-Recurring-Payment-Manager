@@ -16,7 +16,7 @@ import UploadPage, {
 } from "../pages/Upload";
 import { DeleteDialog, ExportData } from "../pages/Settings";
 import { filtersFromSearch } from "../pages/Subscriptions";
-import { Dialog, Notices } from "./Common";
+import { Dialog, Notices, RenewalRows } from "./Common";
 import { clearSession, saveSession } from "../lib/session";
 import { api } from "../api/client";
 import { App } from "../App";
@@ -110,6 +110,23 @@ const subscription: components["schemas"]["SubscriptionOut"] = {
     detected_on: "2026-10-01",
   },
 };
+test("renewals display the server billing projection after an increase notice resolves", () => {
+  render(
+    <RenewalRows
+      items={[
+        {
+          ...subscription,
+          billing_amount: "440.00",
+          avg_amount: "424.00",
+          price_increase: null,
+        },
+      ]}
+    />,
+  );
+  expect(screen.getByText("₹440.00")).toBeVisible();
+  expect(screen.queryByText("₹424.00")).not.toBeInTheDocument();
+});
+
 test("password validation mirrors backend character classes and UTF-8 limit", () => {
   expect(passwordError("longlowercaseonly", true)).toMatch(/three/);
   expect(passwordError("ValidPassword42!", true)).toBeNull();

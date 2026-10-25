@@ -15,7 +15,7 @@ from app.config import get_settings
 from app.services import llm_controls as controls
 from app.services.chat import DISCLOSURE, clear_history, gate, stream_turn
 from app.services.chat_tools import clean
-from app.services.llm import get_client
+from app.services.llm import LLMError, get_client
 from app.services.normalizer import normalize_merchant
 
 
@@ -175,15 +175,22 @@ async def suggest_category(
     engine = db.get_bind()
     lease_token = gate.acquire(user_id, db=db)
     try:
+        was_live = controls.is_live(client)
         client, _ = controls.route(engine, client)
         # Reserve before the single provider request, after validation and per-user admission.
         # A killed or capped provider sends nothing and leaves the one-time attempt unused.
-        if controls.is_live(client) and controls.reserve(engine, controls.estimate(merchant)):
+        if was_live and not controls.is_live(client):
+            return row
+        try:
+            controls.guard_user(engine, client, controls.estimate(merchant), user_id)
+        except controls.Bypass:
             controls.note(engine, "fallbacks")
             return row
+        except LLMError:
+            fail(400, "consent_required", "Live AI consent is required; no further data was sent")
         if controls.is_live(client) and hasattr(client, "before_request"):
-            client.before_request = lambda: controls.guard(
-                engine, client, controls.estimate(merchant)
+            client.before_request = lambda: controls.guard_user(
+                engine, client, controls.estimate(merchant), user_id
             )
         row.suggestion_attempted = True
         db.commit()  # Claim once, including failed requests; no financial data crosses boundary.

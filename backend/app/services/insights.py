@@ -25,6 +25,7 @@ class InsightInput:
     price_previous_amount: Decimal | None = None
     price_new_amount: Decimal | None = None
     price_detected_on: date | None = None
+    billing_amount: Decimal | None = None
 
 
 @dataclass(frozen=True)

@@ -1670,6 +1670,8 @@ export interface components {
              * @example 199.00
              */
             avg_amount: string;
+            /** Billing Amount */
+            billing_amount?: string | null;
             /**
              * Cadence
              * @enum {string}
@@ -1746,6 +1748,8 @@ export interface components {
              * @example 199.00
              */
             avg_amount: string;
+            /** Billing Amount */
+            billing_amount?: string | null;
             /**
              * Cadence
              * @enum {string}

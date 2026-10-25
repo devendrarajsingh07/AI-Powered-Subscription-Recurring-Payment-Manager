@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from app import models as m
 from app import repositories as repo
+from app.services.renewals import sub_out
 from app.services.summary import current_amount, equivalents, money, summarize
 
 
@@ -16,19 +17,20 @@ def generate(db, user_id, *, as_of, now):
     plans = []
     subscriptions = repo.active_subscriptions(db, user_id)
     for sub in subscriptions:
-        if sub.kind != "subscription" or sub.possibly_cancelled or sub.next_expected < as_of:
+        renewal = sub_out(sub, as_of=as_of)
+        if sub.kind != "subscription" or sub.possibly_cancelled or renewal.possibly_cancelled:
             continue
         plans.append(
             dict(
                 kind="renewal",
-                event_key=f"renewal:{sub.id}:{sub.next_expected}",
+                event_key=f"renewal:{sub.id}:{renewal.next_expected}",
                 subscription_id=sub.id,
-                send_on=sub.next_expected - timedelta(days=user.alert_lead_days),
+                send_on=renewal.next_expected - timedelta(days=user.alert_lead_days),
                 payload=dict(
                     merchant=sub.merchant,
                     amount=format(current_amount(sub), ".2f"),
                     currency=sub.currency,
-                    renewal_date=sub.next_expected.isoformat(),
+                    renewal_date=renewal.next_expected.isoformat(),
                 ),
             )
         )

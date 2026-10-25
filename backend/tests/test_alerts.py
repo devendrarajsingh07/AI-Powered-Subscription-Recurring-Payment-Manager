@@ -124,7 +124,9 @@ def test_missing_email_and_disabled_are_skipped(pg_engine, db, tmp_path, email, 
         dict(status="dismissed"),
         dict(kind="fixed_bill"),
         dict(possibly_cancelled=True),
-        dict(next_expected=DAY - timedelta(days=1)),
+        # An overdue prediction alone now rolls forward. Two actually missed cycles
+        # make it ineligible, even if a stale persisted uncertainty flag is false.
+        dict(last_charge=DAY - timedelta(days=100), next_expected=DAY - timedelta(days=1)),
     ],
 )
 def test_ineligible_renewals_never_alert(pg_engine, db, tmp_path, values):
@@ -236,8 +238,12 @@ def test_crash_after_publication_reuses_same_outbox_artifact(pg_engine, db, tmp_
         now=NOW + timedelta(days=8),
         notifier=ConsoleNotifier(tmp_path),
     )
-    assert events(db, uid)[0].status == "sent"
-    assert events(db, uid)[0].sent_at == NOW
+    # Rolling an overdue cycle can also create a *different*, disabled future alert.
+    # Verify recovery of the actual published event, not arbitrary UUID list ordering.
+    restored = {event.id: event for event in events(db, uid)}[row.id]
+    assert restored.status == "sent"
+    assert restored.sent_at == NOW
+    assert all(event.status == "skipped" for event in events(db, uid) if event.id != row.id)
     assert len(list(tmp_path.rglob("*.eml"))) == 1
     assert next(tmp_path.rglob("*.eml")).read_bytes() == original
 
