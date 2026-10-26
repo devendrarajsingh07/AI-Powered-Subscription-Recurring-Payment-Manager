@@ -130,3 +130,9 @@ stalled before tests while apt downloaded 185 packages from the Ubuntu 26.04/res
 from a test failure. Browser jobs now pin ubuntu-24.04, matching the successful local Noble
 runner, with an eight-minute installation limit and 30-minute job bound. No browser, assertion
 or test was disabled; the follow-up commit requires its own complete hosted CI result.
+
+The pinned run 40362767316 reproduced slow Azure-mirror downloads on Noble too; the OS pin alone
+was insufficient. CI browser jobs now fetch the same signed Ubuntu packages from Ubuntu's
+HTTPS primary archive, retaining signature validation, plus 30-second transport timeouts/two
+retries. This changes disposable CI only. The earlier run 40359305930 was canceled after
+explicit owner approval, before its browser tests. No test result was fabricated or skipped.

@@ -74,6 +74,10 @@ jobs:
       - run: make dev
       - run: npm ci
         working-directory: frontend
+      - name: Use Ubuntu primary mirror for browser dependencies
+        run: |
+          sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "2";\n' | sudo tee /etc/apt/apt.conf.d/99subtrack-ci-network >/dev/null
       - run: node node_modules/@playwright/test/cli.js install --with-deps chromium firefox webkit
         timeout-minutes: 8
         working-directory: frontend
@@ -115,6 +119,10 @@ jobs:
       - run: docker compose -f docker-compose.yml -f docker-compose.auth-test.yml up --build --wait
       - run: npm ci
         working-directory: frontend
+      - name: Use Ubuntu primary mirror for browser dependencies
+        run: |
+          sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "2";\n' | sudo tee /etc/apt/apt.conf.d/99subtrack-ci-network >/dev/null
       - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
         timeout-minutes: 8
         working-directory: frontend
