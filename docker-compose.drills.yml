@@ -1,0 +1,171 @@
+name: subtrack-drills
+x-app: &app
+  image: subtrack-drill-api:current
+  build: ./backend
+  env_file: ./var/drills/runtime.env
+  environment: &app-env
+    DATABASE_URL: ${DRILL_DATABASE_URL:?Run python scripts/local_drills.py prepare first}
+    RENDER_GIT_COMMIT: ${DRILL_REVISION:?Missing checked source revision}
+  read_only: true
+  tmpfs: ['/tmp:size=128m,mode=1777']
+  cap_drop: [ALL]
+  security_opt: ['no-new-privileges:true']
+  init: true
+  networks: [drill]
+  volumes:
+    - drill_outbox:/var/subtrack/outbox
+    - drill_socket:/var/subtrack/extractor:ro
+    - ./scripts:/drills:ro
+    - ./scripts:/scripts:ro
+    - ./backend/tests:/app/tests:ro
+  healthcheck:
+    test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://localhost:8000/api/v1/health/ready", timeout=3)']
+    interval: 3s
+    timeout: 5s
+    retries: 30
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: drill
+      POSTGRES_USER: drill
+      POSTGRES_PASSWORD: ${DRILL_DB_PASSWORD:?Missing ephemeral password}
+    volumes: [drill_db:/var/lib/postgresql/data]
+    networks: [drill]
+    healthcheck:
+      test: [CMD, pg_isready, -U, drill, -d, drill]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  restore-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: restored
+      POSTGRES_USER: drill
+      POSTGRES_PASSWORD: ${DRILL_DB_PASSWORD:?Missing ephemeral password}
+    volumes: [drill_restore:/var/lib/postgresql/data]
+    networks: [drill]
+    healthcheck:
+      test: [CMD, pg_isready, -U, drill, -d, restored]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  extractor:
+    image: subtrack-drill-api:current
+    pull_policy: never
+    environment:
+      EXTRACTOR_SOCKET: /var/subtrack/extractor/rpc.sock
+    command: [python, -m, app.extractor_service]
+    network_mode: none
+    read_only: true
+    tmpfs: ['/tmp:size=128m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    pids_limit: 64
+    cpus: '1.0'
+    mem_limit: 768m
+    init: true
+    volumes: [drill_socket:/var/subtrack/extractor]
+    healthcheck:
+      test: [CMD, python, -m, app.extractor_service, --health]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  api1:
+    <<: *app
+    command: [sh, -c, 'alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log']
+    depends_on:
+      db: {condition: service_healthy}
+      extractor: {condition: service_healthy}
+  api2:
+    <<: *app
+    command: [uvicorn, app.main:app, --host, 0.0.0.0, --port, '8000', --no-access-log]
+    depends_on:
+      api1: {condition: service_healthy}
+  worker:
+    <<: *app
+    command: [python, -m, app.worker]
+    healthcheck:
+      test: [CMD, python, -m, app.worker, --health]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      api1: {condition: service_healthy}
+  restore-api:
+    <<: *app
+    profiles: [restore]
+    environment:
+      <<: *app-env
+      DATABASE_URL: ${DRILL_RESTORE_URL:?Missing ephemeral restore URL}
+    volumes:
+      - drill_restore_outbox:/var/subtrack/outbox
+      - drill_socket:/var/subtrack/extractor:ro
+      - ./scripts:/drills:ro
+      - ./scripts:/scripts:ro
+      - ./backend/tests:/app/tests:ro
+    command: [uvicorn, app.main:app, --host, 0.0.0.0, --port, '8000', --no-access-log]
+    depends_on:
+      restore-db: {condition: service_healthy}
+  restore-worker:
+    <<: *app
+    profiles: [restore]
+    environment:
+      <<: *app-env
+      DATABASE_URL: ${DRILL_RESTORE_URL:?Missing ephemeral restore URL}
+    volumes:
+      - drill_restore_outbox:/var/subtrack/outbox
+      - drill_socket:/var/subtrack/extractor:ro
+      - ./scripts:/drills:ro
+      - ./scripts:/scripts:ro
+      - ./backend/tests:/app/tests:ro
+    command: [python, -m, app.worker]
+    healthcheck:
+      test: [CMD, python, -m, app.worker, --health]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      restore-api: {condition: service_healthy}
+  web:
+    image: ${DRILL_WEB_IMAGE:-subtrack-drill-web:current}
+    build:
+      context: ./frontend
+      dockerfile: ../ops/web.Dockerfile
+      additional_contexts:
+        contract: ./backend/openapi
+      args:
+        SOURCE_REVISION: ${DRILL_REVISION:?Missing checked revision}
+    volumes: ['${DRILL_NGINX_CONFIG:-./ops/drill-nginx.conf}:/etc/nginx/nginx.conf:ro']
+    networks: [drill]
+    read_only: true
+    tmpfs: ['/tmp:size=32m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    depends_on:
+      api1: {condition: service_healthy}
+      api2: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/login]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+  probe:
+    image: subtrack-drill-api:current
+    pull_policy: never
+    command: [python, -c, 'import time; time.sleep(86400)']
+    networks: [drill]
+    read_only: true
+    tmpfs: ['/tmp:size=16m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    volumes: ['./scripts:/drills:ro']
+networks:
+  drill:
+    internal: true
+volumes:
+  drill_db:
+  drill_restore:
+  drill_socket:
+  drill_outbox:
+  drill_restore_outbox:

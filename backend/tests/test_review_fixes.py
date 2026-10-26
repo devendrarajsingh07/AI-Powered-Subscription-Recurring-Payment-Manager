@@ -134,7 +134,12 @@ def test_provider_retry_rechecks_consent_and_account(
                 session.get(m.User, user_id).live_opt_in = False
         return []
 
-    with server([(503, revoke), (200, tokens("I do not have that information."))]) as (
+    # Commit withdrawal/deletion before the client can observe 503 headers. Running revoke
+    # as a response-body callback races a legitimate retry against an uncommitted change.
+    with server(
+        [(503, []), (200, tokens("I do not have that information."))],
+        before_response=lambda number: revoke() if number == 1 else None,
+    ) as (
         url,
         requests,
     ):

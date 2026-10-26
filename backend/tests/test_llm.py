@@ -13,7 +13,7 @@ from app.services.llm.gemini import GeminiClient
 
 
 @contextmanager
-def server(responses):
+def server(responses, *, before_response=None):
     requests = []
     headers = []
     paths = []
@@ -27,6 +27,8 @@ def server(responses):
             headers.append(dict(self.headers))
             requests.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
             code, events = responses[min(len(requests) - 1, len(responses) - 1)]
+            if before_response is not None:
+                before_response(len(requests))
             self.send_response(code)
             self.send_header("Content-Type", "text/event-stream")
             self.end_headers()

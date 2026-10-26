@@ -60,3 +60,8 @@ llm-status llm-kill llm-restore:
 # Read-only post-deploy checks: make smoke API=https://host/api/v1 WEB=https://app.example
 smoke:
 	python scripts/smoke_deployed.py --api $(API) --web $(WEB)
+
+# Isolated, synthetic-only operations. Does not use the normal .env or hosted data.
+.PHONY: drill-tools drill-prepare drill-up drill-coordination drill-restore drill-load drill-scan drill-rollback drill-isolation drill-down
+drill-tools drill-prepare drill-up drill-coordination drill-restore drill-load drill-scan drill-rollback drill-isolation drill-down:
+	python scripts/local_drills.py $(patsubst drill-%,%,$@)
