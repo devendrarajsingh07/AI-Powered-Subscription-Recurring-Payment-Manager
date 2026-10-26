@@ -67,10 +67,13 @@ Logs are ignored under `var/expansion-verification/`; no private statements/emai
 
 ## Publication and hosting rule
 
-Use an isolated codex/ branch for exact-commit green hosted CI first, then fast-forward master
-without a PR/force push, and manually deploy that same commit to the existing free Render demo.
-This keeps Vercel's Git auto-deploy behind an already-green commit. Latest exact-commit checks
-are authoritative; read `/health.revision` and `/version.json` before claiming a live revision.
+Owner update (2026-10-26): keep exactly one local and remote branch, **master**. The earlier
+isolated-branch publication workflow is superseded. Work directly on master, run relevant local
+gates before pushing, and inspect exact-commit hosted CI before manually deploying the demo API.
+Vercel's existing Git integration rebuilds master automatically. Do not create topic branches,
+force-push, or rewrite history. Non-master branch history was saved in an ignored local recovery
+bundle before cleanup; remote master and the deployed application were unchanged by cleanup.
+Read `/health.revision` and `/version.json` before claiming a live revision.
 Never treat a push or an old CI run as proof of a new deployment. Do not enable lab/live flags on
 hosted demos. Current actions are available from the repository's checks workflow:
 https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/workflows/ci.yml

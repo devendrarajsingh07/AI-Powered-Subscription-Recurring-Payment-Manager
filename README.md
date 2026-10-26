@@ -51,7 +51,9 @@ A clock-relative demo loader feeds synthetic data through the **same real ingest
 | Module | What it provides |
 |---|---|
 | 🏠 **Dashboard** | Monthly and yearly recurring totals, category split, spending trend, upcoming renewals and budget status. |
-| 📥 **Statement Import** | CSV preview with column mapping, plus English text/scanned PDF and JPEG/PNG extraction with mandatory editable review. |
+| 📥 **Statement Import** | CSV preview with column mapping, plus English text/scanned PDF and JPEG/PNG extraction with mandatory editable review. Local development only; hosted uploads are disabled. |
+| 🧾 **Receipt Inbox Lab** | Synthetic EML review, leased worker sync, separate receipt evidence and explicit bank-charge matching without double-counting. Opt-in local lab; no live Gmail connection. |
+| 🤝 **Voluntary Interests** | Separate, withdrawable category preferences. No mailbox-derived customer lists, provider deals, discounts or shared subscriptions. |
 | 🔁 **Recurrence Detection** | Weekly, monthly, quarterly and yearly cadence detection with regularity and amount-variation checks and a confidence score. |
 | 📋 **Subscriptions** | Filter, sort and review each detected plan, its underlying charges, status, category and price changes. |
 | 📅 **Renewals** | Next expected charge projected by calendar month from the last real charge, with missed-cycle and possibly-cancelled flags. |
@@ -135,7 +137,7 @@ flowchart LR
 - **Money is never a float.** Amounts are `Decimal` in Python and decimal strings over the API; charts derive only dimensionless coordinates.
 - **The model never computes figures.** Tools return typed data and the verifier checks every number in the final answer against them. It checks where figures came from, not whether the prose is true.
 - **Live AI is opt-in and bounded.** Per-user consent, a global kill switch, daily request and token caps, a reservation before every provider call, and a visible offline fallback.
-- **PostgreSQL coordinates everything.** Job leases, rate limits, chat leases, alert locks and AI caps are shared by every API instance; there is no in-process-only state.
+- **PostgreSQL coordinates shared state.** Job leases, rate limits, chat leases, alert locks and AI caps use the database. Worker timers still run in-process; the multi-instance operational drill remains unverified.
 - **Production fails closed.** Weak secrets, test clocks, demo loading and the console notifier are refused outside development.
 - **Additive migrations only.** Schema changes go through Alembic; `create_all` is never used at runtime.
 
@@ -215,7 +217,9 @@ Demo data is generated relative to today in `APP_TIMEZONE`, and loading it again
 - `/api/v1/health` and the frontend's `/version.json` both report the deployed Git commit.
 - The free Render instance sleeps when idle, so the first request can take about a minute.
 
-See [Free demo hosting](docs/FREE_DEMO_HOSTING.md) for the deployment setup.
+Verified application release: `92b9ae6` (2026-10-26). Vercel and Render served that exact revision, all 23 post-deploy smoke checks passed, and [all four master CI jobs passed](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40315826402). These are dated verification receipts; the live revision endpoints and current CI badge show later changes.
+
+Receipt import, mailbox sync, Gmail authorization and interest writes remain disabled on the public demo. Hosting stays free; the real-user beta remains locked. See [Free demo hosting](docs/FREE_DEMO_HOSTING.md) for the deployment setup.
 
 ---
 
@@ -236,6 +240,9 @@ All business routes live under `/api/v1` and require a bearer access token. The 
 | Insights | `GET /recommendations`, `PATCH /recommendations/{id}`, `GET /categories/unconfirmed`, `PATCH /categories/{id}`, `POST /categories/{id}/suggest` |
 | Assistant | `POST /chat` (SSE), `GET`/`PUT /chat/config`, `GET`/`DELETE /chat/history` |
 | Alerts | `GET /alerts`, `GET /alerts/{id}`, `GET`/`PUT /settings/alerts`, `POST /alerts/unsubscribe` |
+| Receipt import (local opt-in) | `POST /receipts/preview`; reviewed imports use the existing upload pipeline |
+| Mailbox lab (local opt-in) | `GET /mailbox/config`, `POST /mailbox/synthetic/connect`, `DELETE /mailbox/connection`, `POST /mailbox/sync`, `GET /mailbox/sync/{id}`, `GET /mailbox/evidence`, `PATCH /mailbox/evidence/{id}` |
+| Voluntary interests (local opt-in) | `GET`/`PUT`/`DELETE /interests` |
 | Your data | `GET /me/export`, `DELETE /me/data`, `POST /support/reports` |
 
 Login errors never reveal whether an account exists. Passwords need 12+ characters, three character classes and at most 72 UTF-8 bytes. Operator-only metrics (`/ops/metrics`) are hidden unless a long `OPS_METRICS_TOKEN` is configured.
@@ -283,6 +290,63 @@ make llm-restore    # re-enable live calls
 
 ---
 
+## 🧾 Local Receipt Labs (Synthetic Data Only)
+
+Both labs default to off and are unavailable on the hosted demo and in production. They never
+connect to Gmail, display an email body, or send receipt content to an AI provider.
+
+### Review and import one synthetic receipt
+
+Set `RECEIPT_IMPORT_ENABLED=true` in the development shell and run `make dev`. In a **separate,
+empty local account**, choose **Upload statement → Import source → Synthetic email receipt
+(local only)**. Pick a committed fixture from `backend/data/receipts/`, review/correct its fields,
+explicitly approve, then import through the real durable pipeline. Legacy receipt imports cannot
+be mixed with bank history; repeated charges still need enough occurrences for detection.
+
+`make receipt-demo` exercises the fixture-only API/worker path with a disposable account, checks
+independently expected totals and duplicate replay, then deletes the account. `make
+evaluate-receipts` checks the 16 labelled parser outcomes. No personal email is used.
+
+### Sync evidence and match an existing bank charge
+
+```powershell
+$env:MAILBOX_LAB_ENABLED = "true"
+make dev
+```
+
+1. Register a local account and open **Upload statement → Open the offline receipt inbox lab**.
+2. Review the disclosure, consent to the synthetic rehearsal, and start sync. The existing worker
+   processes the committed fixtures and reports real job progress; 16 fixtures yield 12 evidence
+   rows and four rejected cases. Replaying preserves edits and decisions without duplicate rows.
+3. Import a synthetic bank CSV. Review any candidate matching the normalized merchant, exact INR
+   amount and payment date within three days. Select and explicitly confirm a candidate—even if
+   there is only one. Linking evidence never adds a transaction or increases spending totals.
+4. Optionally declare music, streaming or cloud interests through **separate voluntary consent**.
+   These choices do not read financial data, contact providers or promise an offer.
+5. Disconnect to purge mailbox evidence and sync metadata without deleting bank history. Withdraw
+   interests separately, or delete the entire account in Settings.
+
+To restore default local configuration:
+
+```powershell
+Remove-Item Env:MAILBOX_LAB_ENABLED
+# If you also enabled single-receipt import:
+Remove-Item Env:RECEIPT_IMPORT_ENABLED -ErrorAction SilentlyContinue
+make dev
+```
+
+Extracted evidence fields expire after 30 days; minimal decision/digest/link tombstones prevent
+resync from resurrecting discarded evidence until disconnect or deletion. No original messages
+or headers are stored. Only allowlisted synthetic EML fixtures may be committed.
+
+**Live Gmail remains unavailable.** OAuth/HTTP/encryption methods have local stand-in tests;
+a real consent callback, connection lifecycle, incremental sync and revocation delivery still
+need implementation, owner/Google approvals and private accuracy measurement. Enabling
+`MAILBOX_LIVE_ENABLED` fails configuration. Provider agreements, licensing, fulfilment and billing
+are separate unfinished work. See [Mailbox Lab](docs/MAILBOX_LAB.md) for precise boundaries.
+
+---
+
 ## 🔐 Security and Data Integrity
 
 - Access tokens live in memory only. Strict mode uses rotating `Secure`, `HttpOnly`, `SameSite=Strict`, host-only refresh cookies with CSRF protection and server-side revocation.
@@ -306,7 +370,7 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 |---|---|
 | **Backend: 554 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
 | **Frontend: 99 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
-| **Browser e2e** | Playwright against the real Compose stack (never mocked happy paths) in Chromium, Firefox and WebKit, plus axe scans of every page in both themes at 360 px |
+| **Browser e2e: 20 distinct passes** | 18 standard cases across Chromium, Firefox and WebKit, one strict same-site auth case and one public-demo restriction case; two profile-specific skips. Real Compose stack, synthetic data, and light/dark/mobile axe checks. |
 
 ```sh
 make test       # pytest on PostgreSQL, detector evaluation, OpenAPI drift, Vitest, TS type drift
@@ -354,7 +418,8 @@ AI-Powered-Subscription-Recurring-Payment-Manager/
 │   │   ├── schemas/              # Pydantic request/response models
 │   │   ├── services/             # Detector, insights, renewals, chat, LLM, queue, email
 │   │   ├── templates/            # Email templates
-│   │   ├── durable_worker.py     # Durable job worker
+│   │   ├── worker.py             # Worker loop, mailbox sync and maintenance
+│   │   ├── durable_worker.py     # Durable upload-job handlers
 │   │   └── extractor_service.py  # Credential-free statement extractor
 │   ├── data/                     # Synthetic fixtures and ground truth
 │   ├── openapi/                  # Checked-in API contract
@@ -387,6 +452,7 @@ AI-Powered-Subscription-Recurring-Payment-Manager/
 | `/recommendations` | Advisory savings and notices |
 | `/categories` | Confirm or change categories |
 | `/settings` | Budget, alerts, export, demo data and account deletion |
+| `/mailbox` | Development-only synthetic receipt evidence, explicit bank matching and voluntary interests |
 | `/unsubscribe` | One-click email unsubscribe |
 
 <table>
@@ -413,6 +479,7 @@ Main settings are in [.env.example](.env.example); the rest have safe defaults i
 | Auth and sessions | `JWT_SECRET`, `JWT_ACCESS_MINUTES`, `AUTH_SESSION_MODE`, `AUTH_REFRESH_DAYS`, `REGISTRATION_MODE`, `REQUIRE_EMAIL_VERIFICATION`, `API_ORIGIN`, `AUTH_COOKIE_SITE` |
 | Rate limits | `AUTH_REGISTER_LIMIT`, `AUTH_LOGIN_LIMIT`, `AUTH_WINDOW_SECONDS`, `AUTH_SESSION_LIMIT`, `ACCOUNT_BACKOFF_THRESHOLD`, `TRUSTED_PROXY_HOPS` |
 | Jobs | `JOB_MODE`, `UPLOAD_WORKERS`, `UPLOAD_QUEUE_LIMIT`, `JOB_LEASE_SECONDS`, `JOB_MAX_ATTEMPTS` |
+| Local receipt labs | `RECEIPT_IMPORT_ENABLED=false`, `MAILBOX_LAB_ENABLED=false`; `MAILBOX_LIVE_ENABLED=true` is refused. No Google key is needed for the synthetic lab. `MAILBOX_TOKEN_KEY` is only used by protocol test seams, not a live connector. |
 | Retention | `RETAIN_JOB_DAYS`, `RETAIN_CHAT_DAYS`, `RETAIN_ALERT_DAYS`, `RETAIN_AUDIT_DAYS` |
 | AI | `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_BASE_URL`, `LLM_MAX_TOKENS`, `LLM_KILL_SWITCH`, `CHAT_MINUTE_LIMIT`, `CHAT_DAILY_LIMIT` |
 | Alerts and email | `NOTIFIER_PROVIDER`, `SCHEDULER_ENABLED`, `ALERT_JOB_HOUR`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_SECURITY` |
@@ -463,6 +530,9 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 | [Architecture](docs/ARCHITECTURE.md) | Detection, delivery, verifier and limitations |
 | [Demo Script](docs/DEMO.md) | Timed three-minute tour with measured values |
 | [Statement Import](docs/STATEMENT_IMPORT.md) | Formats, evaluation, limits and private checker |
+| [Email Receipts](docs/EMAIL_RECEIPT_FOUNDATION.md) | Guarded synthetic receipt review/import and legacy no-mixing boundary |
+| [Mailbox Lab](docs/MAILBOX_LAB.md) | Consent, worker sync, evidence matching, retention, private checker and live integration gaps |
+| [Expansion Plan](docs/EXPANSION_PLAN.md) | Recorded architecture and privacy decisions for the receipt expansion |
 | [Privacy](docs/PRIVACY.md) | Data handling, retention, disclosure and deletion |
 | [Runbook](docs/RUNBOOK.md) | Operations, AI kill switch, releases and proxy settings |
 | [Launch Gates](docs/LAUNCH.md) | What must pass before a real-user beta |
@@ -482,6 +552,9 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 |---|---|
 | Phases 1–7 (core product, statements, assistant, alerts, UI) | ✅ Complete for demo scope |
 | Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | Implemented; stand-in tests and historical CI receipts in PROJECT_INFO. The free demo uses its configured inline mode; multi-instance, restore/load/ZAP and release/rollback drills remain unverified. |
+| Receipt inbox and interests | Verified locally and in CI: synthetic sync, explicit evidence matching, privacy controls and separate voluntary preferences. Disabled on the hosted demo. |
+| Gmail protocol foundation | Local-only tests cover PKCE, scoped single-use state, encryption and bounded HTTP. Actual callback/orchestration, real incremental sync and revocation delivery are **not built**. |
+| Provider partnerships and offers | **Not built**; require owner-led agreements, licensing and fulfilment. Interest declarations do not grant redistribution rights. |
 | Phase 8 drills (two API instances on one database, backup restore, load test, ZAP scan) | ⏳ Not yet run |
 | Real-user beta | 🚫 Blocked: needs the drills, a backed-up database, real email delivery and approved legal documents |
 
@@ -489,11 +562,13 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 
 ## 🤝 Contributing
 
-1. Create a focused branch for one change.
+The repository keeps **one branch: `master`**, both locally and on GitHub. Do not create topic branches or force-push.
+
+1. Work on `master` and keep each commit focused.
 2. Keep money in `Decimal`, API contracts typed, and migrations additive.
 3. Add or update tests for behaviour changes, including independent ground-truth checks.
 4. Run `make lint`, `make test` and `make e2e`; regenerate types with `make openapi types` if the API changes.
-5. Describe the user-facing impact, verification and limitations in your pull request.
+5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. Existing Vercel Git integration rebuilds `master` automatically.
 
 Never commit `.env` files, real statements, outbox copies, keys or browser traces. Use the ignored `private-statements/` folder or a location outside the checkout.
 
@@ -501,7 +576,7 @@ Never commit `.env` files, real statements, outbox copies, keys or browser trace
 
 ## 📄 Assets and Licensing
 
- ` MIT LICENSE`
+Released under the [MIT License](LICENSE), copyright © 2026 DEVENDRA RAJ SINGH. Third-party dependencies retain their own licenses.
 
 ---
 
@@ -512,66 +587,3 @@ Never commit `.env` files, real statements, outbox copies, keys or browser trace
 Created by [Devendra Raj Singh](https://github.com/devendrarajsingh07)
 
 </div>
-
-### October 25 correctness/security review
-
-Billing projections persist independently of temporary price-increase notices; historical charge
-averages remain visible. Additive migration 0016 backfills existing linked histories without
-changing user decisions. Alerts and the renewals API share the explicit-clock overdue projection.
-Live-provider retries recheck consent and account existence before sending. The PDF parser lock
-uses pypdf 6.21.2, and Vercel static headers include CSP (scripts self; connections self plus the
-existing Render demo API). Current test/deployment receipts and launch blockers are in
-[PROJECT_INFO](PROJECT_INFO.md) and [DOD](docs/DOD.md).
-
-## Offline email receipt foundation (development only)
-
-Subscription receipts can now be previewed from synthetic `.eml` files through a guarded API,
-reviewed and imported by the same durable pipeline used for statements. This is **not a Gmail
-connection** and has no email-import UI yet. It is disabled by default and always refused on the
-public demo. Every candidate requires verification; original messages and headers are not stored.
-Receipt and bank histories cannot mix until reconciliation is implemented.
-
-PowerShell:
-
-```powershell
-$env:RECEIPT_IMPORT_ENABLED = "true"
-make dev
-make receipt-demo
-Remove-Item Env:RECEIPT_IMPORT_ENABLED
-make dev
-make evaluate-receipts
-```
-
-The demo command creates a disposable local fixture account, imports eight receipts through the
-real API/worker, verifies three independently expected products and totals, checks duplicate
-replay, and deletes its account. It never connects to Gmail or prints credentials. Only the 16
-labelled EML files in `backend/data/receipts/` may be tracked; private emails/outbox copies stay
-ignored. See [foundation scope, API steps and limitations](docs/EMAIL_RECEIPT_FOUNDATION.md).
-
-Live Gmail access requires a separately reviewed OAuth/consent and verification phase. Future
-provider-offer interest lists must collect separate voluntary choices, with provider-approved
-licensing; mailbox data will not supply commercial cohort reports in this design.
-
-### Local synthetic receipt review UI
-
-The local receipt review/import UI passes component and real-stack browser checks. With
-`RECEIPT_IMPORT_ENABLED=true` in the development shell and `make dev`, use a **separate empty
-local account**, then **Upload statement → Import source → Synthetic email receipt (local only)**.
-Choose one committed synthetic EML, correct/review its fields, approve, and import. Repeat
-receipts need enough occurrences for detection. No email body is displayed and Gmail is not
-connected. The selector is hidden by default and on the hosted synthetic-only demo. Restore
-normal mode by removing the environment override and running `make dev` again. See
-[receipt scope and boundaries](docs/EMAIL_RECEIPT_FOUNDATION.md).
-
-### Offline receipt inbox, matching and voluntary interests
-
-The development-only lab passed local regression, browser, build and security gates. Enable
-`MAILBOX_LAB_ENABLED=true` for `make dev` (API and worker), then use **Upload statement → Open the
-offline receipt inbox lab**. Consent starts a synthetic fixture rehearsal; no Gmail account is
-connected. Sync yields non-financial evidence. Upload a synthetic bank CSV and explicitly confirm
-a returned candidate to link the same payment without increasing spend. Plan interests have
-separate voluntary consent and never consult financial data. Disconnect purges evidence; interests
-can be withdrawn separately. Both features stay disabled on the hosted public demo and production.
-
-[Mailbox scope, local use, privacy and remaining live gates](docs/MAILBOX_LAB.md).
-`MAILBOX_LIVE_ENABLED=true` is refused; no Google credential is needed or requested by the lab.
