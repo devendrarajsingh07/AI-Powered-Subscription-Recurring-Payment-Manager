@@ -207,3 +207,24 @@ Before each live HTTP attempt (including retries), fresh user-scoped state check
 and consent, then the shared kill switch/quota. Revocation prevents later attempts; it cannot recall
 a request already sent. Vercel static headers now restrict scripts to self and connections to self
 and the explicit existing Render demo API. Inline styles support chart positioning.
+
+## Offline email receipt foundation
+
+The guarded `/receipts/preview` path parses up to 1 MB of local MIME with stdlib email/HTML
+parsers, at most 32 parts/five nested levels/64 KB text, without network or attachment extraction.
+Explicit paid-status/merchant/payment-date/paid-amount labels produce unverified INR candidates;
+header dates, renewal amounts, unpaid invoices and refunds cannot become automatic debits.
+Every candidate carries review/authenticity/reconciliation notices. Missing/ambiguous fields
+stay empty. Raw bodies/headers are discarded after parsing and never enter the durable queue.
+
+Existing StatementPreview ownership/expiry/cancel, verified RowEdit confirmation, virtual CSV,
+encrypted durable dispatch and financial services are reused. Only the string source label and
+OpenAPI union expand; models/migrations do not change. Admission locks prevent bank/email/demo
+source mixing. Existing transaction uniqueness dedupes canonical merchant/date/amount, with the
+known limitation that distinct identical charges can merge. The CLI tests fixed synthetic
+fixtures through actual localhost HTTP and the separate worker, then deletes its fixture account.
+
+The flag defaults off; public mode refuses input before parsing; production activation fails.
+Creation requires fake/offline mode and the provider-attempt guard blocks receipt workspaces.
+Gmail OAuth, sync, UI, invoice identity and reconciliation are future work, not stubbed features.
+See EMAIL_RECEIPT_FOUNDATION.md for independent fixture coverage and policy boundaries.

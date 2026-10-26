@@ -146,3 +146,21 @@ Problem reports (category plus up to 1,000 characters) reject statements, long d
 currency amounts, are limited per account per day, and are kept until the account is deleted.
 Never ask reporters for financial records. When `LEGAL_ACCEPTANCE_REQUIRED` is on, the accepted draft
 version and time are stored with the account. The drafts in `docs/legal/` are unreviewed and unapproved.
+
+## Offline receipt foundation
+
+`RECEIPT_IMPORT_ENABLED` defaults off; production activation is refused and the public demo
+rejects the route before reading any message body. Local development accepts a bounded EML,
+without accessing an inbox. Original bytes, MIME attachments, header addresses and message bodies
+are not persisted. Extracted merchant/date/amount/type fields remain in the existing owned preview
+for its configured TTL (default 30 minutes); confirmation/cancel clears them and account deletion
+cascades. Confirmed charges remain ordinary account-owned transaction records with an
+`email_receipt` upload origin. No message/invoice identity or bank reconciliation is implemented;
+canonical duplicate counts are visible and source mixing is refused.
+
+Receipt creation requires the offline assistant; live-provider attempts for existing receipt
+workspaces are blocked before transmission. No Gmail scopes, keys or tokens are requested or
+stored. Future OAuth data use/retention needs its own reviewed design and clear consent.
+Only the 16 labelled synthetic messages in `backend/data/receipts/` are repository fixtures.
+Private mail belongs outside version control, such as the ignored `private-emails/` directory.
+Separate future provider-offer interest declarations must not reuse mailbox-derived data.

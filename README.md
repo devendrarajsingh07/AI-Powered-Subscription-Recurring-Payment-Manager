@@ -13,7 +13,7 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.147-009688?style=for-the-badge&logo=fastapi&logoColor=white)](backend/requirements.in)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](backend/Dockerfile)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-561_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
+[![Tests](https://img.shields.io/badge/Tests-596_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
 
 <br />
 
@@ -304,7 +304,7 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 
 | Suite | Scope |
 |---|---|
-| **Backend: 486 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Backend: 521 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
 | **Frontend: 75 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
 | **Browser e2e** | Playwright against the real Compose stack (never mocked happy paths) in Chromium, Firefox and WebKit, plus axe scans of every page in both themes at 360 px |
 
@@ -522,3 +522,32 @@ Live-provider retries recheck consent and account existence before sending. The 
 uses pypdf 6.21.2, and Vercel static headers include CSP (scripts self; connections self plus the
 existing Render demo API). Current test/deployment receipts and launch blockers are in
 [PROJECT_INFO](PROJECT_INFO.md) and [DOD](docs/DOD.md).
+
+## Offline email receipt foundation (development only)
+
+Subscription receipts can now be previewed from synthetic `.eml` files through a guarded API,
+reviewed and imported by the same durable pipeline used for statements. This is **not a Gmail
+connection** and has no email-import UI yet. It is disabled by default and always refused on the
+public demo. Every candidate requires verification; original messages and headers are not stored.
+Receipt and bank histories cannot mix until reconciliation is implemented.
+
+PowerShell:
+
+```powershell
+$env:RECEIPT_IMPORT_ENABLED = "true"
+make dev
+make receipt-demo
+Remove-Item Env:RECEIPT_IMPORT_ENABLED
+make dev
+make evaluate-receipts
+```
+
+The demo command creates a disposable local fixture account, imports eight receipts through the
+real API/worker, verifies three independently expected products and totals, checks duplicate
+replay, and deletes its account. It never connects to Gmail or prints credentials. Only the 16
+labelled EML files in `backend/data/receipts/` may be tracked; private emails/outbox copies stay
+ignored. See [foundation scope, API steps and limitations](docs/EMAIL_RECEIPT_FOUNDATION.md).
+
+Live Gmail access requires a separately reviewed OAuth/consent and verification phase. Future
+provider-offer interest lists must collect separate voluntary choices, with provider-approved
+licensing; mailbox data will not supply commercial cohort reports in this design.

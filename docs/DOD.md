@@ -1,6 +1,6 @@
 # Definition-of-Done and launch-readiness evidence
 
-Updated 2026-10-25. Beta remains locked. The current-state section of
+Updated 2026-10-26. Beta remains locked. The current-state section of
 [PROJECT_INFO](../PROJECT_INFO.md) supplies current instructions. Prior evidence and every
 master requirement/prohibition mapping remain in [the original evidence](history/DOD_BEFORE_CONTINUATION.md)
 and [the pre-review snapshot](history/DOD_BEFORE_REVIEW_FIXES_2026_10_25.md).
@@ -62,3 +62,21 @@ separate staging; sibling custom domains; transactional sender/SPF/DKIM/DMARC; p
 project/billing/spend alerts; qualified legal review; incident contact; human screen-reader pass;
 private real-statement checks; live Gemini eval; repository visibility decision. DB rotation
 and the chosen MIT LICENSE are complete, not pending owner actions.
+
+## Offline receipt foundation — 2026-10-26
+
+| Done | Implemented — blocked for launch (needs X) | Not done |
+| --- | --- | --- |
+| 35 receipt regressions pass on real PostgreSQL; 16/16 synthetic MIME outcomes; real Compose demo imports8 receipts, detects3 products, checks independent totals/replay and deletes its test account | Development-only reviewed receipt import; launch needs privacy/operational review and broader accuracy measurement | Gmail OAuth/sync, email-import UI, bank reconciliation and invoice identity |
+| Public-demo EML/body refusal, source-mixing exclusion, ownership/expiry/cancel/delete, strict review/decimal validation and durable worker tests pass | Live email access needs reviewed OAuth consent/token lifecycle plus Google verification/security requirements | Live mailbox access or real-provider template accuracy |
+| Full local gate521 backend/75 frontend; standard browsers16, TLS1 and public-demo1; lint/build/drift/audits/evaluators clean | All existing paid/infrastructure/legal launch blockers remain; hosted demos retain disabled email input | Provider interest lists, negotiated offers or credentials/plan sharing |
+
+Exact commands, timings, the corrected fixture-audit failure, metadata limits and deployment
+gates are in [the foundation record](EMAIL_RECEIPT_FOUNDATION.md). Existing application CI and
+deployment receipts above are historical. Latest master checks are authoritative for this new
+revision; a push alone does not prove a deployment. No live Gmail/Gemini call, paid service,
+third-party account, provider contact, real user/data or beta tag was introduced.
+Only the16 allowlisted synthetic EML fixtures may be tracked; original private emails and outbox
+copies stay ignored. The original35 receipt tests include a targeted rerun after final bounded
+blank-line parsing hardening. Detector F1 remains1.0000 on the prior synthetic/handwritten gates;
+real-bank and real-provider accuracy are not measured.
