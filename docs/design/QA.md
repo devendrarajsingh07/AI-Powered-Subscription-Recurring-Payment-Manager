@@ -278,3 +278,23 @@ The public profile confirms the link is hidden and connection/sync/live-authoriz
 are disabled. Screenshot originals and normal local flags/clocks were restored. Hosted exact-commit
 CI/deployment evidence is independent. Human screen-reader and real inbox/provider behavior remain
 unperformed and are not implied by these local checks. No email is rendered as HTML or sent to AI.
+
+
+## Hosted release follow-up (2026-10-26)
+
+Commit 6a8e3fa passed all four branch CI jobs in run40310641609 before promotion;
+Vercel and Render were verified at that exact revision, with23 smoke checks and four disabled
+mailbox/interest write checks passing. Render deployment dep-dbfjbcijnfac73cjk1rg succeeded.
+A smoke attempt during rolling startup returned readiness503; the post-startup rerun passed.
+
+Repeat master run40313272133 passed backend/frontend/security/same-site checks, but its PDF
+browser flow failed the console assertion after a deliberately handled registration429. The
+PDF imported399 rows and all expected products correctly. The registration helper already
+waits for Retry-After and retries; console collection now starts after registration and remains
+strict for the entire PDF flow. Auth throttling/error behavior remains independently tested;
+no limiter, production behavior, retry count, or financial assertion was relaxed. The follow-up
+commit requires its own exact-commit CI gate before promotion. Latest hosted runs, rather than
+this historical failure, determine the final release status.
+
+The older local master has divergent historical commits and was preserved. The verified checkout
+is codex/mailbox-foundation; remote master was fast-forwarded normally, never force-pushed.

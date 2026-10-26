@@ -153,13 +153,15 @@ test.afterEach(async ({ page }) => {
 test("text PDF real review imports all ground-truth products; axe light/dark/mobile", async ({
   page,
 }) => {
+  // Registration deliberately handles 429/Retry-After above. Scope this console assertion
+  // to the PDF flow so a successfully handled auth throttle is not a PDF runtime failure.
+  await register(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
     if (["error", "warning"].includes(message.type()))
       errors.push(message.text());
   });
-  await register(page);
   await choose(page, "text_single.pdf");
   await review(page);
   for (const theme of ["light", "dark"]) {
