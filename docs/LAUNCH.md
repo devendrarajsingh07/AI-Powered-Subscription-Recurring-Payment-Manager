@@ -25,7 +25,7 @@ Human prerequisites: domain and sibling web/API DNS; verified email sender/SPF/D
 managed PostgreSQL/PITR and separate worker budget; paid Gemini billing and spend alerts; legal
 review including India's DPDP Act and applicable rules; incident/grievance contact; invitee selection;
 screen-reader pass; private CSV/PDF/image accuracy checks; live Gemini evaluation; repository
-visibility decision. MIT was selected, but applying a license remains owner-controlled.
+visibility decision. MIT LICENSE is present (copyright 2026 DEVENDRA RAJ SINGH).
 
 See [implementation decisions](PHASE8_PLAN.md) and [operator procedures](RUNBOOK.md).
 
@@ -45,3 +45,12 @@ owner prerequisites above. See DOD.md for the exact evidence and what has not be
   implemented. Provider negotiation/licensing is owner-led; no one was contacted by this work.
 - Public demo keeps MAILBOX_LAB_ENABLED=false. All previous custom-domain/worker/sender/PITR,
   staging, incident response, legal and accessibility gates remain; free hosting is not beta-ready.
+
+## Local operations evidence update (2026-10-26)
+
+Eight two-API/worker coordination checks, synthetic 30-table restore equality, a nine-flow bounded
+load test, local source rollback/re-promotion and limited ZAP baselines have run. See
+[measured results and limits](LOCAL_DRILLS.md). ZAP retains one medium inline-style finding.
+These remove the previous "never run locally" gaps only. Managed PITR, hosted rollback, a
+CI-enforced provider gate, separate staging, encrypted backup operations, real sender/domains,
+worker availability and incident routing remain unverified. This remains **NO-GO**.

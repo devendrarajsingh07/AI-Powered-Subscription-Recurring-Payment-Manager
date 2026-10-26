@@ -43,10 +43,11 @@ Do not purchase services, invite real users, enable live financial-data processi
 ## External blockers (not implementation completion)
 
 - Free Render database has no PITR and expires 2026-11-19. A managed database with backups and a
-  restore drill, separate staging DB/project and a separate worker are not provisioned.
+  managed restore drill, separate staging DB/project and a separate worker are not provisioned.
 - Sibling custom domains, DNS, transactional sender and tested inbox delivery are absent.
 - No paid-tier Gemini key, billing/spend alerts, incident contact or legal sign-off.
-- The retained previously exposed DB credential must be rotated by the owner before real data.
+- Owner confirmed rotation of the previously exposed DB credential on 2026-10-22; the original
+  incident/rotation requirement is historical. Never reproduce credentials in evidence.
 - Human screen-reader, private real-statement accuracy checks and live Gemini eval remain undone.
 
 Current provider facts checked against official docs on 2026-10-20:
@@ -55,7 +56,7 @@ Current provider facts checked against official docs on 2026-10-20:
 [Vercel header configuration](https://vercel.com/docs/project-configuration/vercel-json).
 Free-host testing cannot establish real-user launch readiness.
 
-## Foundation verification checkpoint
+## Historical foundation verification checkpoint (superseded by current handoff)
 
 Implemented work-package2 invitation/export/audit foundations and shared auth counters, plus basic
 hosting headers. All remaining code work is listed explicitly in PROJECT_INFO and DOD; external
@@ -68,3 +69,9 @@ make dev/verify/test/lint/evaluate pass;357 PostgreSQL tests and57 frontend test
 npm/pip audits and existing OpenAPI/TS/evaluator gates pass. A real CLI create/revoke smoke test and
 all-browser/deployment evidence are recorded with the final verification. New security tables use
 additive migrations0009/0010; no runtime create_all or backwards-incompatible business change.
+
+## Local operations update (2026-10-26)
+
+The local two-API/worker, synthetic restore, bounded load, ZAP baseline and same-schema rollback
+drills now have measured evidence in [LOCAL_DRILLS](LOCAL_DRILLS.md). Production/managed/hosted
+guarantees above remain blocked. PROJECT_INFO.md is the sole current instruction source.

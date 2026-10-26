@@ -13,7 +13,7 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.147-009688?style=for-the-badge&logo=fastapi&logoColor=white)](backend/requirements.in)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](backend/Dockerfile)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-653_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
+[![Tests](https://img.shields.io/badge/Tests-667_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
 
 <br />
 
@@ -368,7 +368,7 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 
 | Suite | Scope |
 |---|---|
-| **Backend: 554 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Backend: 568 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
 | **Frontend: 99 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
 | **Browser e2e: 20 distinct passes** | 18 standard cases across Chromium, Firefox and WebKit, one strict same-site auth case and one public-demo restriction case; two profile-specific skips. Real Compose stack, synthetic data, and light/dark/mobile axe checks. |
 
@@ -534,6 +534,7 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 | [Mailbox Lab](docs/MAILBOX_LAB.md) | Consent, worker sync, evidence matching, retention, private checker and live integration gaps |
 | [Expansion Plan](docs/EXPANSION_PLAN.md) | Recorded architecture and privacy decisions for the receipt expansion |
 | [Privacy](docs/PRIVACY.md) | Data handling, retention, disclosure and deletion |
+| [Local Drills](docs/LOCAL_DRILLS.md) | Synthetic-only coordination, restore, load, ZAP and rollback commands/results |
 | [Runbook](docs/RUNBOOK.md) | Operations, AI kill switch, releases and proxy settings |
 | [Launch Gates](docs/LAUNCH.md) | What must pass before a real-user beta |
 | [Definition of Done](docs/DOD.md) | Evidence table and honest gaps |
@@ -551,12 +552,12 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 | Area | Status |
 |---|---|
 | Phases 1–7 (core product, statements, assistant, alerts, UI) | ✅ Complete for demo scope |
-| Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | Implemented; stand-in tests and historical CI receipts in PROJECT_INFO. The free demo uses its configured inline mode; multi-instance, restore/load/ZAP and release/rollback drills remain unverified. |
+| Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | Implemented; stand-in tests and historical CI receipts in PROJECT_INFO. The free demo uses its configured inline mode; local multi-instance, restore/load/ZAP and same-schema rollback drills are measured in docs/LOCAL_DRILLS.md. Managed recovery and enforced hosted release remain unverified. |
 | Receipt inbox and interests | Verified locally and in CI: synthetic sync, explicit evidence matching, privacy controls and separate voluntary preferences. Disabled on the hosted demo. |
 | Gmail protocol foundation | Local-only tests cover PKCE, scoped single-use state, encryption and bounded HTTP. Actual callback/orchestration, real incremental sync and revocation delivery are **not built**. |
 | Provider partnerships and offers | **Not built**; require owner-led agreements, licensing and fulfilment. Interest declarations do not grant redistribution rights. |
-| Phase 8 drills (two API instances on one database, backup restore, load test, ZAP scan) | ⏳ Not yet run |
-| Real-user beta | 🚫 Blocked: needs the drills, a backed-up database, real email delivery and approved legal documents |
+| Local operational drills | Eight coordination checks; 30-table dump/restore equality; nine load flows; local rollback/re-promotion. ZAP retains one medium inline-style warning. [Evidence and limits](docs/LOCAL_DRILLS.md). |
+| Real-user beta | 🚫 Blocked: needs managed backups/PITR, deployed worker, staging, real email delivery, domains and approved legal documents |
 
 ---
 

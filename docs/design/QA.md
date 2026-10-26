@@ -298,3 +298,18 @@ this historical failure, determine the final release status.
 
 The older local master has divergent historical commits and was preserved. The verified checkout
 is codex/mailbox-foundation; remote master was fast-forwarded normally, never force-pushed.
+
+
+## Local operations regression (2026-10-26)
+
+No product UI was changed. The final standard Linux/Docker browser invocation passed 18 cases
+(two explicit profile skips); strict sibling-host TLS and isolated synthetic public-demo each
+passed once: 20 distinct browser passes. Chromium, Firefox and WebKit main flows ran. Existing
+mobile/light/dark axe, CSV/PDF/OCR/receipt/mailbox, chat, outbox and account-deletion checks stay
+strict. Screenshot originals and normal clocks/flags were restored byte-for-byte.
+
+568 backend and 99 frontend tests, lint/types/contracts, production build and dependency audits
+passed. Local operations/ZAP evidence and limitations are in LOCAL_DRILLS.md. One medium
+inline-style CSP warning remains; no authenticated penetration test or human screen-reader
+certification is claimed. The public-demo profile uses a development Vite server for axe
+injection; production static CSP is checked separately. Human screen-reader pass remains a to-do.

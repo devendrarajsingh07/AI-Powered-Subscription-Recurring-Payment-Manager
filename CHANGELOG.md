@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — local operations evidence — 2026-10-26
+
+- Add isolated two-API/worker crash, shared-limit, queue/deletion and container-isolation drills.
+- Measure synthetic PostgreSQL dump/restore equality, bounded k6 flows, local ZAP warnings and
+  same-schema source rollback/re-promotion; keep managed/hosted recovery and beta blocked.
+- Exclude nested private build inputs recursively and prove exclusions with synthetic Docker COPY
+  canaries in CI; preserve only the approved backend email fixtures.
+- Make the retry-consent HTTP test fixture commit withdrawal before releasing retry headers.
+- Consolidate current handoff/evidence and preserve prior facts in history.
+
 ## Unreleased — combined-prompt Part 1 addendum — 2026-10-20
 
 - Harden Gemini wire schemas, JSON category suggestions, blocked/empty/truncated fallback,

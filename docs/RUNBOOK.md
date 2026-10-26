@@ -16,7 +16,8 @@ chat paths with synthetic data. Never copy platform environment pages into logs 
 
 Render and Vercel expose previous deployments. Select the same last verified source revision on
 both. Check Alembic compatibility before rollback; never downgrade a real database automatically.
-No staging rollback drill has run, so this is a procedure to verify, not evidence of recovery.
+A local same-schema source rollback/re-promotion has run; see LOCAL_DRILLS.md. No hosted or
+separate staging rollback has run, so platform recovery remains a procedure to verify.
 
 ## Containment
 
@@ -35,12 +36,14 @@ memory-only access sessions, never cross-site refresh cookies.
 ## Credentials, backups and deletion
 
 Credential changes must be performed by the owner in the platform secret manager, never committed.
-Use separate migration/app roles and per-environment keys before beta. The retained previously
-exposed demo DB credential must be replaced before any real data. Keep external DB ingress blocked.
+Use separate migration/app roles and per-environment keys before beta. The previously exposed
+demo DB credential was rotated by the owner. Keep external DB ingress blocked and rotate again
+if any subsequent exposure is suspected.
 See [exact owner rotation steps and incident evidence](SECURITY_INCIDENT.md). Rotation completed 2026-10-22 (owner-confirmed).
 
-Free PostgreSQL expires 2026-11-19 and has no PITR. There is no verified restore procedure or retention
-promise for this deployment. Provision backed-up staging/production first, then perform a timed
+Free PostgreSQL expires 2026-11-19 and has no PITR. There is no managed restore/PITR verification or retention
+promise for this deployment. The isolated synthetic local dump/restore drill passed; it does not
+verify recovery of the hosted database. Provision backed-up staging/production first, then perform a timed
 restore to a separate DB and compare schema plus independently recorded synthetic row counts.
 Do not dump private financial records to this repository or CI artifacts.
 
@@ -127,3 +130,22 @@ Changing it makes old encrypted state unusable and requires reconnection; it nev
 JWT_SECRET. No live Gmail credential is configured on hosted demos. For any future approved live
 integration, real provider revocation/retry, key rotation and backup retention require an audited
 operator procedure before launch. Existing database-secret/session/incident runbooks still apply.
+
+## Local operational rehearsal (synthetic data only)
+
+See [commands, measurements and limitations](LOCAL_DRILLS.md). Use `make drill-prepare`,
+`make drill-up`, then `make drill-coordination`, `make drill-restore`, `make drill-load`,
+`make drill-scan`, `make drill-rollback`, `make drill-isolation` and `make drill-down`.
+Never substitute normal or hosted credentials. The reserved project has no published ports;
+HTTP probes run on its internal network. Original settings are restored after test profiles.
+
+The restore compares all 30 table counts/digests and ten exact API responses, plus ownership
+and upload dedupe; archive transfer/verification is part of the recorded total time. Its archive
+is unencrypted, synthetic-only and git-ignored. Before any real restored environment is exposed,
+revoke copied sessions, rotate operator secrets, and establish encrypted backup storage, retention
+and authorization. None of these managed guarantees follows from this drill.
+
+Rollback builds Git archives without creating branches or downgrading the DB. An incompatible
+head is rejected by readiness. The verified previous/current revisions have identical business
+code and schema; this does not establish rollback compatibility for arbitrary later migrations.
+The medium ZAP inline-style warning remains open; no authenticated penetration test was run.

@@ -29,7 +29,8 @@ browser object URL. Responses containing authenticated data use Cache-Control: n
 Compose uses PostgreSQL durable jobs with leases/claim tokens, a separate worker, and a
 no-network extractor container with no database credentials and bounded cgroup resources.
 The free hosted demo uses its configured inline fallback; do not infer Compose isolation or
-always-on worker guarantees on that deployment. Two-API crash/failover drills remain outstanding.
+always-on worker guarantees on that deployment. Eight local two-API/worker coordination checks
+have passed; see [local operational evidence](LOCAL_DRILLS.md).
 Formats, defaults, component licenses, measured OCR failures and
 private terminal-only testing are in [Statement import](STATEMENT_IMPORT.md). Real-bank layout
 coverage, phone photos and handwriting remain unmeasured/unsupported; English and INR only.
@@ -181,8 +182,10 @@ Production refuses demo/test-clock/console/adversarial settings; seed is develop
   descriptions need review. INR only; no FX conversion or multi-currency totals.
 - A recurring payment is not proof of use, redundancy, cancellation or suitability of a purchase.
 - Shared PostgreSQL limits, chat leases and durable jobs are implemented and unit/integration tested.
-  Two-API Compose crash/limit drills and restore/load/ZAP evidence remain outstanding. The free hosted
-  demo has no separately deployed worker. The runbook is preparation, not tested recovery evidence.
+  Local two-API crash/limit, synthetic restore/load/ZAP and same-schema source rollback evidence is
+  recorded in LOCAL_DRILLS.md. The free hosted demo has no separately deployed worker. Managed
+  PITR, hosted rollback, staging and enforced provider CI gating remain unverified; local results
+  do not establish production recovery or capacity. ZAP retains an inline-style medium finding.
 - Figure verification does not verify prose. Offline assistant handles recognized patterns only.
   Automated chat redaction is not a complete PII classifier. External retention follows the live provider.
 - SMTP has the send/commit ambiguity described above. Exported files and delivered email cannot be recalled.
