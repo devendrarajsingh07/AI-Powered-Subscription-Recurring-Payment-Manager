@@ -13,7 +13,7 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.147-009688?style=for-the-badge&logo=fastapi&logoColor=white)](backend/requirements.in)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](backend/Dockerfile)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-596_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
+[![Tests](https://img.shields.io/badge/Tests-612_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
 
 <br />
 
@@ -304,8 +304,8 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 
 | Suite | Scope |
 |---|---|
-| **Backend: 521 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
-| **Frontend: 75 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
+| **Backend: 525 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Frontend: 87 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
 | **Browser e2e** | Playwright against the real Compose stack (never mocked happy paths) in Chromium, Firefox and WebKit, plus axe scans of every page in both themes at 360 px |
 
 ```sh
@@ -551,3 +551,14 @@ ignored. See [foundation scope, API steps and limitations](docs/EMAIL_RECEIPT_FO
 Live Gmail access requires a separately reviewed OAuth/consent and verification phase. Future
 provider-offer interest lists must collect separate voluntary choices, with provider-approved
 licensing; mailbox data will not supply commercial cohort reports in this design.
+
+### Local synthetic receipt review UI
+
+The local receipt review/import UI passes component and real-stack browser checks. With
+`RECEIPT_IMPORT_ENABLED=true` in the development shell and `make dev`, use a **separate empty
+local account**, then **Upload statement → Import source → Synthetic email receipt (local only)**.
+Choose one committed synthetic EML, correct/review its fields, approve, and import. Repeat
+receipts need enough occurrences for detection. No email body is displayed and Gmail is not
+connected. The selector is hidden by default and on the hosted synthetic-only demo. Restore
+normal mode by removing the environment override and running `make dev` again. See
+[receipt scope and boundaries](docs/EMAIL_RECEIPT_FOUNDATION.md).

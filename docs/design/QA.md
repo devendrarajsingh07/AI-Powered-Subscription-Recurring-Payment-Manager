@@ -232,3 +232,29 @@ The first normal-browser attempt exposed anonymous-bootstrap401 console noise an
 rate bucket causing a11y navigation to lose its session. Fixed in product code and rerunning all
 engines; no console assertions or browser projects were removed. Public-demo enforcement and
 hosted verification remain separate gates. No manual screen-reader or live-service claim.
+
+## Receipt-import UI slice — verified locally (2026-10-26)
+
+Browser plugin not available; repository Playwright with the existing Linux browser image.
+Flow: Upload → synthetic receipt → editable reviewed fields → actual queued upload → receipt
+results → repeat/dedupe → missing-field cancellation → safe rejection → deletion.
+
+| Check | Result |
+| --- | --- |
+| Page identity/nonblank/no framework overlay | Receipt heading and real form rendered on `/upload`; screenshots visually inspected |
+| Network component states/actions |12 typed-MSW tests passed: type/size checks;409/422/429 retryable errors; capability visibility/public suppression; Decimal strings; edit clears approval; no empty import; cancel; hostile text; light/dark axe |
+| Real pipeline | Eight imports and three independent labelled products/totals; replay inserts0, skips1; missing payment date remains empty; cancellation/rejection/deletion passed |
+| Responsive/accessibility | Axe clean at desktop/light and360px/light/dark; no document overflow; table scroll stays inside labelled keyboard-focusable region; no email image/iframe/script |
+| Console | No page/runtime/console errors before intentional invalid-receipt422 |
+| Evidence | Desktop/light and mobile/light/dark screenshots outside repo; all three visually inspected |
+| Regressions |525 PostgreSQL tests,87 frontend tests,19 actual browser passes across profiles; lint/type/contract/build/audits/scans passed |
+
+Two clock-dependent browser failures were caused by the local Docker runner not forwarding the
+fixed test clock; both passed after correction. First new receipt run timed out on the hidden
+mobile theme selector; the harness now switches themes at desktop width and cleans up on timeout.
+TLS first encountered a stale local nginx upstream502 after container recreation; proxy refresh
+restored the strict test flow. No product guarantees were weakened. Screenshot originals and the
+normal API clock/configuration were restored. Hosted CI is a separate publication gate.
+
+Human screen-reader review remains unperformed. No live Gmail, real mail/statement accuracy or
+live model test was performed; those remain explicit owner/launch tasks.

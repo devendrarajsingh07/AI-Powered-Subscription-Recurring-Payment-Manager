@@ -4,11 +4,62 @@ Updated 2026-10-26. This is the sole source of current instructions. Prior hando
 historical facts, not new instructions; the exact preceding handoff is archived at
 `docs/history/HANDOFF_BEFORE_EMAIL_RECEIPTS_2026_10_26.md`.
 
-## Current work: offline email receipt-import foundation
+## Current work: receipt review/import UI — local gates passed; publication pending
 
-The owner selected **email receipt-import foundation with synthetic fixtures**. Implementation
-is on `codex/email-receipt-foundation`, based on master 1eda459. Gmail is not connected; there is
-no OAuth callback, mailbox sync, email-import UI, provider offer or partner contact. Do not claim
+The owner authorized the next remaining work: the local synthetic receipt-import UI. Reuse the
+owned preview/review/upload pipeline; never render EML bodies/headers, embedded HTML or remote
+images; show only editable extracted fields and mandatory approval. The fail-closed
+`receipt_import_enabled` capability in `/auth/config` controls visibility: development/offline
+only, never public demo or production. Source-mixing protection, INR decimal strings,
+expiry/cancel/delete and the prohibition on live Gmail/LLM calls are unchanged.
+
+Implemented: upload source selection, synthetic EML picker/drop zone, receipt-specific
+review/uncertainty copy, edits clear approval, empty receipt import blocked, actual queued upload
+progress/results and source badges. No new dependency, migration or financial calculation.
+`make e2e` temporarily enables receipt fixtures and restores the original API configuration.
+
+Verification (real local Compose/PostgreSQL; ignored logs under `var/receipt-ui-*`):
+- `make dev verify`: passed; full `make test lint evaluate`: exit0. **525 backend tests**
+  (419.75s, one upstream TestClient/httpx deprecation warning), **87 frontend tests** (10 files),
+  OpenAPI/type drift, Ruff/ESLint/TypeScript and all evaluators passed. Detector P/R/F1=1.0000 on
+  synthetic and both handwritten groups; receipt outcomes16/16. Real-provider accuracy unmeasured.
+- New receipt Chromium flow: **1 passed35.9s**, eight imports/three independent labelled products
+  and independently computed totals; duplicate replay, missing date, safe rejection, cancel/delete,
+  desktop and 360px light/dark axe, no overflow/embed/runtime errors. Screenshots saved outside
+  the repository and visually inspected. Twelve new typed-MSW component tests and four new
+  fail-closed capability cases are included in the full totals above.
+- Standard previous browsers: **14 passed** initially; two clock-dependent tests failed because
+  the local Docker harness omitted APP_TEST_AS_OF. With the variable forwarded, **2 passed41.2s**.
+  Existing TLS **1 passed14.3s** and public-demo **1 passed14.6s**: **19 actual browser passes**
+  including the new receipt flow. Two standard profile skips were run separately, not counted twice.
+- Local harness failures were fixed rather than hidden: first receipt test selected a hidden
+  mobile theme control; it now returns to desktop before changing themes and has timeout-safe
+  cleanup. Its disposable account was deleted through the local API. TLS initially hit502 from
+  a stale nginx upstream after container recreation; refreshing the local proxy fixed it without
+  weakening any cookie/CSRF/TLS setting. Clock and normal Compose config were restored; tracked
+  screenshots were byte-restored after regressions.
+- Production build passed: main354.46kB/gzip111.65; lazy chart389.93/gzip114.22; upload21.11/gzip7.23.
+  `npm audit --audit-level=low`:0; `pip-audit -r backend/requirements.lock --disable-pip`: no known
+  vulnerabilities. Gitleaks entire76-commit pre-commit history and current source: clean.
+- Native Vitest was blocked by Windows temp-cache rename EPERM; Docker tests passed. Codex
+  Process Jobs does not support win32, so verification ran through foreground terminal sessions.
+
+Publication: commit/push and exact-commit hosted CI remain to be completed for this UI slice;
+never describe the baseline CI as verification of these changes. Only deploy the existing demos
+once local gates and hosted CI pass. Hosted receipt input remains disabled. No Gmail OAuth,
+mailbox sync, provider deals, real users/data, paid services, live model calls or beta tag.
+
+## Verified deployment baseline (historical)
+
+Foundation master **889dde9** passed CI **40271224487** (all four jobs); Render deployment
+**dep-dbfdscavcj2c73fp50d0** succeeded/live. Exact revision checked on Vercel and Render; all23
+smoke checks passed and public receipt uploads returned403. This is historical evidence for
+that commit; latest exact-commit master checks remain authoritative for subsequent changes.
+
+## Completed foundation (historical implementation log)
+
+The owner selected **email receipt-import foundation with synthetic fixtures**. Foundation commits dac987b and 889dde9 are on master; the UI continuation is described above. Gmail is not connected; there is
+no OAuth callback, mailbox sync, provider offer or partner contact. The new UI slice is above. Do not claim
 that this development foundation grants Gmail access or processes real inboxes.
 
 Decisions were recorded before implementation in `docs/EMAIL_RECEIPT_FOUNDATION.md`.

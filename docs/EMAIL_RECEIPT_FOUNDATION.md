@@ -132,3 +132,26 @@ original user mail and outbox copies must remain ignored. Do not place private m
   filenames, including forced-tracked outbox copies. Tests validate reserved fixture addresses.
 - Latest hosted results are available from the master checks workflow; only its exact-commit
   success authorizes updates to the existing demos. The hosted feature flag stays off.
+
+## Local review UI (2026-10-26; verified locally)
+
+With the development flag enabled and the offline assistant selected, register a separate empty
+local account. Open **Upload statement → Import source → Synthetic email receipt (local only)**.
+Choose a committed `backend/data/receipts/*.eml` fixture. Review the extracted merchant, payment
+date, INR amount and type; correct missing/ambiguous fields, then check **Reviewed**. Any edit
+clears approval. **Import reviewed rows** uses the real upload worker and shows server progress
+and results. Cancel purges the preview. Repeat with the eight `detect: true` fixtures in the truth
+manifest to detect the three labelled products; a single receipt alone cannot prove recurrence.
+
+The browser never embeds an email, exposes original headers/body, connects a mailbox, or sends
+receipt content to AI. Authentication config controls visibility; disabled or public deployments
+have no receipt picker. This is synthetic local development, not permission to import private
+emails. Real browser verification passed eight imports, three independently labelled products
+and totals, replay, missing-date blocking, cancellation, safe rejection and deletion; axe passed
+at desktop and360px light/dark. Screenshots were saved outside the repo and visually reviewed.
+
+Full continuation gate:525 PostgreSQL tests,87 frontend tests,19 actual browser passes across
+profiles (14 prior cases plus two corrected clock-environment reruns, the new receipt flow, TLS
+and public demo). Lint/type/contract drift/build/evaluation and npm/Python/history/tree scans
+passed. Initial local harness failures and exact timings are recorded in PROJECT_INFO.md.
+Hosted CI/publication remains separate; public receipt uploads stay disabled.

@@ -63,7 +63,7 @@ project/billing/spend alerts; qualified legal review; incident contact; human sc
 private real-statement checks; live Gemini eval; repository visibility decision. DB rotation
 and the chosen MIT LICENSE are complete, not pending owner actions.
 
-## Offline receipt foundation — 2026-10-26
+## Offline receipt foundation — 2026-10-26 (historical; UI status superseded below)
 
 | Done | Implemented — blocked for launch (needs X) | Not done |
 | --- | --- | --- |
@@ -80,3 +80,14 @@ Only the16 allowlisted synthetic EML fixtures may be tracked; original private e
 copies stay ignored. The original35 receipt tests include a targeted rerun after final bounded
 blank-line parsing hardening. Detector F1 remains1.0000 on the prior synthetic/handwritten gates;
 real-bank and real-provider accuracy are not measured.
+
+### Receipt-import UI continuation (2026-10-26)
+
+| Done | Implemented — blocked for launch (needs X) | Not done |
+| --- | --- | --- |
+| Local synthetic EML picker, editable fields, explicit approval, cancel, real upload progress/results, source badges; fail-closed capability and public-demo suppression | Receipt processing for real users — needs existing launch prerequisites, privacy review and private accuracy measurement | Live Gmail connection/OAuth/sync and bank reconciliation |
+|525 backend +87 frontend tests;19 actual browser passes across profiles; detector P/R/F1=1.0000; receipts16/16; lint/type/contract/build/audits/history/tree scans passed | Publication waits for exact-commit hosted CI; hosted receipt input stays disabled | Provider partnerships, interest lists, commercial offers; no beta launch |
+
+Timings and corrected harness failures are recorded in PROJECT_INFO.md. Browser plugin absent;
+existing Linux Playwright image used. No manual screen-reader, real-provider accuracy or live-LLM
+pass is claimed. The local configuration and existing screenshots were restored after testing.
