@@ -382,6 +382,9 @@ async def upload(
             "remove_demo_first",
             "Remove demo data in Settings before importing a real statement",
         )
+    from app.services.receipt_previews import ensure_source
+
+    ensure_source(db, user.id, "csv")
     if worker is None or not worker.reserve():
         fail(429, "upload_queue_full", "Upload queue is full; retry after current uploads finish")
     try:

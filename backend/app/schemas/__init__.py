@@ -206,7 +206,7 @@ class Preview(Schema):
 
 
 class UploadOut(Schema):
-    source_type: Literal["csv", "pdf_text", "pdf_ocr", "image_ocr"] = "csv"
+    source_type: Literal["csv", "pdf_text", "pdf_ocr", "image_ocr", "email_receipt"] = "csv"
     excluded_count: int = 0
     source: Literal["upload", "demo"] = "upload"
     demo_as_of: date | None = None
@@ -567,7 +567,7 @@ class Reconciliation(Schema):
 
 class StatementResult(Schema):
     rows: list[ExtractedRow]
-    source_type: Literal["pdf_text", "pdf_ocr", "image_ocr"]
+    source_type: Literal["pdf_text", "pdf_ocr", "image_ocr", "email_receipt"]
     page_count: int
     flagged_count: int
     reconciliation: Reconciliation
@@ -579,7 +579,7 @@ class StatementPreviewOut(Schema):
     filename: str
     status: Literal["pending", "processing", "ready", "failed", "cancelled", "confirmed"]
     stage: str
-    source_type: Literal["pdf_text", "pdf_ocr", "image_ocr"]
+    source_type: Literal["pdf_text", "pdf_ocr", "image_ocr", "email_receipt"]
     processed_pages: int
     total_pages: int
     expires_at: datetime

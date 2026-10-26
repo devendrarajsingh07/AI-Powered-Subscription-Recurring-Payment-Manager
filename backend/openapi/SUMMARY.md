@@ -43,6 +43,7 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | PATCH | `/api/v1/jobs/{job_id}` | JWT | Cancel Processing Job |
 | DELETE | `/api/v1/me/data` | JWT | Delete My Data |
 | GET | `/api/v1/me/export` | JWT | Export Data |
+| POST | `/api/v1/receipts/preview` | JWT | Receipt Preview |
 | GET | `/api/v1/recommendations` | JWT | Recommendations |
 | PATCH | `/api/v1/recommendations/{recommendation_id}` | JWT | Patch Recommendation |
 | GET | `/api/v1/renewals/upcoming` | JWT | Renewals |

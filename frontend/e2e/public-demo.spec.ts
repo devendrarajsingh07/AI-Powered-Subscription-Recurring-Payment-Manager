@@ -36,8 +36,12 @@ test("public visitors are isolated, file uploads disabled, synthetic demo works 
     page.getByRole("heading", { name: "Synthetic demo data" }),
   ).toBeVisible();
   expect(await page.locator('input[type="file"]').count()).toBe(0);
-  for (const extension of ["csv", "pdf", "png"]) {
-    for (const endpoint of ["/uploads", "/uploads/preview"]) {
+  for (const extension of ["csv", "pdf", "png", "eml"]) {
+    for (const endpoint of [
+      "/uploads",
+      "/uploads/preview",
+      "/receipts/preview",
+    ]) {
       const rejected = await page.request.post("/api/v1" + endpoint, {
         headers: auth,
         multipart: {

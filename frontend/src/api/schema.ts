@@ -566,6 +566,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/receipts/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receipt Preview
+         * @description Development-only synthetic EML → unverified rows. Import via POST /uploads after review.
+         *
+         *     No original bytes, headers or email addresses are persisted. Attachments are not parsed.
+         *     Gmail is not connected. Existing preview status/cancel routes apply; every row requires an
+         *     explicit verified edit. Receipt/statement histories cannot share an account until reconciled.
+         */
+        post: operations["receipt_preview_api_v1_receipts_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recommendations": {
         parameters: {
             query?: never;
@@ -943,6 +967,11 @@ export interface components {
              * @default
              */
             password: string;
+        };
+        /** Body_receipt_preview_api_v1_receipts_preview_post */
+        Body_receipt_preview_api_v1_receipts_preview_post: {
+            /** File */
+            file: string;
         };
         /** Body_upload_api_v1_uploads_post */
         Body_upload_api_v1_uploads_post: {
@@ -1631,7 +1660,7 @@ export interface components {
              * Source Type
              * @enum {string}
              */
-            source_type: "pdf_text" | "pdf_ocr" | "image_ocr";
+            source_type: "pdf_text" | "pdf_ocr" | "image_ocr" | "email_receipt";
             /** Stage */
             stage: string;
             /**
@@ -1657,7 +1686,7 @@ export interface components {
              * Source Type
              * @enum {string}
              */
-            source_type: "pdf_text" | "pdf_ocr" | "image_ocr";
+            source_type: "pdf_text" | "pdf_ocr" | "image_ocr" | "email_receipt";
             /** Warnings */
             warnings: string[];
         };
@@ -2003,7 +2032,7 @@ export interface components {
              * @default csv
              * @enum {string}
              */
-            source_type: "csv" | "pdf_text" | "pdf_ocr" | "image_ocr";
+            source_type: "csv" | "pdf_text" | "pdf_ocr" | "image_ocr" | "email_receipt";
             /** Stage */
             stage: string;
             /**
@@ -4642,6 +4671,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    receipt_preview_api_v1_receipts_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_receipt_preview_api_v1_receipts_preview_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementPreviewOut"];
                 };
             };
             /** @description Unauthorized */

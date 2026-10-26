@@ -19,6 +19,8 @@ var/
 
 
 private-statements/
+private-emails/
 *.eml
+!backend/data/receipts/*.eml
 .env.*
 !.env.example

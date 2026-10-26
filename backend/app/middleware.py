@@ -38,6 +38,7 @@ class SafetyMiddleware:
             in (
                 "/api/v1/uploads",
                 "/api/v1/uploads/preview",
+                "/api/v1/receipts/preview",
             )
         ):
             # Refuse before reading bytes or parsing multipart, including chunked requests.
@@ -49,6 +50,21 @@ class SafetyMiddleware:
                         "code": "demo_data_only",
                         "message": "File uploads are disabled in the public demo. "
                         "Load synthetic demo data instead.",
+                    }
+                },
+            )(scope, receive, send)
+        if (
+            scope["method"] == "POST"
+            and scope["path"] == "/api/v1/receipts/preview"
+            and not get_settings().receipt_import_enabled
+        ):
+            return await JSONResponse(
+                status_code=404,
+                headers=EARLY_HEADERS,
+                content={
+                    "error": {
+                        "code": "receipt_import_disabled",
+                        "message": "Receipt-import development foundation is disabled",
                     }
                 },
             )(scope, receive, send)
@@ -68,11 +84,14 @@ class SafetyMiddleware:
         if scope["method"] == "POST" and scope["path"] in (
             "/api/v1/uploads",
             "/api/v1/uploads/preview",
+            "/api/v1/receipts/preview",
         ):
             # Bound even chunked bodies before multipart can spool arbitrary data to disk.
             chunks, total = [], 0
             maximum = (
-                10 * 1024 * 1024 + 64 * 1024
+                1024 * 1024 + 64 * 1024
+                if scope["path"] == "/api/v1/receipts/preview"
+                else 10 * 1024 * 1024 + 64 * 1024
                 if scope["path"].endswith("/preview")
                 else MAX_MULTIPART_BYTES
             )
@@ -88,7 +107,9 @@ class SafetyMiddleware:
                         content={
                             "error": {
                                 "code": "file_too_large",
-                                "message": "Statement exceeds the preview upload limit"
+                                "message": "Receipt exceeds the 1 MB upload limit"
+                                if scope["path"] == "/api/v1/receipts/preview"
+                                else "Statement exceeds the preview upload limit"
                                 if maximum != MAX_MULTIPART_BYTES
                                 else "CSV exceeds the 5 MB upload limit",
                             }

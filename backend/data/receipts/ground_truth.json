@@ -1,0 +1,147 @@
+{
+  "as_of": "2026-10-18",
+  "notice": "Synthetic explicit-label fixtures, not real provider templates. Labels are independent plan inputs; no parser output used.",
+  "cases": {
+    "netflix-1.eml": {
+      "verdict": "review",
+      "date": "2026-07-01",
+      "description": "netflix",
+      "amount": "499.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "netflix-2.eml": {
+      "verdict": "review",
+      "date": "2026-08-01",
+      "description": "netflix",
+      "amount": "499.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "netflix-3.eml": {
+      "verdict": "review",
+      "date": "2026-09-01",
+      "description": "netflix",
+      "amount": "499.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "spotify-1.eml": {
+      "verdict": "review",
+      "date": "2026-07-12",
+      "description": "spotify",
+      "amount": "149.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "spotify-2.eml": {
+      "verdict": "review",
+      "date": "2026-08-12",
+      "description": "spotify",
+      "amount": "149.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "spotify-3.eml": {
+      "verdict": "review",
+      "date": "2026-09-12",
+      "description": "spotify",
+      "amount": "149.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "google_one-1.eml": {
+      "verdict": "review",
+      "date": "2025-09-01",
+      "description": "google one",
+      "amount": "1300.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "google_one-2.eml": {
+      "verdict": "review",
+      "date": "2026-09-01",
+      "description": "google one",
+      "amount": "1300.00",
+      "type": "debit",
+      "complete": true,
+      "detect": true
+    },
+    "ambiguous-amount.eml": {
+      "verdict": "review",
+      "type": "debit",
+      "complete": false,
+      "detect": false,
+      "date": "2026-09-01",
+      "description": "netflix",
+      "amount": null
+    },
+    "header-date-is-not-payment.eml": {
+      "verdict": "review",
+      "type": "debit",
+      "complete": false,
+      "detect": false,
+      "date": null,
+      "description": "netflix",
+      "amount": "499.00"
+    },
+    "missing-currency.eml": {
+      "verdict": "review",
+      "type": "debit",
+      "complete": false,
+      "detect": false,
+      "date": "2026-09-01",
+      "description": "netflix",
+      "amount": null
+    },
+    "foreign-currency.eml": {
+      "verdict": "reject",
+      "error": "unsupported_currency"
+    },
+    "invoice-is-not-paid.eml": {
+      "verdict": "reject",
+      "error": "not_paid_receipt"
+    },
+    "failed-is-not-paid.eml": {
+      "verdict": "reject",
+      "error": "not_paid_receipt"
+    },
+    "refund-is-not-paid.eml": {
+      "verdict": "reject",
+      "error": "not_paid_receipt"
+    },
+    "hostile-html.eml": {
+      "verdict": "review",
+      "type": "debit",
+      "complete": false,
+      "detect": false,
+      "date": "2026-09-03",
+      "description": "dropbox",
+      "amount": "49.99"
+    }
+  },
+  "patterns": [
+    {
+      "merchant": "netflix",
+      "cadence": "monthly",
+      "avg_amount": "499.00"
+    },
+    {
+      "merchant": "spotify",
+      "cadence": "monthly",
+      "avg_amount": "149.00"
+    },
+    {
+      "merchant": "google one",
+      "cadence": "yearly",
+      "avg_amount": "1300.00"
+    }
+  ]
+}

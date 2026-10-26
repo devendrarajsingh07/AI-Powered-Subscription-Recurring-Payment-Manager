@@ -17,6 +17,7 @@ from app.api import account as account_routes  # noqa: F401 - registers account 
 from app.api import chat as chat_routes  # noqa: F401 - registers routes on the shared router
 from app.api import lifecycle as lifecycle_routes  # noqa: F401 - unsubscribe, events, reports
 from app.api import ops as ops_routes  # noqa: F401 - internal token-gated metrics
+from app.api import receipts as receipt_routes  # noqa: F401 - offline, opt-in receipt foundation
 from app.api.routes import router
 from app.config import get_settings
 from app.db import get_db, get_engine

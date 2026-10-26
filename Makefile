@@ -1,4 +1,4 @@
-.PHONY: llm-status llm-kill llm-restore smoke dev down test lint seed verify sample evaluate openapi types e2e run-alerts outbox chat-eval chat-eval-live evaluate-extraction extraction-fixtures
+.PHONY: llm-status llm-kill llm-restore smoke dev down test lint seed verify sample evaluate evaluate-receipts receipt-demo openapi types e2e run-alerts outbox chat-eval chat-eval-live evaluate-extraction extraction-fixtures
 dev:
 	docker compose up --build --wait
 down:
@@ -7,6 +7,7 @@ test:
 	docker compose run --rm --no-deps api pytest -q
 	docker compose run --rm --no-deps api python scripts/evaluate_detector.py
 	docker compose run --rm --no-deps api python scripts/evaluate_extraction.py
+	docker compose run --rm --no-deps api python scripts/evaluate_receipts.py
 	docker compose run --rm --no-deps api python scripts/export_openapi.py --check
 	docker compose run --rm --no-deps web npm test -- --run
 	docker compose run --rm --no-deps web npm run types:check
@@ -22,6 +23,10 @@ sample:
 	docker compose run --rm --no-deps api python scripts/gen_sample_data.py
 evaluate:
 	docker compose run --rm --no-deps api python scripts/evaluate_detector.py
+evaluate-receipts:
+	docker compose run --rm --no-deps api python scripts/evaluate_receipts.py
+receipt-demo:
+	docker compose exec -T api python scripts/demo_receipts.py
 evaluate-extraction:
 	docker compose run --rm --no-deps api python scripts/evaluate_extraction.py
 extraction-fixtures:

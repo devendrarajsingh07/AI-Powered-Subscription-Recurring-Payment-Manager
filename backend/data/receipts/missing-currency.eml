@@ -1,0 +1,12 @@
+From: untrusted@example.org
+To: fixture-only@example.org
+Date: Sun, 18 Oct 2026 12:00:00 +0530
+Subject: Synthetic edge-case receipt
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Merchant: Netflix
+Payment status: Paid
+Payment date: 2026-09-01
+Amount paid: 499.00

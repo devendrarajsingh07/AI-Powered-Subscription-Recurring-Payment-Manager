@@ -1,0 +1,26 @@
+From: Synthetic Receipts <receipts@billing.example.org>
+To: fixture-only@example.org
+Date: Sun, 18 Oct 2026 12:00:00 +0530
+Subject: Synthetic payment receipt
+Message-ID: <synthetic-google_one-1.eml@example.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============6645722465352918492=="
+
+--===============6645722465352918492==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+
+TWVyY2hhbnQ6IEdvb2dsZSBPbmUKUGF5bWVudCBzdGF0dXM6IFBhaWQKUGF5bWVudCBkYXRlOiAy
+MDI1LTA5LTAxCkFtb3VudCBwYWlkOiBJTlIgMTMwMC4wMApOZXh0IHJlbmV3YWw6IDIwOTktMTIt
+MzEKUmVuZXdhbCBhbW91bnQ6IElOUiA5OTk5OS4wMAo=
+
+--===============6645722465352918492==
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="ignored.txt"
+MIME-Version: 1.0
+
+TWVyY2hhbnQ6IEZha2UKUGF5bWVudCBzdGF0dXM6IFBhaWQKQW1vdW50IHBhaWQ6IElOUiA5OTk5
+OQo=
+
+--===============6645722465352918492==--

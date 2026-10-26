@@ -118,6 +118,9 @@ def confirm(db, user_id, preview_id, edits_text, worker, *, as_of=None):
     if repo.get_user(db, user_id, lock=True) is None:
         fail(401, "unauthorized", "Invalid or expired credentials")
     row = owned(db, user_id, preview_id)
+    from app.services.receipt_previews import ensure_source
+
+    ensure_source(db, user_id, row.source_type)
     if row.status == "confirmed":
         return repo.get_owned(db, user_id, m.Upload, row.upload_id), None
     if row.status != "ready":
@@ -169,6 +172,8 @@ def confirm(db, user_id, preview_id, edits_text, worker, *, as_of=None):
                 "Correct the date, description, amount and debit/credit type in every verified row",
             )
         selected.append(item)
+    if row.source_type == "email_receipt" and not selected:
+        fail(422, "receipt_review_required", "Explicitly verify a receipt row before importing")
     data = virtual_csv(selected)
     if not worker.reserve():
         fail(429, "upload_queue_full", "Upload queue is full; retry after current uploads finish")

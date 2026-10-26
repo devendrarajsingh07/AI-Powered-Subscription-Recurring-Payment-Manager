@@ -1,0 +1,12 @@
+From: Synthetic Receipts <receipts@billing.example.org>
+To: fixture-only@example.org
+Date: Sun, 18 Oct 2026 12:00:00 +0530
+Subject: Synthetic payment receipt
+Message-ID: <synthetic-spotify-3.eml@example.org>
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body><p>Merchant: Spotify Ltd</p><p>Payment status: Paid</p><p>Payment=
+ date: 2026-09-12</p><p>Amount paid: INR 149.00</p><p>Next renewal: 2099-12-3=
+1</p><p>Renewal amount: INR 99999.00</p></body></html>

@@ -289,6 +289,20 @@
         "title": "Body_preview_api_v1_uploads_preview_post",
         "type": "object"
       },
+      "Body_receipt_preview_api_v1_receipts_preview_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_receipt_preview_api_v1_receipts_preview_post",
+        "type": "object"
+      },
       "Body_upload_api_v1_uploads_post": {
         "properties": {
           "edits": {
@@ -2072,7 +2086,8 @@
             "enum": [
               "pdf_text",
               "pdf_ocr",
-              "image_ocr"
+              "image_ocr",
+              "email_receipt"
             ],
             "title": "Source Type",
             "type": "string"
@@ -2152,7 +2167,8 @@
             "enum": [
               "pdf_text",
               "pdf_ocr",
-              "image_ocr"
+              "image_ocr",
+              "email_receipt"
             ],
             "title": "Source Type",
             "type": "string"
@@ -2992,7 +3008,8 @@
               "csv",
               "pdf_text",
               "pdf_ocr",
-              "image_ocr"
+              "image_ocr",
+              "email_receipt"
             ],
             "title": "Source Type",
             "type": "string"
@@ -6381,6 +6398,103 @@
         "summary": "Export Data",
         "tags": [
           "privacy"
+        ]
+      }
+    },
+    "/api/v1/receipts/preview": {
+      "post": {
+        "description": "Development-only synthetic EML \u2192 unverified rows. Import via POST /uploads after review.\n\nNo original bytes, headers or email addresses are persisted. Attachments are not parsed.\nGmail is not connected. Existing preview status/cancel routes apply; every row requires an\nexplicit verified edit. Receipt/statement histories cannot share an account until reconciled.",
+        "operationId": "receipt_preview_api_v1_receipts_preview_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_receipt_preview_api_v1_receipts_preview_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatementPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Receipt Preview",
+        "tags": [
+          "receipts"
         ]
       }
     },

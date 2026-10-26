@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     environment: Literal["development", "test", "production"] = "development"
     demo_enabled: bool = True
+    receipt_import_enabled: bool = False
     public_demo_only: bool = False
     auth_session_mode: Literal["strict", "demo"] = "strict"
     api_origin: str = "http://localhost:8000"
@@ -122,6 +123,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def live_configuration(self):
+        if self.receipt_import_enabled and self.environment == "production":
+            raise ValueError("Receipt-import foundation is development-only")
         if self.app_test_as_of:
             date.fromisoformat(self.app_test_as_of)
         if self.environment != "development":
