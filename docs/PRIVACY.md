@@ -164,3 +164,25 @@ stored. Future OAuth data use/retention needs its own reviewed design and clear 
 Only the 16 labelled synthetic messages in `backend/data/receipts/` are repository fixtures.
 Private mail belongs outside version control, such as the ignored `private-emails/` directory.
 Separate future provider-offer interest declarations must not reuse mailbox-derived data.
+
+## Disabled mailbox rehearsal and voluntary declarations
+
+The optional private development lab reads committed synthetic fixtures only, with explicit
+versioned consent; it never connects a Google account. It stores normalized extracted receipt
+fields separately from financial transactions. Explicit bank matching links evidence to an
+existing same-owner debit without changing spend. Original email bodies/headers/addresses are
+never retained or sent to AI. Receipt-only legacy uploads remain subject to their existing guard.
+
+Extracted evidence fields expire after30 days from creation/review; minimal digest/status/link
+tombstones persist until disconnect/deletion to prevent resync resurrecting discarded evidence.
+Sync records expire from storage seven days after their TTL; scoped OAuth states expire in five
+minutes and are purged on hourly maintenance. Independent key-encrypted token/verifier material
+exists only in local protocol tests; live Gmail is unavailable. Export excludes all such material.
+Disconnect purges mailbox evidence, sync records, credentials and OAuth states. It retains minimal
+consent/disconnection metadata and does not alter bank transactions or separate plan interests.
+Account deletion cascades all of it. Existing backup/email limitations above still apply.
+
+Plan interests are independent voluntary category declarations, never inferred from financial or
+mailbox data. They persist until withdrawal/account deletion. Operator-only cohort counts exclude
+old consent versions and suppress groups below10; nothing is shared with providers and no offers
+exist. Neither this threshold nor a synthetic consent grants permission for future live processing.

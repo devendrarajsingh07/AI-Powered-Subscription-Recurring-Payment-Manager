@@ -18,3 +18,11 @@ The operator must define eligibility, acceptable use, support, suspension, avail
 dispute resolution, applicable law and versioned acceptance before publishing final terms.
 
 These placeholders are not an enforceable allocation of rights or a substitute for legal advice.
+
+## Unapproved technical addendum: receipt/interest rehearsal
+
+DRAFT — requires review by a qualified lawyer. Local synthetic receipt extraction, bank-match
+suggestions and voluntary category interests do not establish payment settlement, email
+identity/authenticity, provider affiliation, an available offer or a right to share/resell a plan.
+No provider transaction, negotiation or agreement is performed by this release. Live Gmail is
+unavailable. These drafts remain unapproved and their acceptance requirement remains off.

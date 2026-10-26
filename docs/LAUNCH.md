@@ -32,3 +32,16 @@ See [implementation decisions](PHASE8_PLAN.md) and [operator procedures](RUNBOOK
 Status 2026-10-21: suppression/unsubscribe, support reports, legal-version recording, kill switch,
 retention and metrics are implemented and locally tested but remain **blocked for launch** on the
 owner prerequisites above. See DOD.md for the exact evidence and what has not been verified.
+
+## Mailbox/interest expansion gates (2026-10-26)
+
+- Implemented locally, not launch approval: synthetic consent, bounded leased fixture sync,
+  separate receipt evidence, explicit bank matching and independent voluntary interests.
+- OAuth PKCE/state/credential/HTTP protocol foundation is stand-in-tested only. Actual Google
+  consent callback/orchestration, real inbox incremental sync and revocation delivery remain
+  Not done. Google restricted-scope/security review, keys, legal/operational approval and private
+  accuracy checks are required before activation. MAILBOX_LIVE_ENABLED=true currently fails.
+- No provider agreement, offer, price, discount, entitlement sharing, fulfilment or billing is
+  implemented. Provider negotiation/licensing is owner-led; no one was contacted by this work.
+- Public demo keeps MAILBOX_LAB_ENABLED=false. All previous custom-domain/worker/sender/PITR,
+  staging, incident response, legal and accessibility gates remain; free hosting is not beta-ready.

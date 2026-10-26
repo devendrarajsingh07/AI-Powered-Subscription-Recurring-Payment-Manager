@@ -91,3 +91,15 @@ real-bank and real-provider accuracy are not measured.
 Timings and corrected harness failures are recorded in PROJECT_INFO.md. Browser plugin absent;
 existing Linux Playwright image used. No manual screen-reader, real-provider accuracy or live-LLM
 pass is claimed. The local configuration and existing screenshots were restored after testing.
+
+## Expansion continuation — verified local evidence (2026-10-26)
+
+| Done | Implemented — blocked for launch (needs X) | Not done |
+| --- | --- | --- |
+|554 PostgreSQL tests,99 frontend tests;20 distinct browser cases including real worker/reconciliation/privacy and public-demo restrictions; migration up/down/drift, lint/type/OpenAPI/build/evaluator gates passed | Consent, leased synthetic sync, non-financial receipt evidence and explicit bank matching — needs existing launch prerequisites and private accuracy measurement | Actual Gmail consent callback/orchestration, real inbox incremental sync, real revocation delivery and genuine provider accuracy |
+| Separate voluntary interest declarations/withdrawal and operator-only current-consent cohorts; no financial/mailbox queries for cohorts; no offers or provider contact | OAuth/credential/HTTP foundation tested with injected responses and actual loopback server — needs owner/Google approvals, keys and completed live wiring | Provider agreements/licensing, real offers, fulfilment/billing; no beta launch |
+| npm audit0; pip-audit no known vulnerabilities; Gitleaks entire78-commit pre-commit history/current source clean; owner-only checker tested with synthetic fixture | Current free demo remains default-off for lab/live mail; latest exact-commit hosted checks and live revisions determine publication | Previously documented local operational drills and all external paid/domain/email/legal/real-data launch gates |
+
+No personal inbox, live model, paid resource, new third-party account, terms acceptance or provider
+communication was used. See EXPANSION_PLAN.md and MAILBOX_LAB.md for exact limits. Stand-in
+verification is never labelled launch-ready or an actual Google connection.

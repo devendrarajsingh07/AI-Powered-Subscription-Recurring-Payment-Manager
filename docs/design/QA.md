@@ -258,3 +258,23 @@ normal API clock/configuration were restored. Hosted CI is a separate publicatio
 
 Human screen-reader review remains unperformed. No live Gmail, real mail/statement accuracy or
 live model test was performed; those remain explicit owner/launch tasks.
+
+## Mailbox/evidence/interest expansion — verified locally (2026-10-26)
+
+Browser plugin absent; existing Linux Playwright, real Compose API/PostgreSQL and separate worker.
+Target: `/mailbox` → synthetic consent → real worker sync → evidence → bank upload → explicit match
+without double spend → replay → separate interest consent/withdrawal → typed purge → delete user.
+
+| Check | Result |
+| --- | --- |
+| Page identity/nonblank/no overlay | Meaningful real receipt form and proper route title; visually inspected screenshot outside repository |
+| Component states/actions |12 typed-network tests cover consent/disabled/errors/retry, ambiguity, edits revoke approval, plain hostile text, light/dark axe, typed disconnect, independent interests and queued/running/done/failed progress |
+| Real pipeline/numbers/privacy | First mailbox browser25.6s, final18.4s; independent labels/counts, zero spend before bank upload and exactly unchanged API summary after match/replay/purge; interests stay separate and can be withdrawn; deletion passed |
+| Responsive/accessibility | Desktop/light and360px/light/dark axe clean; no document overflow; radio/checkbox layout corrected and final regression rerun |
+| Runtime/console | No relevant page/runtime/console errors in positive flow |
+| Full gates |554 backend/99 frontend;18 standard browsers6.7m + TLS1(11.7s) + public demo1(11.1s); contract/lint/type/build/audit/scans passed |
+
+The public profile confirms the link is hidden and connection/sync/live-authorize/interest writes
+are disabled. Screenshot originals and normal local flags/clocks were restored. Hosted exact-commit
+CI/deployment evidence is independent. Human screen-reader and real inbox/provider behavior remain
+unperformed and are not implied by these local checks. No email is rendered as HTML or sent to AI.

@@ -26,3 +26,19 @@ Human review must define lawful purposes/bases, rights and export handling, rete
 processor agreements, international transfers, children/age policy, grievance route and incident
 notifications, including obligations under India's DPDP Act and applicable rules. No legal sign-off
 has occurred. Users must not be asked to accept this draft as a finalized contract.
+
+## Unapproved technical addendum: synthetic receipt inbox
+
+DRAFT — requires review by a qualified lawyer. This addendum is not approved or required for
+acceptance. The local synthetic mailbox rehearsal records separate consent and extracts only
+merchant/payment date/INR amount and flags from committed fixtures. Evidence never changes spend;
+a user must confirm any link to an existing bank transaction. Original mail bodies/headers and
+addresses are not retained. After30 days extracted fields are cleared; minimal digest/status/link
+tombstones remain until disconnect/account deletion to prevent resync resurrecting discarded
+messages. Consent metadata remains until account deletion; sync records have seven-day retention
+past expiry and OAuth state expires in five minutes (purged at hourly maintenance).
+
+Voluntary plan-interest declarations have separate consent, are not inferred from financial or
+mailbox data, and can be withdrawn independently. No offers/provider sharing exist in this release.
+Actual live Gmail processing is unavailable and needs a separate approved policy and Google review.
+See docs/MAILBOX_LAB.md for exact implementation boundaries; backup/email deletion limits remain.

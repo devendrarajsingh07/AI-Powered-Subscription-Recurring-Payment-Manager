@@ -113,3 +113,17 @@ peer address if it is missing or not an IP.
 
 `DATABASE_URL` may be given as `postgres://` or `postgresql://`; the app rewrites it to the installed
 `postgresql+psycopg://` driver.
+
+## Stop the optional synthetic mailbox lab
+
+Set MAILBOX_LAB_ENABLED=false and restart both local API and worker; production/public demo must
+never enable it. A worker rechecks consent/generation/claim between each item. Disconnect through
+DELETE /api/v1/mailbox/connection (caller JWT) to purge evidence, jobs and OAuth state, even after
+flag disablement. Account deletion also purges everything; independent voluntary interests have
+DELETE /api/v1/interests. Neither action changes bank history. Do not log JWTs or request content.
+
+The independent MAILBOX_TOKEN_KEY is used only by local OAuth protocol tests in this release.
+Changing it makes old encrypted state unusable and requires reconnection; it never falls back to
+JWT_SECRET. No live Gmail credential is configured on hosted demos. For any future approved live
+integration, real provider revocation/retry, key rotation and backup retention require an audited
+operator procedure before launch. Existing database-secret/session/incident runbooks still apply.

@@ -228,3 +228,21 @@ The flag defaults off; public mode refuses input before parsing; production acti
 Creation requires fake/offline mode and the provider-attempt guard blocks receipt workspaces.
 Gmail OAuth, sync, UI, invoice identity and reconciliation are future work, not stubbed features.
 See EMAIL_RECEIPT_FOUNDATION.md for independent fixture coverage and policy boundaries.
+
+## Optional synthetic mailbox/evidence layer
+
+See [the scope and protocol record](MAILBOX_LAB.md). An additive migration adds scoped consent,
+hashed/expiring OAuth state, leased fixture-sync progress, non-financial receipt evidence and
+independent voluntary interests. The existing separate worker consumes bounded sync leases;
+per-item transactions fence generation and claim token, and every item rechecks current consent.
+Raw email content is parsed then discarded. Evidence is not input to summary, detection, insights
+or chat tools. Bank candidates are same-owner, exact INR Decimal amount/normalized merchant,
+within three payment-date days, excluding legacy receipt-derived transactions. A user must select
+and confirm a candidate; ambiguity is never auto-resolved. Idempotency uses per-connection message
+digests and retained minimal tombstones; disconnect/account deletion purges them.
+
+Live Gmail authorization is hard-disabled. Local transport/loopback tests exercise OAuth PKCE,
+scoped state, encrypted credential lifecycle and bounded HTTP behavior, not a real Google account.
+Interests use separate consent/table and no financial-model queries. Internal cohort visibility is
+operator-only and thresholded; no commercial sharing, offers or provider agreement is implemented.
+All existing free-hosting, real-data, production and beta restrictions remain.

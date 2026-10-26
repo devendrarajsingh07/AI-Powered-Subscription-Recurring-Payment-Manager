@@ -1,155 +1,113 @@
 # SubTrack — current-state handoff
 
-Updated 2026-10-26. This is the sole source of current instructions. Prior handoffs preserve
-historical facts, not new instructions; the exact preceding handoff is archived at
-`docs/history/HANDOFF_BEFORE_EMAIL_RECEIPTS_2026_10_26.md`.
+Updated2026-10-26. This is the sole current instruction source. Earlier handoffs are historical
+facts in docs/history/, including the exact preceding receipt-UI handoff. Read README,
+docs/EXPANSION_PLAN.md, docs/MAILBOX_LAB.md, docs/DOD.md and the real code before editing.
 
-## Current work: receipt review/import UI — local gates passed; publication pending
+## Current state: locally verified expansion foundation
 
-The owner authorized the next remaining work: the local synthetic receipt-import UI. Reuse the
-owned preview/review/upload pipeline; never render EML bodies/headers, embedded HTML or remote
-images; show only editable extracted fields and mandatory approval. The fail-closed
-`receipt_import_enabled` capability in `/auth/config` controls visibility: development/offline
-only, never public demo or production. Source-mixing protection, INR decimal strings,
-expiry/cancel/delete and the prohibition on live Gmail/LLM calls are unchanged.
+Implemented and verified locally, **not a live Gmail connection or real-user launch**:
+- Development-only synthetic mailbox consent and actual separate-worker fixture sync. Fixed
+  allowlisted16 EMLs run through the real bounded parser; no canned extracted results.
+- Scoped versioned consent, one active sync per connection, global32-job admission, SKIP LOCKED
+  claims,30-second fenced leases, per-item checkpoints, three attempts/backoff and30-minute TTL.
+  Automatic hourly sync runs only while the opted-in local worker is awake. Every item rechecks
+  consent/generation; disconnect fences work and purges evidence, jobs, OAuth state and credentials.
+- Separate receipt-evidence table, never input to financial summary/detection/savings/chat tools.
+  Candidates: same-owner bank/demo debits, exact INR Decimal amount and normalized merchant,
+  payment dates within three days; legacy receipt-derived transactions are excluded. No automatic
+  match, even with one candidate. Explicit confirmation links evidence without changing totals.
+  User edits/ignored/matched decisions survive resync. Existing legacy no-mixing guard is retained.
+- Extracted evidence fields clear after30 days from creation/review; minimal digest/status/link
+  tombstones remain until disconnect/deletion so discarded evidence cannot be resurrected by sync.
+  Sync records purge seven days past expiry; five-minute OAuth state purges at hourly maintenance.
+  Safe account export includes new data and excludes all token/verifier ciphertext and claim tokens.
+- OAuth protocol/encryption foundation only: PKCE, hashed scoped single-use state, independent
+  Fernet key, exchange/refresh/revocation/raw/history methods, bounded HTTP and safe errors, tested
+  with injected responses AND an actual loopback HTTP server. Default live construction refuses.
+  Runtime Gmail authorization is hard-disabled; MAILBOX_LIVE_ENABLED=true fails configuration.
+- Separate voluntary category-interest declarations with separate consent/withdrawal. No financial
+  or mailbox model queries for cohorts. Internal ops-secret-gated counts exclude stale consent and
+  suppress groups below10. No offer, provider contact, partnership, discount or plan sharing exists.
+- Lazy-loaded local `/mailbox` UI: explicit synthetic labelling, consent, true sync progress,
+  editable evidence, match confirmation, status filters/pagination, typed disconnect/purge and
+  independent interest controls. Link is absent from public-demo upload UI; default-off/disabled
+  page has no live connection controls. Existing themes, plain-text rendering and money rules apply.
+- Additive migration0017_mailbox_lab; no create_all, stack change, new package or destructive backfill.
+  `MAILBOX_LAB_ENABLED=false` is the default and remains false on hosted demos. No key is needed
+  for the lab; MAILBOX_TOKEN_KEY is generated ephemerally for local protocol tests only.
 
-Implemented: upload source selection, synthetic EML picker/drop zone, receipt-specific
-review/uncertainty copy, edits clear approval, empty receipt import blocked, actual queued upload
-progress/results and source badges. No new dependency, migration or financial calculation.
-`make e2e` temporarily enables receipt fixtures and restores the original API configuration.
+## Verification receipts (final local source)
 
-Verification (real local Compose/PostgreSQL; ignored logs under `var/receipt-ui-*`):
-- `make dev verify`: passed; full `make test lint evaluate`: exit0. **525 backend tests**
-  (419.75s, one upstream TestClient/httpx deprecation warning), **87 frontend tests** (10 files),
-  OpenAPI/type drift, Ruff/ESLint/TypeScript and all evaluators passed. Detector P/R/F1=1.0000 on
-  synthetic and both handwritten groups; receipt outcomes16/16. Real-provider accuracy unmeasured.
-- New receipt Chromium flow: **1 passed35.9s**, eight imports/three independent labelled products
-  and independently computed totals; duplicate replay, missing date, safe rejection, cancel/delete,
-  desktop and 360px light/dark axe, no overflow/embed/runtime errors. Screenshots saved outside
-  the repository and visually inspected. Twelve new typed-MSW component tests and four new
-  fail-closed capability cases are included in the full totals above.
-- Standard previous browsers: **14 passed** initially; two clock-dependent tests failed because
-  the local Docker harness omitted APP_TEST_AS_OF. With the variable forwarded, **2 passed41.2s**.
-  Existing TLS **1 passed14.3s** and public-demo **1 passed14.6s**: **19 actual browser passes**
-  including the new receipt flow. Two standard profile skips were run separately, not counted twice.
-- Local harness failures were fixed rather than hidden: first receipt test selected a hidden
-  mobile theme control; it now returns to desktop before changing themes and has timeout-safe
-  cleanup. Its disposable account was deleted through the local API. TLS initially hit502 from
-  a stale nginx upstream after container recreation; refreshing the local proxy fixed it without
-  weakening any cookie/CSRF/TLS setting. Clock and normal Compose config were restored; tracked
-  screenshots were byte-restored after regressions.
-- Production build passed: main354.46kB/gzip111.65; lazy chart389.93/gzip114.22; upload21.11/gzip7.23.
-  `npm audit --audit-level=low`:0; `pip-audit -r backend/requirements.lock --disable-pip`: no known
-  vulnerabilities. Gitleaks entire76-commit pre-commit history and current source: clean.
-- Native Vitest was blocked by Windows temp-cache rename EPERM; Docker tests passed. Codex
-  Process Jobs does not support win32, so verification ran through foreground terminal sessions.
+Logs are ignored under `var/expansion-verification/`; no private statements/emails were used.
+- `make dev verify`: exit0. Focused PostgreSQL/migration suite34 passed49.00s.
+- `make test lint evaluate`: exit0; **554 PostgreSQL tests**,545.73s, one upstream
+  Starlette/TestClient/httpx deprecation warning; **99 frontend tests**,11 files. OpenAPI/type drift,
+  Ruff/ESLint/TypeScript passed. Detector P/R/F1=1.0000 on synthetic/handwritten bank/handwritten
+  products; extraction gate passed and receipt exact outcomes16/16. Real-source accuracy unmeasured.
+- Real-worker mailbox Chromium flow passed25.6s initially; final all-browser rerun passed18.4s
+  after a checkbox-label layout correction. Checks independently labelled evidence counts,
+  zero spend before bank ingestion, unchanged exact summary after match/replay/purge, separate
+  interest consent/withdrawal, user deletion, runtime/console health, desktop and360px light/dark
+  axe and no overflow. Screenshot outside repo was visually inspected.
+- Full standard browser invocation: **18 passed6.7m**, two profile skips. Strict same-site TLS
+  **1 passed11.7s**; expanded public demo **1 passed11.1s**. **20 distinct browser cases passed**;
+  do not double-count the initial focused mailbox rerun. Public checks reject connect/sync/live
+  authorize/interest writes, hide the link and confirm the lab capability is disabled.
+- Production build passed14.57s: main354.65kB/gzip111.74, lazy mailbox11.84/gzip3.90,
+  lazy chart389.93/gzip114.22. No performance SLA is claimed.
+- `npm audit --audit-level=low`:0; `pip-audit -r backend/requirements.lock --disable-pip`: no known
+  vulnerabilities. Gitleaks entire78-commit pre-commit history and current source: clean. Existing
+  exact historical synthetic JWT exceptions and16-file EML allowlist were not broadened.
+- Owner-only private receipt checker executed on a synthetic fixture: passed, terminal-only,
+  no network/file output. Never interpret this as a real-provider accuracy measurement.
+- All normal API/worker flags and clocks were restored; existing tracked screenshots were restored
+  byte-for-byte. Windows-native test cache limitations use Docker/Linux browsers; Codex Process
+  Jobs is unsupported on win32, so finite verification used foreground terminal sessions.
 
-Publication: commit/push and exact-commit hosted CI remain to be completed for this UI slice;
-never describe the baseline CI as verification of these changes. Only deploy the existing demos
-once local gates and hosted CI pass. Hosted receipt input remains disabled. No Gmail OAuth,
-mailbox sync, provider deals, real users/data, paid services, live model calls or beta tag.
+## Publication and hosting rule
 
-## Verified deployment baseline (historical)
+Use an isolated codex/ branch for exact-commit green hosted CI first, then fast-forward master
+without a PR/force push, and manually deploy that same commit to the existing free Render demo.
+This keeps Vercel's Git auto-deploy behind an already-green commit. Latest exact-commit checks
+are authoritative; read `/health.revision` and `/version.json` before claiming a live revision.
+Never treat a push or an old CI run as proof of a new deployment. Do not enable lab/live flags on
+hosted demos. Current actions are available from the repository's checks workflow:
+https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/workflows/ci.yml
 
-Foundation master **889dde9** passed CI **40271224487** (all four jobs); Render deployment
-**dep-dbfdscavcj2c73fp50d0** succeeded/live. Exact revision checked on Vercel and Render; all23
-smoke checks passed and public receipt uploads returned403. This is historical evidence for
-that commit; latest exact-commit master checks remain authoritative for subsequent changes.
-
-## Completed foundation (historical implementation log)
-
-The owner selected **email receipt-import foundation with synthetic fixtures**. Foundation commits dac987b and 889dde9 are on master; the UI continuation is described above. Gmail is not connected; there is
-no OAuth callback, mailbox sync, provider offer or partner contact. The new UI slice is above. Do not claim
-that this development foundation grants Gmail access or processes real inboxes.
-
-Decisions were recorded before implementation in `docs/EMAIL_RECEIPT_FOUNDATION.md`.
-
-- New JWT-scoped `POST /api/v1/receipts/preview`: one bounded EML, explicit-label English INR paid
-  receipts, locally parsed with the Python standard library. Attachments/remote resources/active
-  HTML are ignored. Missing/ambiguous fields remain missing. Headers never supply a payment date.
-- Every row requires explicit verified review through existing `POST /uploads`; source_type is
-  `email_receipt`. Existing scoped preview read/cancel/expiry, encrypted durable CSV dispatch,
-  deterministic detection, Decimal summaries and recommendation generation are reused.
-- Original EML bytes/headers/addresses/bodies are never persisted or sent to a provider. Only
-  extracted fields enter the expiring preview. Confirm/cancel clears payloads; deletion cascades.
-- Receipt and bank/demo histories cannot mix in either direction under the ingestion lock.
-  Canonical merchant/date/amount dedupe handles repeat charges; distinct identical charges may
-  merge. Invoice/message identity and bank reconciliation remain unimplemented.
-- `RECEIPT_IMPORT_ENABLED=false` by default; enabled creation requires development/offline mode.
-  Production activation fails. Public-demo requests are rejected before reading a body, even
-  with the flag enabled. The live-provider guard also blocks existing receipt workspaces.
-- No database migration is needed: existing source columns are strings. OpenAPI and generated
-  TypeScript add the source label and guarded route. No dependencies or stack were changed.
-- Only the 16 independently labelled synthetic EML fixture filenames may be versioned. Outbox
-  and private emails stay ignored; the source scanner enforces the narrow manifest exception.
-
-Verification: `make test lint evaluate` passed with 521 PostgreSQL tests (610.74s, one upstream
-TestClient deprecation warning), 75 frontend tests, OpenAPI/type drift, lint/typecheck and all
-three evaluators. Detector P/R/F1 remains 1.0000 on synthetic and both handwritten groups.
-The receipt evaluator matched 16/16 labelled outcomes; real-provider accuracy is unmeasured.
-The 35 receipt tests were additionally rerun after linear blank-line parsing hardening (22.13s).
-Real Compose `make dev receipt-demo` passed 8 imports, 3 products, independently computed totals,
-duplicate replay and deletion. Production build passed; Python/npm audits clean; Gitleaks full
-74-commit local history and current source clean. Standard browsers 16 passed (6.1m), strict TLS
-1 passed (16.4s), expanded isolated public-demo profile 1 passed (13.6s), including EML refusal.
-Original screenshots were restored from verified backups. Publication/deployment must follow
-exact-commit hosted CI; the baseline CI below does not certify new changes.
-
-## How to try it locally
-
-PowerShell: `$env:RECEIPT_IMPORT_ENABLED="true"`, `make dev`, then `make receipt-demo`.
-The CLI creates/deletes its own local synthetic account and uses the real API/separate worker.
-Remove the environment override and run `make dev` afterward to restore disabled mode.
-`make evaluate-receipts` runs the offline fixture gate without enabling any mailbox connection.
-Manual preview/review API steps, data boundaries and limitations are in the foundation document.
-
-The existing dashboard, statement UI, alerts and grounded chat are unchanged. Gmail scopes,
-verification/security assessment, encrypted token lifecycle, per-user mailbox consent and its UI
-need a separate future phase. Commercial interest lists must collect independent voluntary
-choices; Gmail-derived data must not feed provider negotiations or advertising in this design.
-
-## Owner decisions and deployment gates
-
-Keep hosting **free** and the real-user beta **locked**. No paid resources, new third-party
-accounts/terms, live Gemini/Gmail calls, real financial data/users, beta tags or history rewrite.
-Architecture A, PostgreSQL coordination, bcrypt, strict SameSite/CSRF, fail-closed production and
-deterministic money remain mandatory. Hosted mode stays fake/offline, disposable isolated
-visitors and synthetic data only; registration/login and all file uploads remain disabled.
-
-The owner previously requested direct pushes to the default branch **master** (no main branch)
-and updates to the existing Vercel/Render demos after local gates and exact-commit hosted CI.
-Do not force-push. Latest exact-commit results are authoritative in the
-[master checks workflow](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/workflows/ci.yml?query=branch%3Amaster).
-The receipt foundation stays disabled on hosted demos; no new infrastructure is authorized.
-
-## Baseline evidence and deployment context
-
-Before this feature, master 1eda459 passed all four CI jobs in run 40216300877. Review fixes are
-5338f0c (billing/renewals/retry consent), 644681f (pypdf 6.21.2/CSP), 007e76d and 1eda459 (docs).
-The October 25 deployed application verification at 007e76d passed 23/23 smoke checks; Render
- dep-dbf3ks29lscs738mgjjg succeeded/live. This is historical evidence, not certification of a new
-commit. Read revisions/readiness before claiming a new deployment.
+Historical verified baseline: receipt UI master7c56cb1, CI40289738439 (all four jobs green), Render
+dep-dbfhdtm7bikc73dipktg succeeded/live, exact revisions on Vercel/Render and23 smoke checks passed;
+receipt capability false and preview403. This is historical evidence, not a new release assertion.
 
 Frontend: https://ai-powered-subscription-recurring-p.vercel.app
 API: https://ai-powered-subscription-recurring.onrender.com/api/v1
+Default branch is **master**, not main. The owner authorized direct promotion and demo updates
+once local/hosted gates pass. Do not force-push, rewrite history or tag a beta.
 
-Vercel's existing Git auto-deployment precedes CI; enforced provider gating is an open operational
-gap. Render updates have been manual after exact-commit green CI; the opt-in release workflow
-and rollback are not proven by a manual release. Free hosting has no separately deployed worker;
-Compose's durable worker/extractor guarantees must not be claimed for the inline hosted demo.
+## Owner decisions, real limits and remaining work
 
-## Remaining launch blockers and limits
+Keep hosting **free**, production fail-closed, real-user beta locked. No paid resources, new
+third-party accounts/terms, real users/financial data, live Gmail/Gemini calls or provider contact.
+Architecture A and PostgreSQL coordination, bcrypt, strict SameSite/CSRF, Fake deployed mode,
+deterministic Decimal money and educational/demo notices remain mandatory. Legal drafts are
+unapproved; acceptance stays off. Existing public visitors remain isolated/disposable/synthetic;
+password registration/login and all file uploads stay disabled on hosted public demo.
 
-- Two-API/worker Compose crash/shared-limit evidence, restore, load, ZAP and exercised rollback.
-- Managed PostgreSQL/PITR before the free database expires **2026-11-19**, or accept demo-data loss;
-  separate staging, sibling custom domains, real sender/SPF/DKIM/DMARC, monitoring/incident contact.
-- Paid-tier Gemini project/billing/spend alerts and private live evaluation remain owner tasks.
-- Legal drafts are unapproved; acceptance stays off. Lawyer review, human screen-reader pass,
-  private real-statement/receipt accuracy checks and repository visibility remain owner decisions.
-- Source detector metrics cover synthetic/handwritten data; receipt metrics cover explicit-label
-  synthetic messages only. OCR is imperfect, renewals are estimates, SMTP has send/commit
-  ambiguity, and chat verification proves figure provenance rather than prose associations.
-- Database credential rotation was owner-confirmed complete 2026-10-22. MIT LICENSE is present,
-  copyright 2026 DEVENDRA RAJ SINGH. Do not repeat old pending instructions or reproduce secrets.
+**Not done:** actual Gmail consent callback/orchestration, real inbox incremental sync and real
+revocation delivery; OAuth protocol tests are only a foundation. Needs owner/Google approvals,
+credentials, operational/legal review, completed runtime integration and private accuracy checks.
+No full real-bank reconciliation, invoice identity, FX matching or mail-only financial ledger is
+claimed. New evidence links existing bank charges only; legacy imports retain their known limits.
+Provider agreements/licensing, offers, fulfilment/billing cannot be fabricated and are not built.
+Voluntary interests do not grant redistribution rights or permission to share Gmail-derived data.
 
-Priority: correct numbers > data safety > working demo > polish > extra features.
+Existing launch gaps remain: two-API/worker operational drill evidence, local restore/load/ZAP and
+exercised rollback; managed PostgreSQL/PITR before free DB expiry **2026-11-19** (or accept demo
+loss), separate staging, sibling custom domains, deployed worker, real sender/SPF/DKIM/DMARC,
+monitoring/incident contact, paid-tier Gemini/billing/spend alerts, legal review, human screen-reader
+pass, private real-statement/receipt measurement and live Gemini eval. Managed backup deletion
+and delivered emails cannot be guaranteed by a SQL delete. Owner confirmed credential rotation
+on2026-10-22; historical pre-rotation instructions are superseded, never print secrets.
+
+Earlier phases/demo/bank detection/alerts/chat remain intact. Their detailed history and actual
+verification limits are in docs/history/, docs/ARCHITECTURE.md, docs/PRIVACY.md and docs/DOD.md.
