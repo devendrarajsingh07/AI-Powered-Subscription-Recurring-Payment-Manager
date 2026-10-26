@@ -45,6 +45,7 @@ import { Auth } from "./pages/Auth";
 import { ChatAssistant } from "./components/ChatAssistant";
 import { applyTheme, readTheme, type Theme } from "./lib/theme";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const MailboxLab = lazy(() => import("./pages/MailboxLab"));
 const UploadPage = lazy(() => import("./pages/Upload"));
 const Subscriptions = lazy(() => import("./pages/Subscriptions"));
 const Renewals = lazy(() => import("./pages/Renewals"));
@@ -87,6 +88,7 @@ function pageTitle(pathname: string) {
     navigation.find(([path]) => path === pathname)?.[1] ||
     (
       {
+        "/mailbox": "Receipt inbox lab",
         "/login": "Sign in",
         "/register": "Create account",
         "/verify-email": "Verify email",
@@ -327,6 +329,7 @@ export function App() {
             <Route element={<Shell />}>
               <Route index element={<Dashboard />} />
               <Route path="upload" element={<UploadPage />} />
+              <Route path="mailbox" element={<MailboxLab />} />
               <Route path="subscriptions" element={<Subscriptions />} />
               <Route path="renewals" element={<Renewals />} />
               <Route path="recommendations" element={<Recommendations />} />

@@ -38,9 +38,20 @@ requires the HTTP Bearer access token. Health and register/login are public.
 | POST | `/api/v1/demo/load` | JWT | Load Demo |
 | GET | `/api/v1/health` | Public | Health |
 | GET | `/api/v1/health/ready` | Public | Ready |
+| DELETE | `/api/v1/interests` | JWT | Delete Interests |
+| GET | `/api/v1/interests` | JWT | Get Interests |
+| PUT | `/api/v1/interests` | JWT | Put Interests |
 | GET | `/api/v1/jobs` | JWT | Processing Jobs |
 | GET | `/api/v1/jobs/{job_id}` | JWT | Processing Job |
 | PATCH | `/api/v1/jobs/{job_id}` | JWT | Cancel Processing Job |
+| GET | `/api/v1/mailbox/config` | JWT | Config |
+| DELETE | `/api/v1/mailbox/connection` | JWT | Disconnect |
+| GET | `/api/v1/mailbox/evidence` | JWT | Evidence |
+| PATCH | `/api/v1/mailbox/evidence/{evidence_id}` | JWT | Review |
+| POST | `/api/v1/mailbox/gmail/authorize` | JWT | Gmail Authorize |
+| POST | `/api/v1/mailbox/sync` | JWT | Sync |
+| GET | `/api/v1/mailbox/sync/{sync_id}` | JWT | Sync Status |
+| POST | `/api/v1/mailbox/synthetic/connect` | JWT | Connect |
 | DELETE | `/api/v1/me/data` | JWT | Delete My Data |
 | GET | `/api/v1/me/export` | JWT | Export Data |
 | POST | `/api/v1/receipts/preview` | JWT | Receipt Preview |

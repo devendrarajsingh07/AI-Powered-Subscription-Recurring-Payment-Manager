@@ -54,6 +54,10 @@ def main():
         try:
             timers.tick(worker)
             worked = worker.run_once()
+            if not worked:
+                from app.services.mailbox_lab import run_once
+
+                worked = run_once(worker.engine)
         except Exception:
             logging.getLogger("subtrack.worker").warning("Worker coordination unavailable")
             worked = False
@@ -68,7 +72,7 @@ class Timers:
 
     def __init__(self, cfg):
         self.cfg = cfg
-        self.next_run = dict.fromkeys(("maintenance", "retry", "retention", "demo"), 0.0)
+        self.next_run = dict.fromkeys(("maintenance", "retry", "retention", "demo", "mailbox"), 0.0)
         self.daily_done = None
 
     def due(self, name, every):
@@ -82,10 +86,17 @@ class Timers:
         log = logging.getLogger("subtrack.worker")
         if self.due("maintenance", 5):
             worker.maintenance()
+        if self.due("mailbox", 60):
+            from app.services.mailbox_lab import queue_due
+
+            queue_due(worker.engine)
         if self.due("retention", 3600):
             from app.services.retention import purge
 
             log.info("Retention completed counts=%s", purge(worker.engine))
+            from app.services.mailbox_lab import maintenance
+
+            maintenance(worker.engine)
         if self.cfg.public_demo_only and self.due("demo", 900):
             from app.services.demo_retention import purge_demo_accounts
 

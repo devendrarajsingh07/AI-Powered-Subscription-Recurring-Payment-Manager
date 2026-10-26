@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     environment: Literal["development", "test", "production"] = "development"
     demo_enabled: bool = True
     receipt_import_enabled: bool = False
+    mailbox_lab_enabled: bool = False
+    mailbox_live_enabled: bool = False
+    mailbox_token_key: SecretStr = SecretStr("")
     public_demo_only: bool = False
     auth_session_mode: Literal["strict", "demo"] = "strict"
     api_origin: str = "http://localhost:8000"
@@ -123,6 +126,12 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def live_configuration(self):
+        if self.mailbox_live_enabled:
+            raise ValueError("Live Gmail is owner-blocked; use local protocol tests only")
+        if self.mailbox_lab_enabled and (
+            self.environment == "production" or self.public_demo_only or self.llm_provider != "fake"
+        ):
+            raise ValueError("Mailbox lab requires private development with the offline assistant")
         if self.receipt_import_enabled and self.environment == "production":
             raise ValueError("Receipt-import foundation is development-only")
         if self.app_test_as_of:

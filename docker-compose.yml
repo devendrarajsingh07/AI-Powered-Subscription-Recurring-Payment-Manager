@@ -21,6 +21,7 @@ services:
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
       APP_TEST_AS_OF: ${APP_TEST_AS_OF:-}
       RECEIPT_IMPORT_ENABLED: ${RECEIPT_IMPORT_ENABLED:-false}
+      MAILBOX_LAB_ENABLED: ${MAILBOX_LAB_ENABLED:-false}
       JOB_MODE: ${JOB_MODE:-postgres}
       EXTRACTOR_SOCKET: /var/subtrack/extractor/rpc.sock
     ports:
@@ -48,6 +49,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
       JOB_MODE: postgres
+      MAILBOX_LAB_ENABLED: ${MAILBOX_LAB_ENABLED:-false}
       EXTRACTOR_SOCKET: /var/subtrack/extractor/rpc.sock
     command: [python, -m, app.worker]
     volumes:

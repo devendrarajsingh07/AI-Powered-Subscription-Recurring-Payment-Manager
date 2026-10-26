@@ -1590,3 +1590,20 @@ html[data-theme="dark"] {
     order: 1;
   }
 }
+
+/* Compact, labelled approval controls; the label remains the full click target. */
+.check-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.check-label input[type="checkbox"],
+.check-label input[type="radio"] {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex: 0 0 auto;
+}

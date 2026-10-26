@@ -133,11 +133,13 @@ def guard_user(engine, client, tokens, authenticated_user_id):
         account = repo.get_user(db, authenticated_user_id)
         if account is None or not account.live_opt_in:
             raise LLMError("Live AI consent is required. No further data was sent.")
-        from app.models import Upload
+        from app.models import MailboxConnection, ReceiptEvidence, Upload
 
-        if repo.count_owned(
+        if (repo.count_owned(
             db, authenticated_user_id, Upload, Upload.source_type == "email_receipt"
-        ):
+        ) or repo.count_owned(db, authenticated_user_id, ReceiptEvidence)
+            or repo.count_owned(db, authenticated_user_id, MailboxConnection,
+                                MailboxConnection.consented_at.is_not(None))):
             raise LLMError("Receipt-import foundation is offline-only. No data was sent.")
     guard(engine, client, tokens)
 

@@ -31,6 +31,32 @@ class SafetyMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        lab_write = (scope["method"] in ("POST", "PUT", "PATCH")
+                     and (scope["path"].startswith("/api/v1/mailbox/")
+                          or scope["path"] == "/api/v1/interests"))
+        if lab_write and (not get_settings().mailbox_lab_enabled
+                          or get_settings().public_demo_only):
+            return await JSONResponse(status_code=404, headers=EARLY_HEADERS, content={
+                "error": {"code": "mailbox_disabled", "message": "Mailbox lab is disabled"}
+            })(scope, receive, send)
+        if lab_write:
+            chunks, size = [], 0
+            while True:
+                part = await receive()
+                chunks.append(part)
+                size += len(part.get("body", b""))
+                if size > 32768:
+                    return await JSONResponse(status_code=413, headers=EARLY_HEADERS, content={
+                        "error": {"code": "request_limit", "message": "Request exceeds its limit"}
+                    })(scope, receive, send)
+                if not part.get("more_body", False):
+                    break
+            original_receive = receive
+
+            async def lab_receive():
+                return chunks.pop(0) if chunks else await original_receive()
+
+            receive = lab_receive
         if (
             get_settings().public_demo_only
             and scope["method"] == "POST"

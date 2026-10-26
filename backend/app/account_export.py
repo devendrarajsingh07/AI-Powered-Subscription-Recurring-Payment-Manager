@@ -21,6 +21,10 @@ TABLES = (
     m.Alert,
     m.ChatMessage,
     m.StatementUsage,
+    m.MailboxConnection,
+    m.MailboxSync,
+    m.ReceiptEvidence,
+    m.PlanInterest,
 )
 PROFILE = (
     "email",
@@ -60,6 +64,7 @@ def export_records(engine, user_id):
             for row in rows:
                 item = {
                     column.name: getattr(row, column.name) for column in model.__table__.columns
+                    if column.name not in {"token_cipher", "verifier_cipher", "claim_token"}
                 }
                 yield ("" if first else ",") + json.dumps(item, default=encode)
                 first = False

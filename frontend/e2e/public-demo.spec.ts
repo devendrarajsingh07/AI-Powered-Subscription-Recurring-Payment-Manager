@@ -56,6 +56,35 @@ test("public visitors are isolated, file uploads disabled, synthetic demo works 
       expect((await rejected.json()).error.code).toBe("demo_data_only");
     }
   }
+  expect(
+    await page
+      .getByRole("link", { name: "Open the offline receipt inbox lab" })
+      .count(),
+  ).toBe(0);
+  const mailbox = await page.request.get("/api/v1/mailbox/config", {
+    headers: auth,
+  });
+  expect(mailbox.status()).toBe(200);
+  expect((await mailbox.json()).enabled).toBe(false);
+  for (const endpoint of [
+    "/mailbox/synthetic/connect",
+    "/mailbox/sync",
+    "/mailbox/gmail/authorize",
+  ]) {
+    expect(
+      (
+        await page.request.post("/api/v1" + endpoint, {
+          headers: auth,
+          data: {},
+        })
+      ).status(),
+    ).toBe(404);
+  }
+  expect(
+    (
+      await page.request.put("/api/v1/interests", { headers: auth, data: {} })
+    ).status(),
+  ).toBe(404);
   await page.getByRole("button", { name: "Load demo data" }).click();
   await expect(
     page.getByRole("heading", { name: "Statement processed" }),

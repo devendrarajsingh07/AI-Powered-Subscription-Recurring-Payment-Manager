@@ -489,3 +489,132 @@ class SupportReport(Owned, Base):
     )
     message: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class MailboxConnection(Owned, Base):
+    __tablename__ = "mailbox_connections"
+    mode: Mapped[str] = mapped_column(String(16), server_default="synthetic")
+    consent_version: Mapped[str] = mapped_column(String(40))
+    consented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    disconnected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    generation: Mapped[int] = mapped_column(Integer, server_default="1")
+    token_cipher: Mapped[bytes | None] = mapped_column(LargeBinary)
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_mailbox_user"),
+        UniqueConstraint("id", "user_id", name="uq_mailbox_owner"),
+        CheckConstraint("mode IN ('synthetic', 'gmail')", name="ck_mailbox_mode"),
+        CheckConstraint(
+            "octet_length(token_cipher) <= 16384", name="ck_mailbox_token_size"
+        ),
+    )
+
+
+class MailboxOAuthState(Owned, Base):
+    __tablename__ = "mailbox_oauth_states"
+    digest: Mapped[str] = mapped_column(String(64), unique=True)
+    verifier_cipher: Mapped[bytes] = mapped_column(LargeBinary)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class MailboxSync(Owned, Base):
+    __tablename__ = "mailbox_syncs"
+    connection_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    generation: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), server_default="queued")
+    processed: Mapped[int] = mapped_column(Integer, server_default="0")
+    total: Mapped[int] = mapped_column(Integer)
+    accepted: Mapped[int] = mapped_column(Integer, server_default="0")
+    rejected: Mapped[int] = mapped_column(Integer, server_default="0")
+    duplicates: Mapped[int] = mapped_column(Integer, server_default="0")
+    attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    claim_token: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    failure_code: Mapped[str | None] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["connection_id", "user_id"],
+            ["mailbox_connections.id", "mailbox_connections.user_id"],
+            ondelete="CASCADE",
+        ),
+        CheckConstraint(
+            "status IN ('queued','running','done','failed','cancelled')",
+            name="ck_mailbox_sync_status",
+        ),
+        CheckConstraint(
+            "processed BETWEEN 0 AND total AND total BETWEEN 0 AND 16 "
+            "AND attempts BETWEEN 0 AND 3",
+            name="ck_mailbox_sync_bounds",
+        ),
+        Index("ix_mailbox_sync_claim", "status", "available_at", "lease_until"),
+        Index(
+            "uq_mailbox_active_sync",
+            "connection_id",
+            unique=True,
+            postgresql_where=text("status IN ('queued', 'running')"),
+        ),
+    )
+
+
+class ReceiptEvidence(Owned, Base):
+    """Evidence only: never a second transaction, never included in spend arithmetic."""
+
+    __tablename__ = "receipt_evidence"
+    connection_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    message_digest: Mapped[str] = mapped_column(String(64))
+    merchant: Mapped[str | None] = mapped_column(String(255))
+    charged_on: Mapped[date | None] = mapped_column(Date)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    currency: Mapped[str] = mapped_column(String(3), server_default="INR")
+    flags: Mapped[list] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(16), server_default="pending")
+    transaction_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["connection_id", "user_id"],
+            ["mailbox_connections.id", "mailbox_connections.user_id"],
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["transaction_id", "user_id"],
+            ["transactions.id", "transactions.user_id"],
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("connection_id", "message_digest", name="uq_receipt_message"),
+        CheckConstraint("amount IS NULL OR amount > 0", name="ck_receipt_amount"),
+        CheckConstraint("currency = 'INR'", name="ck_receipt_currency"),
+        CheckConstraint(
+            "status IN ('pending','matched','ignored')", name="ck_receipt_status"
+        ),
+        CheckConstraint(
+            "(status = 'matched') = (transaction_id IS NOT NULL)",
+            name="ck_receipt_match",
+        ),
+    )
+
+
+class PlanInterest(Owned, Base):
+    __tablename__ = "plan_interests"
+    category: Mapped[str] = mapped_column(String(16))
+    consent_version: Mapped[str] = mapped_column(String(40))
+    consented_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    __table_args__ = (
+        UniqueConstraint("user_id", "category", name="uq_plan_interest_user_category"),
+        CheckConstraint(
+            "category IN ('music','streaming','cloud')",
+            name="ck_plan_interest_category",
+        ),
+    )

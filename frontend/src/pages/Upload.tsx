@@ -6,6 +6,7 @@ import { StatementReview } from "../components/StatementReview";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileUp } from "lucide-react";
+import { Link } from "react-router";
 import { api, errorMessage } from "../api/client";
 import type { components } from "../api/schema";
 import { Empty, ErrorState, Heading, Loading } from "../components/Common";
@@ -192,6 +193,9 @@ function UploadWorkspace({ receiptsEnabled }: { receiptsEnabled: boolean }) {
             : "Turn transaction history into a clearer recurring spend picture."
         }
       />
+      <p>
+        <Link to="/mailbox">Open the offline receipt inbox lab</Link>
+      </p>
       {receiptsEnabled && (
         <label>
           Import source

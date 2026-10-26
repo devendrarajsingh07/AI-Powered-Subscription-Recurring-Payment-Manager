@@ -30,6 +30,10 @@ EVENTS = frozenset(
         "email_suppressed",
         "alert_unsubscribed",
         "support_report",
+        "mailbox_consent",
+        "mailbox_disconnected",
+        "receipt_reviewed",
+        "plan_interest_changed",
     }
 )
 

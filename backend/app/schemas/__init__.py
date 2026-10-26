@@ -619,3 +619,102 @@ class JobOut(Schema):
 
 class JobAction(Schema):
     action: Literal["cancel"]
+
+
+class MailboxConfig(Schema):
+    enabled: bool
+    mode: Literal["disabled", "synthetic"]
+    live_available: Literal[False] = False
+    connected: bool
+    disclosure: str
+    consent_version: str
+    interest_disclosure: str
+    interest_version: str
+
+
+class MailboxConsent(Schema):
+    consent: StrictBool
+    version: str = Field(max_length=40)
+
+    @field_validator("consent")
+    @classmethod
+    def explicit_consent(cls, value):
+        if not value:
+            raise ValueError("Explicit consent is required")
+        return value
+
+
+class MailboxSyncOut(Schema):
+    id: uuid.UUID
+    status: Literal["queued", "running", "done", "failed", "cancelled"]
+    processed: int
+    total: int
+    accepted: int
+    rejected: int
+    duplicates: int
+    attempts: int
+    failure_code: str | None
+    expires_at: datetime
+    created_at: datetime
+
+
+class BankCandidate(Schema):
+    id: uuid.UUID
+    date: DateValue
+    merchant_normalized: str
+    amount: Money
+    currency: Literal["INR"]
+
+
+class ReceiptEvidenceOut(Schema):
+    id: uuid.UUID
+    merchant: str | None
+    charged_on: DateValue | None
+    amount: Money | None
+    currency: Literal["INR"]
+    flags: list[str]
+    status: Literal["pending", "matched", "ignored"]
+    transaction_id: uuid.UUID | None
+    reviewed_at: datetime | None
+    candidates: list[BankCandidate] = []
+
+
+class EvidenceDecision(Schema):
+    action: Literal["review", "match", "ignore"]
+    verified: StrictBool = False
+    merchant: str | None = Field(default=None, min_length=1, max_length=100)
+    charged_on: DateValue | None = None
+    amount: Money | None = None
+    transaction_id: uuid.UUID | None = None
+
+    @model_validator(mode="after")
+    def require_fields(self):
+        fields = {"merchant", "charged_on", "amount"}
+        if self.action == "review":
+            if not self.verified or not self.merchant or not self.charged_on or not self.amount:
+                raise ValueError("Review requires all receipt fields and explicit verification")
+            if self.transaction_id or not re.fullmatch(r"[\w &().+\-]{1,100}", self.merchant):
+                raise ValueError("Use a plain merchant name, date and positive INR amount")
+        elif self.action == "match":
+            if not self.verified or not self.transaction_id or fields & self.model_fields_set:
+                raise ValueError("Explicitly confirm one returned bank candidate without edits")
+        elif (fields | {"transaction_id"}) & self.model_fields_set or self.verified:
+            raise ValueError("Ignore takes no receipt fields")
+        return self
+
+
+class InterestPut(MailboxConsent):
+    categories: list[Literal["music", "streaming", "cloud"]] = Field(max_length=3)
+
+    @field_validator("categories")
+    @classmethod
+    def unique_categories(cls, value):
+        if len(set(value)) != len(value):
+            raise ValueError("Choose each category once")
+        return value
+
+
+class InterestOut(Schema):
+    categories: list[Literal["music", "streaming", "cloud"]]
+    consent_version: str
+    disclosure: str
