@@ -23,6 +23,10 @@ def auth_config():
     cfg = get_settings()
     return dict(
         public_demo_only=cfg.public_demo_only,
+        receipt_import_enabled=(
+            cfg.receipt_import_enabled and not cfg.public_demo_only
+            and cfg.environment != "production" and cfg.llm_provider == "fake"
+        ),
         session_mode=cfg.auth_session_mode,
         notice="Public demo — do not upload real statements or personal data"
         if cfg.public_demo_only

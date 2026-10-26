@@ -952,6 +952,11 @@ export interface components {
             /** Public Demo Only */
             public_demo_only: boolean;
             /**
+             * Receipt Import Enabled
+             * @default false
+             */
+            receipt_import_enabled: boolean;
+            /**
              * Session Mode
              * @enum {string}
              */

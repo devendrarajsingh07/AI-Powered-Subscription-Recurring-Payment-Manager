@@ -97,6 +97,7 @@ test("registration requires and sends the current legal version when enabled", a
   server.use(
     http.get("*/api/v1/auth/config", () =>
       HttpResponse.json({
+        receipt_import_enabled: false,
         public_demo_only: false,
         session_mode: "strict",
         notice: "Educational use with synthetic data",

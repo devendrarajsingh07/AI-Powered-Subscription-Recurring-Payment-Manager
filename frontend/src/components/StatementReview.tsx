@@ -64,6 +64,7 @@ export function StatementReview({
     retry: false,
   });
   useEffect(() => {
+    if (file.name.toLowerCase().endsWith(".eml")) return;
     const local = URL.createObjectURL(file);
     setUrl(local);
     return () => URL.revokeObjectURL(local);
@@ -187,6 +188,7 @@ export function StatementReview({
       </section>
     );
   const result = job.result;
+  const receipt = result.source_type === "email_receipt";
   const rows = result.rows.filter(
     (row) =>
       !flaggedOnly ||
@@ -207,57 +209,69 @@ export function StatementReview({
   });
   return (
     <section className="panel statement-review" aria-labelledby="review-title">
-      <h2 id="review-title">Review every extracted row</h2>
+      <h2 id="review-title">
+        {receipt ? "Review receipt payment" : "Review every extracted row"}
+      </h2>
       <p role="status">Extraction ready. Review all values before import.</p>
       <p className="notice-box">
-        OCR can misread digits. Compare dates, descriptions, amounts and
-        debit/credit types with your local copy. You are responsible for
-        verifying flagged values before import. All imports are INR only.
+        {receipt
+          ? "Receipt fields are unverified. Check the actual payment date, merchant, amount and debit/credit type against your synthetic fixture. Approval does not verify authenticity or bank settlement. INR only."
+          : "OCR can misread digits. Compare dates, descriptions, amounts and debit/credit types with your local copy. You are responsible for verifying flagged values before import. All imports are INR only."}
       </p>
       <p>
         Source: {result.source_type.replaceAll("_", " ")} · Pages:{" "}
         {result.page_count} · Flagged rows: {result.flagged_count}
       </p>
-      <p className="notice-box">
-        Reconciliation: <strong>{result.reconciliation.status}</strong> ·
-        Balance checks: {result.reconciliation.balance_checks} · Total checks:{" "}
-        {result.reconciliation.total_checks}. Matched balances do not prove
-        every field correct.
-      </p>
+      {!receipt && (
+        <p className="notice-box">
+          Reconciliation: <strong>{result.reconciliation.status}</strong> ·
+          Balance checks: {result.reconciliation.balance_checks} · Total checks:{" "}
+          {result.reconciliation.total_checks}. Matched balances do not prove
+          every field correct.
+        </p>
+      )}
       {result.warnings.map((warning) => (
         <p key={warning}>{warning}</p>
       ))}
       <p className="muted">
-        Preview expires: {job.expires_at}. Originals are not retained. This
-        preview uses only your browser’s local file.
+        Preview expires: {job.expires_at}. Originals are not retained.{" "}
+        {receipt
+          ? "Only extracted fields are retained for review; email headers and bodies are not stored."
+          : "This preview uses only your browser’s local file."}
       </p>
       <p className="muted">
-        Recognition scores are not transaction accuracy. Descriptions are plain
-        text; formula prefixes are neutralized in this preview. Extracted
-        descriptions retain their original text unless you edit them.
+        {receipt
+          ? "Every receipt row needs explicit approval. The merchant is normalized; original email content is never displayed or embedded here."
+          : "Recognition scores are not transaction accuracy. Descriptions are plain text; formula prefixes are neutralized in this preview. Extracted descriptions retain their original text unless you edit them."}
       </p>
-      <div className="statement-review-layout">
-        <details className="local-statement">
-          <summary>Show my local file</summary>
-          {file.name.toLowerCase().endsWith(".pdf") ? (
-            <>
-              <iframe
-                src={url}
-                title="Local PDF statement preview"
-                sandbox=""
-              />
-              <p>
-                If the browser blocks the embedded viewer, open the local copy
-                in your PDF viewer.
-              </p>
-              <a href={url} target="_blank" rel="noreferrer">
-                Open local PDF copy
-              </a>
-            </>
-          ) : (
-            <img src={url} alt="Local statement file for comparison" />
-          )}
-        </details>
+      <div
+        className={
+          receipt ? "receipt-review-layout" : "statement-review-layout"
+        }
+      >
+        {!receipt && (
+          <details className="local-statement">
+            <summary>Show my local file</summary>
+            {file.name.toLowerCase().endsWith(".pdf") ? (
+              <>
+                <iframe
+                  src={url}
+                  title="Local PDF statement preview"
+                  sandbox=""
+                />
+                <p>
+                  If the browser blocks the embedded viewer, open the local copy
+                  in your PDF viewer.
+                </p>
+                <a href={url} target="_blank" rel="noreferrer">
+                  Open local PDF copy
+                </a>
+              </>
+            ) : (
+              <img src={url} alt="Local statement file for comparison" />
+            )}
+          </details>
+        )}
         <div className="review-controls">
           <div className="review-toolbar">
             <label>
@@ -402,7 +416,9 @@ export function StatementReview({
                           </td>
                           <td>
                             <span className="badge">
-                              Confidence {row.confidence}%
+                              {receipt
+                                ? "Needs approval · authenticity unverified"
+                                : `Confidence ${row.confidence}%`}
                             </span>
                             <ul id={`review-notices-${n}`}>
                               {row.flags.map((flag) => (
@@ -460,7 +476,15 @@ export function StatementReview({
             </button>
             <button
               className="primary"
-              disabled={busy || !reviewComplete(result.rows, edits)}
+              disabled={
+                busy ||
+                !reviewComplete(result.rows, edits) ||
+                (receipt &&
+                  !result.rows.some(
+                    (row) =>
+                      !edits[row.index]?.delete && edits[row.index]?.verified,
+                  ))
+              }
               onClick={() => void confirm()}
             >
               Import reviewed rows

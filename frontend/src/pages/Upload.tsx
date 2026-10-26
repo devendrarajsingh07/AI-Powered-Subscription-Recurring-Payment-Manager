@@ -1,6 +1,7 @@
 import { UploadProgress, Warnings } from "../components/UploadProgress";
 export { UploadProgress } from "../components/UploadProgress";
 import { DemoPanel } from "../components/DemoPanel";
+import { ReceiptImport } from "../components/ReceiptImport";
 import { StatementReview } from "../components/StatementReview";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -61,9 +62,13 @@ export default function UploadPage() {
         <DemoPanel />
       </>
     );
-  return <UploadWorkspace />;
+  return (
+    <UploadWorkspace receiptsEnabled={!!mode.data.receipt_import_enabled} />
+  );
 }
-function UploadWorkspace() {
+function UploadWorkspace({ receiptsEnabled }: { receiptsEnabled: boolean }) {
+  const [source, setSource] = useState<"statement" | "receipt">("statement");
+  const receiptMode = receiptsEnabled && source === "receipt";
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -180,192 +185,230 @@ function UploadWorkspace() {
   return (
     <>
       <Heading
-        title="Upload a statement"
-        subtitle="Turn transaction history into a clearer recurring spend picture."
+        title={receiptMode ? "Import receipt payments" : "Upload a statement"}
+        subtitle={
+          receiptMode
+            ? "Review synthetic receipt fields before importing them."
+            : "Turn transaction history into a clearer recurring spend picture."
+        }
       />
-      {!statementJobId && !uploadId && <DemoPanel />}
-      <div className="steps" aria-label="Upload steps">
-        <span
-          className={!preview && !uploadId && !statementJobId ? "current" : ""}
-        >
-          1 · Choose a file
-        </span>
-        <span className={preview || statementJobId ? "current" : ""}>
-          2 · Check columns
-        </span>
-        <span className={uploadId ? "current" : ""}>3 · Process & review</span>
-      </div>
-      {statementJobId && file && (
-        <StatementReview
-          key={statementJobId}
-          jobId={statementJobId}
-          file={file}
-          onImported={(id) => {
-            setStatementJobId(null);
-            setUploadId(id);
-          }}
-          onCancel={() => {
-            setStatementJobId(null);
-            picker.current?.focus();
-          }}
-          onRetry={() => void choose(file)}
-        />
-      )}
-      <section className="panel">
-        <div
-          className="dropzone"
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            if (!busy) void choose(event.dataTransfer.files[0]);
-          }}
-        >
-          <FileUp size={36} />
-          <h2>Start with your transaction history</h2>
-          <p>Drop a CSV, PDF, JPEG or PNG here, or choose a file below.</p>
-          <label className="file-label">
-            Choose statement file
-            <input
-              aria-label="Choose statement file"
-              ref={picker}
-              type="file"
-              accept=".csv,.pdf,.jpg,.jpeg,.png,text/csv,application/pdf,image/jpeg,image/png"
-              disabled={busy}
-              onChange={(event) => {
-                void choose(event.target.files?.[0]);
-                event.target.value = "";
-              }}
-            />
-          </label>
-          <small>
-            CSV: 5 MB / 50,000 rows · PDF: 10 MB / 30 pages · JPEG/PNG: 10 MB /
-            25 megapixels · INR only
-          </small>
-        </div>
-        <p className="muted">
-          Simple date / description / amount / type exports and Indian bank
-          debit / credit layouts are supported. Other currencies are rejected by
-          the server for CSV. For extracted statements, verify the currency
-          yourself; only INR is supported.
-        </p>
-        <p className="muted">
-          PDF/image extraction runs locally on our server and requires review.
-          Use clean English scans around 200 dpi or better. Photos, handwriting,
-          heavy skew and blur may be rejected.
-        </p>
+      {receiptsEnabled && (
         <label>
-          PDF password (only if encrypted)
-          <input
-            type="password"
-            autoComplete="off"
-            value={password}
-            maxLength={256}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        <small>
-          Used in memory only, never stored or logged. Enter it before choosing
-          an encrypted PDF, or before retrying.
-        </small>
-      </section>
-      {error && <ErrorState error={new Error(error)} />}
-      {busy && <Loading text="Reading your statement…" />}
-      {preview && (
-        <section className="panel">
-          <h2>Check your column mapping</h2>
-          <p>
-            {file?.name} · {preview.row_count} rows · Delimiter:{" "}
-            {preview.delimiter === "\t" ? "Tab" : preview.delimiter} · Date
-            formats:{" "}
-            {preview.date_formats.join(", ") ||
-              "Choose the correct date column"}
-          </p>
-          <label>
-            Amount layout
-            <select
-              value={layout}
-              onChange={(event) => setLayout(event.target.value as Layout)}
-            >
-              <option value="single">Single amount + type</option>
-              <option value="split">Separate debit / credit</option>
-            </select>
-          </label>
-          <div className="mapping-grid">
-            {[
-              "date",
-              "description",
-              ...(layout === "single"
-                ? ["amount", "type"]
-                : ["debit", "credit"]),
-              "currency",
-            ].map((field) => (
-              <label key={field}>
-                {field === "currency"
-                  ? "Currency (optional)"
-                  : field[0].toUpperCase() + field.slice(1)}
-                <select
-                  aria-label={`Map ${field}`}
-                  value={mapping[field] || ""}
-                  onChange={(event) =>
-                    setMapping({ ...mapping, [field]: event.target.value })
-                  }
-                >
-                  <option value="">
-                    {field === "currency" ? "Assume INR" : "Choose column"}
-                  </option>
-                  {preview.columns.map((column) => (
-                    <option key={column}>{column}</option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
-          <p className="muted">
-            Assign each column once. Preview cells are formula-safe and treated
-            as text.
-          </p>
-          <div
-            className="table-scroll"
-            tabIndex={0}
-            role="region"
-            aria-label="Scrollable data table"
-          >
-            <table>
-              <caption>Statement preview</caption>
-              <thead>
-                <tr>
-                  {preview.columns.map((column) => (
-                    <th key={column}>{column}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {preview.rows.map((row, index) => (
-                  <tr key={index}>
-                    {row.map((cell, cellIndex) => (
-                      <td key={cellIndex}>{cell}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {preview.warnings.length > 0 && (
-            <Warnings warnings={preview.warnings} />
-          )}
-          {preview.malformed_csv && (
-            <p className="notice-box">{preview.remainder_notice}</p>
-          )}
-          <button
-            className="primary"
-            disabled={busy || !mappingValid(mapping, layout)}
-            onClick={() => {
-              void confirm();
+          Import source
+          <select
+            value={source}
+            onChange={(event) => {
+              setSource(event.target.value as "statement" | "receipt");
+              setPreview(null);
+              setStatementJobId(null);
+              setUploadId(null);
+              setError("");
             }}
           >
-            Confirm and import
-          </button>
-        </section>
+            <option value="statement">Bank statement</option>
+            <option value="receipt">
+              Synthetic email receipt (local only)
+            </option>
+          </select>
+        </label>
+      )}
+      {receiptMode && (
+        <ReceiptImport
+          onImported={setUploadId}
+          onStart={() => setUploadId(null)}
+        />
+      )}
+      {!receiptMode && (
+        <>
+          {!statementJobId && !uploadId && <DemoPanel />}
+          <div className="steps" aria-label="Upload steps">
+            <span
+              className={
+                !preview && !uploadId && !statementJobId ? "current" : ""
+              }
+            >
+              1 · Choose a file
+            </span>
+            <span className={preview || statementJobId ? "current" : ""}>
+              2 · Check columns
+            </span>
+            <span className={uploadId ? "current" : ""}>
+              3 · Process & review
+            </span>
+          </div>
+          {statementJobId && file && (
+            <StatementReview
+              key={statementJobId}
+              jobId={statementJobId}
+              file={file}
+              onImported={(id) => {
+                setStatementJobId(null);
+                setUploadId(id);
+              }}
+              onCancel={() => {
+                setStatementJobId(null);
+                picker.current?.focus();
+              }}
+              onRetry={() => void choose(file)}
+            />
+          )}
+          <section className="panel">
+            <div
+              className="dropzone"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (!busy) void choose(event.dataTransfer.files[0]);
+              }}
+            >
+              <FileUp size={36} />
+              <h2>Start with your transaction history</h2>
+              <p>Drop a CSV, PDF, JPEG or PNG here, or choose a file below.</p>
+              <label className="file-label">
+                Choose statement file
+                <input
+                  aria-label="Choose statement file"
+                  ref={picker}
+                  type="file"
+                  accept=".csv,.pdf,.jpg,.jpeg,.png,text/csv,application/pdf,image/jpeg,image/png"
+                  disabled={busy}
+                  onChange={(event) => {
+                    void choose(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              <small>
+                CSV: 5 MB / 50,000 rows · PDF: 10 MB / 30 pages · JPEG/PNG: 10
+                MB / 25 megapixels · INR only
+              </small>
+            </div>
+            <p className="muted">
+              Simple date / description / amount / type exports and Indian bank
+              debit / credit layouts are supported. Other currencies are
+              rejected by the server for CSV. For extracted statements, verify
+              the currency yourself; only INR is supported.
+            </p>
+            <p className="muted">
+              PDF/image extraction runs locally on our server and requires
+              review. Use clean English scans around 200 dpi or better. Photos,
+              handwriting, heavy skew and blur may be rejected.
+            </p>
+            <label>
+              PDF password (only if encrypted)
+              <input
+                type="password"
+                autoComplete="off"
+                value={password}
+                maxLength={256}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            <small>
+              Used in memory only, never stored or logged. Enter it before
+              choosing an encrypted PDF, or before retrying.
+            </small>
+          </section>
+          {error && <ErrorState error={new Error(error)} />}
+          {busy && <Loading text="Reading your statement…" />}
+          {preview && (
+            <section className="panel">
+              <h2>Check your column mapping</h2>
+              <p>
+                {file?.name} · {preview.row_count} rows · Delimiter:{" "}
+                {preview.delimiter === "\t" ? "Tab" : preview.delimiter} · Date
+                formats:{" "}
+                {preview.date_formats.join(", ") ||
+                  "Choose the correct date column"}
+              </p>
+              <label>
+                Amount layout
+                <select
+                  value={layout}
+                  onChange={(event) => setLayout(event.target.value as Layout)}
+                >
+                  <option value="single">Single amount + type</option>
+                  <option value="split">Separate debit / credit</option>
+                </select>
+              </label>
+              <div className="mapping-grid">
+                {[
+                  "date",
+                  "description",
+                  ...(layout === "single"
+                    ? ["amount", "type"]
+                    : ["debit", "credit"]),
+                  "currency",
+                ].map((field) => (
+                  <label key={field}>
+                    {field === "currency"
+                      ? "Currency (optional)"
+                      : field[0].toUpperCase() + field.slice(1)}
+                    <select
+                      aria-label={`Map ${field}`}
+                      value={mapping[field] || ""}
+                      onChange={(event) =>
+                        setMapping({ ...mapping, [field]: event.target.value })
+                      }
+                    >
+                      <option value="">
+                        {field === "currency" ? "Assume INR" : "Choose column"}
+                      </option>
+                      {preview.columns.map((column) => (
+                        <option key={column}>{column}</option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+              <p className="muted">
+                Assign each column once. Preview cells are formula-safe and
+                treated as text.
+              </p>
+              <div
+                className="table-scroll"
+                tabIndex={0}
+                role="region"
+                aria-label="Scrollable data table"
+              >
+                <table>
+                  <caption>Statement preview</caption>
+                  <thead>
+                    <tr>
+                      {preview.columns.map((column) => (
+                        <th key={column}>{column}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.rows.map((row, index) => (
+                      <tr key={index}>
+                        {row.map((cell, cellIndex) => (
+                          <td key={cellIndex}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {preview.warnings.length > 0 && (
+                <Warnings warnings={preview.warnings} />
+              )}
+              {preview.malformed_csv && (
+                <p className="notice-box">{preview.remainder_notice}</p>
+              )}
+              <button
+                className="primary"
+                disabled={busy || !mappingValid(mapping, layout)}
+                onClick={() => {
+                  void confirm();
+                }}
+              >
+                Confirm and import
+              </button>
+            </section>
+          )}
+        </>
       )}
       {uploadId &&
         (upload.isError ? (
@@ -380,7 +423,7 @@ function UploadWorkspace() {
         ) : (
           <Loading text="Waiting for upload progress…" />
         ))}
-      {upload.data?.status === "failed" && (
+      {!receiptMode && upload.data?.status === "failed" && (
         <button
           onClick={() => {
             setUploadId(null);
@@ -420,6 +463,11 @@ function UploadWorkspace() {
                   {item.filename}
                 </button>
                 <span className="badge">{item.status}</span>
+                {item.source_type === "email_receipt" && (
+                  <span className="badge">
+                    Email receipt · unverified authenticity
+                  </span>
+                )}
                 <span>{item.row_count} rows</span>
               </li>
             ))}

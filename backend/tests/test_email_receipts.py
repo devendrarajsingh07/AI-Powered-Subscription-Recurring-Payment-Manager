@@ -439,3 +439,23 @@ def test_concurrent_bank_and_receipt_admission_never_mix(api_client, enabled):
     assert wait(api_client, headers, accepted["id"])[0]["inserted_count"] == 1
     uploads = api_client.get("/api/v1/uploads", headers=headers).json()
     assert uploads["total"] == 1
+
+
+@pytest.mark.parametrize("flag,public,provider,expected", [
+    (False, False, "fake", False),
+    (True, False, "fake", True),
+    (True, True, "fake", False),
+    (True, False, "gemini", False),
+])
+def test_receipt_ui_capability_fails_closed(
+    api_client, monkeypatch, flag, public, provider, expected
+):
+    from app.api import account as routes
+    cfg = SimpleNamespace(public_demo_only=public, receipt_import_enabled=flag,
+                          environment="development", llm_provider=provider,
+                          auth_session_mode="demo", legal_version="draft",
+                          legal_acceptance_required=False)
+    monkeypatch.setattr(routes, "get_settings", lambda: cfg)
+    response = api_client.get("/api/v1/auth/config")
+    assert response.status_code == 200
+    assert response.json()["receipt_import_enabled"] is expected

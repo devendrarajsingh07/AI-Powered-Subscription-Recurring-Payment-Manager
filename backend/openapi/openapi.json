@@ -250,6 +250,11 @@
             "title": "Public Demo Only",
             "type": "boolean"
           },
+          "receipt_import_enabled": {
+            "default": false,
+            "title": "Receipt Import Enabled",
+            "type": "boolean"
+          },
           "session_mode": {
             "enum": [
               "strict",

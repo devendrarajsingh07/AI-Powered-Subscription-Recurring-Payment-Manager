@@ -9,6 +9,7 @@ export const authHandlers = [
   ),
   http.get("*/api/v1/auth/config", () =>
     HttpResponse.json({
+      receipt_import_enabled: false,
       public_demo_only: false,
       session_mode: "strict",
       notice: "Educational use with synthetic data",

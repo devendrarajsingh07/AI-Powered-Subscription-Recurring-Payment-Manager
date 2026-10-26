@@ -8,10 +8,14 @@ export function UploadProgress({ upload }: { upload: Upload }) {
       <div className="section-heading">
         <h2>
           {upload.status === "done"
-            ? "Statement processed"
+            ? upload.source_type === "email_receipt"
+              ? "Receipt processed"
+              : "Statement processed"
             : upload.status === "failed"
               ? "Upload failed"
-              : "Processing your statement"}
+              : upload.source_type === "email_receipt"
+                ? "Processing your receipt"
+                : "Processing your statement"}
         </h2>
         <span className="badge">{upload.status}</span>
       </div>

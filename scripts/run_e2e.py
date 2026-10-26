@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     original = os.environ.copy()
-    fixed = dict(original, APP_TEST_AS_OF=json.loads(
+    fixed = dict(original, RECEIPT_IMPORT_ENABLED="true", APP_TEST_AS_OF=json.loads(
         (ROOT / 'backend/data/ground_truth.json').read_text())['as_of'])
     command = ['docker', 'compose', 'up', '-d', '--wait', 'api']
     try:

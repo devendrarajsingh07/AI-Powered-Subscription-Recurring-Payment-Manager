@@ -51,6 +51,7 @@ function demo() {
   server.use(
     http.get("*/api/v1/auth/config", () =>
       HttpResponse.json({
+        receipt_import_enabled: false,
         public_demo_only: true,
         session_mode: "demo",
         notice: "Public demo — do not upload real statements or personal data",

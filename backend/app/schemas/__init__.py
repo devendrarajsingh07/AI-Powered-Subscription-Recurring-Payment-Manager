@@ -76,6 +76,7 @@ class Schema(BaseModel):
 
 class AuthConfig(Schema):
     public_demo_only: bool
+    receipt_import_enabled: bool = False
     session_mode: Literal["strict", "demo"]
     notice: str
     legal_version: str = ""
