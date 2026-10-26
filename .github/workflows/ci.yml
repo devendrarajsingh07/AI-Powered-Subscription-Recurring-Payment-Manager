@@ -57,7 +57,9 @@ jobs:
       - if: always()
         run: docker compose down
   e2e:
-    runs-on: ubuntu-latest
+    # Match the Noble browser environment used for local release verification.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -73,6 +75,7 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - run: node node_modules/@playwright/test/cli.js install --with-deps chromium firefox webkit
+        timeout-minutes: 8
         working-directory: frontend
       - run: make verify && make e2e
       - name: Enforced public-demo-only browser flow
@@ -93,7 +96,8 @@ jobs:
       - if: always()
         run: docker compose down
   auth-same-site:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -112,6 +116,7 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
+        timeout-minutes: 8
         working-directory: frontend
       - run: node node_modules/@playwright/test/cli.js test account.spec.ts --project=chromium
         working-directory: frontend

@@ -121,3 +121,12 @@ Technical commit 14afdaa contains the verified tooling and build-context fix. Do
 committed separately. All local gates passed before publication; exact-HEAD hosted CI remains
 the final check. `make drill-down` removed only the isolated project (volumes/evidence retained),
 and subsequent `make verify` passed all three normal-stack checks. No manual hosting changes.
+
+## Hosted browser-runner correction
+
+Run 40359305930 on 52b0f7c passed main checks, secrets and strict auth. The full browser job
+stalled before tests while apt downloaded 185 packages from the Ubuntu 26.04/resolute mirror
+(selected by floating ubuntu-latest). This was observed in its live GitHub log, not inferred
+from a test failure. Browser jobs now pin ubuntu-24.04, matching the successful local Noble
+runner, with an eight-minute installation limit and 30-minute job bound. No browser, assertion
+or test was disabled; the follow-up commit requires its own complete hosted CI result.
