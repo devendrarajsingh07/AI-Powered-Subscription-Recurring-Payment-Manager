@@ -22,7 +22,7 @@ synthetic-only demo. No accounts, paid resources, live providers or beta activat
   post-deploy verification reads repository variables DEMO_API_URL (ending /api/v1) and
   DEMO_WEB_URL. Only HTTPS URLs without credentials, queries or fragments are accepted.
   These are public addresses, not secrets. Eighteen local HTTP/configuration tests pass.
-- A post-deployment GitHub workflow starts on Vercel `deployment_status: success`, verifies
+- A post-deployment GitHub workflow starts on Vercel commit-status success, verifies
   approved master history before checkout, and checks exact frontend/API revision plus headers
   and CORS. Do not start that job at CI completion: Render waits for all check runs, which could
   otherwise form a wait cycle. Observed Vercel results on714ac03 use the separate commit-status
@@ -61,3 +61,40 @@ health check were inspected; no credentials displayed or changed. GitHub non-sec
 were saved; deployment secrets remain absent. Vercel's new gate is supplied by checked-in config.
 No new account, token, hook or paid plan was created. Hosted commit/CI/deploy/rollback receipts
 remain pending until publication and observation; baseline714ac03 is still the deployed version.
+
+Post-push integration observation: public GitHub deployment metadata returned an empty list,
+while the exact commit has a legacy `Vercel` pending/success status. The post-release workflow
+was corrected to `status` with exact context/state filtering, rather than relying on an
+unobserved deployment event. It still verifies successful push CI, master ancestry and paired
+source versions before its read-only smoke. Pending/error statuses skip the job; Render uses
+check runs, not this legacy status. First publication is verified manually as well.
+
+### First strict release (publication in progress)
+
+Source19799eee9f750d7c110eb80ec6c99074bbc44601 (technical35677df, documentation19799ee)
+passed all four hosted jobs in run40612395352. Vercel buildHyS4RkTfYrUrXoQ55tBi6AdzmJRu
+was observed holding first for exact CI and then matching API readiness. The persisted Render
+checks-passed setting did not produce an observed auto-trigger for this commit. A manual latest
+master deploy was started only after green CI: dep-dbgksglg1s2s73bl4pqg. Automatic triggering
+remains unverified; do not equate a saved setting with demonstrated enforcement. No weaker
+On Commit trigger was enabled. Publication is checked independently before marking success.
+
+### First paired publication verified — October28 06:54 IST
+
+Both public version endpoints report19799eee9f750d7c110eb80ec6c99074bbc44601. Render
+`dep-dbgksglg1s2s73bl4pqg` succeeded; Vercel `HyS4RkTfYrUrXoQ55tBi6AdzmJRu` is Ready,
+Production/Current, source master19799ee (23m31s including fail-closed wait). The frontend was
+observed waiting for CI and then API; it published only after matching API readiness.
+
+Read-only smoke repeated after an initial unavailable health request: **24/24 passed** on
+both hosts, including strict CSP, headers, exact-origin CORS and private/ops route restrictions.
+The first attempt's seven failures all derived from that single health request; its report is
+retained, not counted as success. Public config remains `public_demo_only=true`, demo sessions,
+receipt imports off and unapproved legal acceptance off. No account data was read or changed.
+
+Repository app inspection shows no Render app attached to this repository. Opening the existing
+account-level Render installation requires GitHub identity verification; owner action requested.
+No app permissions have been granted/expanded. Native Render auto-trigger is not yet demonstrated.
+The first deployment was explicitly manual after all green checks; do not claim full automatic
+API release enforcement from that observation. The follow-up status-trigger workflow syntax and
+read-only permissions were locally parsed/checked; its actual event execution remains to verify.

@@ -1,7 +1,8 @@
 name: verify-deployed-demo
-# Starts only AFTER Vercel reports a successful deployment, avoiding a check/Render wait cycle.
+# This repository's Vercel integration emits legacy commit statuses, not deployment records.
+# Start only AFTER its success status, avoiding a check/Render wait cycle.
 on:
-  deployment_status:
+  status:
   workflow_dispatch:
     inputs:
       sha:
@@ -14,8 +15,7 @@ jobs:
   smoke:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.deployment_status.state == 'success' &&
-       github.event.deployment.environment == 'Production')
+      (github.event.context == 'Vercel' && github.event.state == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -24,7 +24,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          EVENT_SHA: ${{ github.event.deployment.sha }}
+          EVENT_SHA: ${{ github.event.sha }}
           INPUT_SHA: ${{ inputs.sha }}
         run: |
           set -euo pipefail

@@ -1,6 +1,6 @@
-> Current deployment2026-10-21: f857f1f on both hosts. Public synthetic-only disposable sessions;
-> registration/password login/file uploads disabled. Earlier smoke results below are historical.
-> Hosted CI39623411405 green; rotation pending. See PROJECT_INFO.md for current instructions.
+> Current instructions: [PROJECT_INFO](../PROJECT_INFO.md) and [release gate](RELEASE_GATE.md).
+> Free synthetic-only disposable sessions; password registration/login and file uploads disabled.
+> Owner confirmed DB rotation on2026-10-22. Earlier dated deployments below are historical receipts.
 
 # Free hosted demo — not a production deployment
 
@@ -13,6 +13,7 @@ Use synthetic data only; the educational-use notice and offline assistant remain
 - Existing API: `AI-Powered-Subscription-Recurring-Payment-Manager`, Free, Oregon, one instance.
 - Dockerfile: `./backend/Dockerfile`; build context: `./backend`; repository root directory empty.
 - Docker command: `python scripts/start_demo_server.py`.
+- Native auto-deploy: **After CI Checks Pass**, saved October28 after local verification.
 - Readiness path: `/api/v1/health/ready`.
 - Free PostgreSQL16: `subtrack-demo-db`, Oregon; created2026-10-20, expires2026-11-19.
 - External database access blocked; the API uses the private connection URL with the SQLAlchemy
@@ -29,7 +30,8 @@ for production or change ENVIRONMENT merely to bypass production guards.
 
 ## Vercel configuration
 
-Root `frontend`, Vite, `npm run build`, output `dist`. The checked-in rewrite serves the SPA for
+Root `frontend`, Vite, output `dist`. The checked-in build command runs
+`node scripts/deploy-gate.mjs && npm run build`; it waits for exact-commit CI and API readiness. The checked-in rewrite serves the SPA for
 client routes and leaves `/api/` paths alone so a missing API base does not masquerade as HTML200.
 Set `VITE_API_BASE_URL` to the hosted API origin plus `/api/v1`, then redeploy. Local/private upload mode uses the API directly; the hosted public demo rejects all file uploads
 and accepts only its synthetic loader. No statements are proxied through Vercel Functions. No keys belong in VITE variables.
@@ -62,13 +64,11 @@ cleanup. The deployed browser also registered successfully and loaded the curren
 subscription monthly4015.80, fixed-bill monthly22297.05 and potential savings343.00 (INR).
 These are synthetic-demo observations, not capacity, real-bank or production certification.
 
-Historical incident: a database credential was accidentally exposed by the browser accessibility output even after
-the field was hidden. The owner explicitly requested retaining it. External ingress is blocked;
-rotation is an explicit owner action pending in docs/SECURITY_INCIDENT.md. Never reproduce the value.
-Subsequent secret-bearing UI reads must suppress raw accessibility output and report only state
-or boolean checks. Browser credential-change actions remain a user handoff. The2026-10-21 continuation
-supersedes the earlier retention decision: rotation is now **owner action pending**, with exact steps
-and scan/network evidence in [SECURITY_INCIDENT.md](SECURITY_INCIDENT.md). Never print the value.
+Historical incident: a database credential appeared in browser accessibility output even after
+the field was hidden. No value is repeated here. The owner confirmed rotation on2026-10-22;
+external ingress remains blocked. Exact incident evidence and rotation procedure are in
+[SECURITY_INCIDENT](SECURITY_INCIDENT.md). Never reproduce connection values or read raw
+secret-bearing accessibility output. Future credential entry/changes remain owner actions.
 
 ## Public-demo hardening build
 

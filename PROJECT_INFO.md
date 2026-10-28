@@ -6,7 +6,7 @@ docs/RELEASE_GATE.md, docs/DOD.md and actual code. Do not redo completed product
 
 ## Current work: CSP hardening and free demo release verification
 
-Working-tree implementation, not yet published:
+First strict paired release published as19799ee; follow-up workflow/receipt verification in progress:
 - Production Vercel/nginx/preview policies require self-only scripts/styles/style elements and
   style-src-attr none. Vite HMR exceptions remain development-only. No nonce/hash workaround.
 - Actual compiled build on read-only non-root nginx; nine Chromium/Firefox/WebKit cases pass:
@@ -21,13 +21,13 @@ Working-tree implementation, not yet published:
 - Eighteen real local-HTTP/configuration Node release-gate tests pass. The key-free Vercel build gate waits
   for exact repo/master push CI, exact ready Render SHA, and rechecks head before build. It
   fails closed on missing/wrong metadata, errors/rate limits, old API, superseded SHA or timeout.
-- Render native After CI Checks Pass is available with already-connected Git credentials.
+- Render native After CI Checks Pass is configured, but no automatic trigger was observed for19799ee; first API release was manual after CI. Repository app inspection found no Render attachment; existing installation settings require owner GitHub verification.
   Enabled After CI Checks Pass on October28 after local gates passed; saved setting visually verified. Root is already repository
   root, Dockerfile ./backend/Dockerfile, context ./backend; no build path filters.
 - GitHub repository deployment secrets were absent on inspection. No new token is needed for
   the native integration path. Existing optional secret workflow additionally requires explicit
   DEPLOY_STRATEGY=legacy-secrets; never activate both controllers.
-- New post-deploy workflow runs after production deployment_status success, verifies approved
+- New post-deploy workflow runs after Vercel commit-status success, verifies approved
   master history/CI before checkout, then exact paired revisions and read-only security smoke.
   It must not start before Render deploy, to avoid a check/deployment dependency cycle.
 
@@ -49,14 +49,14 @@ Working-tree implementation, not yet published:
 - Private logs under ignored var/drills/csp-*. Initial Node deadline-classification failures,
   WebKit harness issues and Docker DNS interruption are retained; all final relevant checks pass.
 - Non-secret GitHub variables DEMO_API_URL and DEMO_WEB_URL now saved. No new deployment secret.
-- Remaining: commit/push, exact-commit hosted CI, paired hosted publication/post-deploy smoke,
+- Remaining: verify native auto-trigger on follow-up (Render app repository access needs owner GitHub verification), status-trigger post-deploy workflow,
   strict-CSP same-schema hosted rollback/re-promotion and final receipts. Do not claim these yet.
 
 ## Publication rules
 
 Exactly one local/remote branch: master. No worktrees/topic branches/PRs, force push, history
 rewrite or beta tag. Baseline master 714ac03 passed all four hosted checks in run 40363921345.
-Current changes are uncommitted. Verify current source versions before any live-version claim.
+Technical35677df and docs19799ee are pushed. Follow-up workflow/receipt edits remain uncommitted. Hosted run40612395352 passed all four jobs; both hosts serve19799ee and24 smoke checks pass. Verify current source versions before any live-version claim.
 Repo: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager
 Web: https://ai-powered-subscription-recurring-p.vercel.app
 API: https://ai-powered-subscription-recurring.onrender.com/api/v1
