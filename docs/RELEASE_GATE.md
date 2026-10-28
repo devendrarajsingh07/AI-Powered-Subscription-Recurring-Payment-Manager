@@ -6,6 +6,12 @@ Historical progress/failures are preserved in history/RELEASE_PROGRESS_2026_10_2
 
 ## Current outcome
 
+The original native-only API path remains unresolved. The existing guarded workflow now supports
+api-hook mode, locally verified with6 HTTP tests; the frontend gate has21 tests including token
+scoping, redaction and an actual compiled-output credential check. All local gates pass. **Activation
+and hosted proof are pending the owner steps in CI_ACCESS_SETUP.md.** Do not label stand-ins Done.
+
+
 - Vercel exact-CI/API build gate and automatic post-release verification are demonstrated.
 - Hosted same-schema strict-CSP rollback/re-promotion is demonstrated; no database restore claimed.
 - Render's native checks-passed setting is saved/restored. The first two releases required manual
@@ -56,7 +62,7 @@ failure before submission; reopening the exact artifact succeeded. No false succ
 Public browser shows the persistent demo banner and isolated-session button, no password form.
 Config remains demo-only, receipt imports off, legal drafts unapproved. No account was read/changed.
 
-## Native integration path (no new deployment credentials)
+## Original native integration path (historical design; API trigger unresolved)
 
 - Render already has connected Git credentials for this repository/master and offers
   **After CI Checks Pass**. Enable that native option after the local gates pass.
@@ -120,3 +126,39 @@ wait, not those local attempts. Keep these availability limits explicit; never r
 
 Completed local TLS-test proxy was identified by project/service labels, removed without touching
 application containers/volumes, and normal make verify passed all three health checks again.
+
+## API-hook fallback design — recorded before implementation
+
+The fresh post-binding push5d9f4ce passed all four CI jobs in40638645278, but no native Render
+trigger was observed. Do not claim native automation fixed. It is manually published after CI.
+Prepare opt-in DEPLOY_STRATEGY=api-hook in the existing deploy workflow: current master only,
+successful exact push CI and repository checks before checkout/deployment credentials; Render
+hook with exact ref, matching revision plus readiness required. Vercel's existing gate/post-smoke
+remain. No Vercel token is needed. Legacy two-provider mode remains optional and unchanged.
+
+Owner must explicitly save the existing one-service Render hook as the encrypted Actions secret
+RENDER_DEPLOY_HOOK_URL. This delegates deployment of the existing free demo service to this guarded
+workflow; no new account, credential generation or paid service. Keep deployment disabled until
+that step and local tests are complete. Disable native auto-deploy when activating this single
+controller (specific-ref hooks also turn it off). Validate an actual fresh release before marking
+automatic deployment done; local HTTP stand-ins alone do not establish hosted success.
+
+### Read-only metadata authentication decision (before implementation)
+
+Observed anonymous GitHub403/quota failures make unattended public-metadata reads unreliable.
+Add optional GITHUB_RELEASE_READ_TOKEN for Vercel build-time metadata only. It needs Actions:read
+and Contents:read on this repository, no write scopes. It is never VITE-prefixed or bundled;
+authorization is attached only to this verifier's GitHub repository URLs, never API/web requests.
+Post-deploy CI supplies its existing ephemeral read-only github.token, so no new CI read secret.
+Missing/expired credentials and HTTP errors still fail closed; default offline/local tests use none.
+
+Owner must create/save any long-lived token themselves as a Vercel Production Secret, and save
+the existing service hook as the GitHub Actions secret. These are explicit credential delegation
+steps, not paid resources or new accounts. All code/local gates precede requesting activation;
+actual automatic releases remain blocked until those owner steps and hosted verification pass.
+
+Latest local receipt:576 PostgreSQL tests(534.25s),99 component tests; full lint/types/contracts,
+detector/extraction/receipt gates pass. Final frontend21 Node tests/lint/types/build pass;
+12.24s Vite build with a synthetic read credential absent from compiled output. Real standard
+browser18 passes(384.719s), five separate-profile skips; normal settings/screenshots restored.
+Audits: npm0, pip no known vulnerabilities. No real credential was used by these checks.

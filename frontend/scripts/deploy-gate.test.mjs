@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import { main, repository, waitForVerifiedRelease } from "./deploy-gate.mjs";
 
 const sha = "a".repeat(40),
@@ -208,4 +212,50 @@ test("release endpoints must be explicit HTTPS origins with the API path", async
       /endpoints are missing or invalid/,
     );
   }
+});
+
+test("read credential goes only to repository metadata, never API or web", async (t) => {
+  const f = await fixture(t);
+  await waitForVerifiedRelease({ ...f.options, mode: "verify", token: "synthetic-read-token" });
+  const metadata = f.requests.filter((request) => request.url.startsWith("/github/"));
+  const services = f.requests.filter((request) => !request.url.startsWith("/github/"));
+  assert.ok(metadata.length > 0 && services.length > 0);
+  assert.ok(metadata.every((request) => request.auth === "Bearer synthetic-read-token"));
+  assert.ok(services.every((request) => request.auth === undefined));
+});
+
+test("metadata errors never expose the read credential or provider response", async (t) => {
+  const token = "synthetic-private-read-token";
+  const f = await fixture(t, { ciStatus: 403, runs: () => ({ error: token }) });
+  await assert.rejects(
+    waitForVerifiedRelease({ ...f.options, token }),
+    (error) => /metadata unavailable/.test(error.message) && !error.message.includes(token),
+  );
+  assert.equal(f.state.health, 0);
+});
+
+test("compiled artifact check blocks a credential leak without printing the value", async (t) => {
+  const prefix = join(resolve(tmpdir()), "subtrack-bundle-test-");
+  const directory = await mkdtemp(prefix);
+  t.after(async () => {
+    if (!resolve(directory).startsWith(prefix)) throw new Error("Unsafe test cleanup path");
+    await rm(directory, { recursive: true, force: true });
+  });
+  await mkdir(join(directory, "dist"));
+  const credential = "synthetic-build-only-credential";
+  const asset = join(directory, "dist", "asset.js");
+  const script = fileURLToPath(new URL("check-build-secret.mjs", import.meta.url));
+  const run = () => spawnSync(process.execPath, [script], {
+    cwd: directory,
+    env: { ...process.env, GITHUB_RELEASE_READ_TOKEN: credential },
+    encoding: "utf8",
+  });
+  await writeFile(asset, `const exposed = "${credential}";`);
+  const blocked = run();
+  assert.equal(blocked.status, 1);
+  assert.ok(!(blocked.stdout + blocked.stderr).includes(credential));
+  await writeFile(asset, "const safe = true;");
+  const clean = run();
+  assert.equal(clean.status, 0);
+  assert.ok(clean.stdout.includes("PASS"));
 });

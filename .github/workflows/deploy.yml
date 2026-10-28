@@ -1,7 +1,8 @@
 name: deploy-demo
 # Opt-in release for the FREE synthetic-data demo only. Nothing runs unless the owner sets the
-# repository variables DEPLOY_STRATEGY=legacy-secrets and DEPLOY_ENABLED=true plus the
-# variables/secrets below. Native provider gating is the default; never run both controllers.
+# repository variables DEPLOY_ENABLED=true and one strategy below:
+# api-hook uses only the Render service hook; Vercel's checked-in build gate handles the web.
+# legacy-secrets also promotes Vercel with its token. Never run two API release controllers.
 #
 # Trust model: secrets are only ever used with a commit that (1) is on this repository's master
 # history, (2) has a successful `checks` run triggered by a *push* to this repository for that exact
@@ -26,7 +27,7 @@ permissions:
 jobs:
   release:
     if: >-
-      vars.DEPLOY_STRATEGY == 'legacy-secrets' &&
+      (vars.DEPLOY_STRATEGY == 'legacy-secrets' || vars.DEPLOY_STRATEGY == 'api-hook') &&
       vars.DEPLOY_ENABLED == 'true' &&
       (github.event_name == 'workflow_dispatch' ||
         (github.event.workflow_run.conclusion == 'success' &&
@@ -36,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Verify the commit before touching any secret or code
+      - name: Verify the commit before deployment credentials or checkout
         id: verify
         env:
           GH_TOKEN: ${{ github.token }}
@@ -44,11 +45,16 @@ jobs:
           EVENT: ${{ github.event_name }}
           RUN_SHA: ${{ github.event.workflow_run.head_sha }}
           INPUT_SHA: ${{ github.event.inputs.rollback_sha }}
+          STRATEGY: ${{ vars.DEPLOY_STRATEGY }}
         run: |
           set -euo pipefail
           head=$(gh api "repos/$REPO/commits/master" --jq .sha)
           if [ "$EVENT" = workflow_run ]; then sha="$RUN_SHA"; else sha="${INPUT_SHA:-$head}"; fi
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Need a full lowercase 40-character SHA"; exit 1; }
+          if [ "$STRATEGY" = api-hook ] && [ "$EVENT" = workflow_dispatch ] && [ "$sha" != "$head" ]; then
+            echo '::error::API-hook mode releases current master only; use the verified artifact rollback runbook.'
+            exit 1
+          fi
           relation=$(gh api "repos/$REPO/compare/$sha...$head" --jq .status)
           case "$relation" in identical|ahead) ;; *) echo "::error::$sha is not on master history ($relation)"; exit 1;; esac
           green=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$sha&event=push&status=success&per_page=20" \
@@ -74,10 +80,11 @@ jobs:
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
           RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TOKEN: ${{ vars.DEPLOY_STRATEGY == 'legacy-secrets' && secrets.VERCEL_TOKEN || '' }}
+          RELEASE_MODE: ${{ vars.DEPLOY_STRATEGY == 'api-hook' && 'api' || 'full' }}
         run: python scripts/release_demo.py
       - name: Smoke test deployed demo (read-only; headers, CORS, routing)
-        if: steps.verify.outputs.skip == 'false'
+        if: steps.verify.outputs.skip == 'false' && vars.DEPLOY_STRATEGY == 'legacy-secrets'
         env:
           API_URL: ${{ vars.DEMO_API_URL }}
           WEB_URL: ${{ vars.DEMO_WEB_URL }}

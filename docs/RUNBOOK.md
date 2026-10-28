@@ -168,3 +168,14 @@ record the failure and retry after service/quota recovery. Never change headers/
 quota or bypass the SHA/CI checks. If a wait expires before API readiness, keep the prior frontend
 and retry the same approved source after readiness, or release a new fully checked master commit.
 A submitted UI action is not a deployment receipt: verify the new artifact and public revision.
+
+## API-hook controller (opt-in; owner setup pending)
+
+See CI_ACCESS_SETUP.md. DEPLOY_STRATEGY=api-hook plus DEPLOY_ENABLED=true uses only the existing
+service's RENDER_DEPLOY_HOOK_URL Actions secret. Render native auto-deploy must be Off. The job
+checks successful exact push CI and current master before any checkout/deployment secret, calls
+Render with exact ref, and waits for matching revision/readiness. Vercel's gated Git build then
+proceeds; GITHUB_RELEASE_READ_TOKEN (Contents/Actions read only) avoids anonymous quota pressure
+without going to API/web requests or client assets. CI uses its ephemeral read-only token.
+No financial arithmetic/provider changes; failures remain closed. Use actual artifact receipts,
+not a submitted UI action, as proof. No activation claimed until hosted CI/release/smoke pass.

@@ -52,6 +52,7 @@ jobs:
           DEPLOY_SHA: ${{ steps.approved.outputs.sha }}
           DEMO_API_URL: ${{ vars.DEMO_API_URL }}
           DEMO_WEB_URL: ${{ vars.DEMO_WEB_URL }}
+          GITHUB_RELEASE_READ_TOKEN: ${{ github.token }}
         run: node frontend/scripts/deploy-gate.mjs --verify
       - name: Read-only deployed headers, CORS and routing smoke
         env:

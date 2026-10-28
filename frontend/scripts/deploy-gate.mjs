@@ -10,6 +10,7 @@ export async function waitForVerifiedRelease({
   github = "https://api.github.com",
   api,
   web,
+  token = "",
   fetcher = fetch,
   timeoutMs = 25 * 60 * 1000,
   pollMs = 45000,
@@ -33,6 +34,9 @@ export async function waitForVerifiedRelease({
           Accept: "application/vnd.github+json",
           "User-Agent": "subtrack-release-gate",
           "Cache-Control": "no-cache",
+          ...(token && url.startsWith(root + "/")
+            ? { Authorization: `Bearer ${token}` }
+            : {}),
         },
         redirect: "error",
         signal,
@@ -145,6 +149,7 @@ export async function main(env = process.env, args = process.argv.slice(2)) {
     sha,
     api: api.origin,
     web: web?.origin,
+    token: (env.GITHUB_RELEASE_READ_TOKEN || "").trim(),
     mode: verify ? "verify" : "build",
     log: (message) => console.log(message),
   });

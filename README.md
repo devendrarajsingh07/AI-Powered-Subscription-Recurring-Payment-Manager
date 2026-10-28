@@ -13,7 +13,7 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.147-009688?style=for-the-badge&logo=fastapi&logoColor=white)](backend/requirements.in)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](backend/Dockerfile)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-691_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
+[![Tests](https://img.shields.io/badge/Tests-696_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
 
 <br />
 
@@ -368,8 +368,8 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 
 | Suite | Scope |
 |---|---|
-| **Backend: 574 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
-| **Release gate: 18 Node tests** | Real local HTTP metadata/CI/readiness checks, stale and superseded revisions, fail-closed errors, endpoint validation and rollback ancestry |
+| **Backend: 576 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Release gate: 21 Node tests** | Real local HTTP metadata/CI/readiness checks, stale and superseded revisions, fail-closed errors, endpoint validation and rollback ancestry |
 | **Frontend: 99 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
 | **Browser e2e: 29 distinct passes** | 18 standard cases across Chromium, Firefox and WebKit, one strict same-site auth case, one public-demo restriction case and nine compiled-CSP cases; five profile-specific skips in the standard run. Real Compose stack, synthetic data, and light/dark/mobile axe checks. |
 
@@ -571,7 +571,7 @@ The repository keeps **one branch: `master`**, both locally and on GitHub. Do no
 2. Keep money in `Decimal`, API contracts typed, and migrations additive.
 3. Add or update tests for behaviour changes, including independent ground-truth checks.
 4. Run `make lint`, `make test` and `make e2e`; regenerate types with `make openapi types` if the API changes.
-5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render has its checks-passed setting saved, but repository app access is now saved; automatic triggering still needs observation. API releases remain manual after green CI until demonstrated. See [release configuration and receipts](docs/RELEASE_GATE.md).
+5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render has its checks-passed setting saved, but native triggering remained unobserved after access/source refresh. An API-hook controller and authenticated metadata reads are implemented and locally tested; activation requires the owner steps in docs/CI_ACCESS_SETUP.md. See [release configuration and receipts](docs/RELEASE_GATE.md).
 
 Never commit `.env` files, real statements, outbox copies, keys or browser traces. Use the ignored `private-statements/` folder or a location outside the checkout.
 
@@ -590,3 +590,7 @@ Released under the [MIT License](LICENSE), copyright © 2026 DEVENDRA RAJ SINGH.
 Created by [Devendra Raj Singh](https://github.com/devendrarajsingh07)
 
 </div>
+
+CI setup: [owner credential handoff](docs/CI_ACCESS_SETUP.md). The existing service hook is scoped
+to Render deployment; the Vercel build credential reads only GitHub commit/CI metadata. Never use
+a VITE-prefixed name for either credential. The public demo remains synthetic-only and beta locked.

@@ -89,8 +89,9 @@ def run(base, timeout=6, **extra):
         VERCEL_API=base,
         RELEASE_TIMEOUT_SECONDS=str(timeout),
         RELEASE_POLL_SECONDS="0.2",
-        **extra,
+        RELEASE_MODE="full",
     )
+    env.update(extra)
     return subprocess.run(
         [sys.executable, "-I", str(SCRIPT)], env=env, capture_output=True, text=True, timeout=60
     )
@@ -131,3 +132,26 @@ def test_rejects_anything_but_a_full_sha():
             [sys.executable, "-I", str(SCRIPT)], env=env, capture_output=True, text=True
         )
     assert bad.returncode != 0 and state["hook_refs"] == []
+
+
+def test_api_only_waits_for_exact_revision_without_vercel_credentials_or_requests():
+    with hosts() as (base, state):
+        result = run(
+            base,
+            RELEASE_MODE="api",
+            VERCEL_TOKEN="",
+            VERCEL_PROJECT_ID="",
+            WEB_URL="",
+        )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert state["hook_refs"] == [SHA] and state["api_polls"] > 2
+    assert state["promoted"] == [] and state["auth"] == []
+    assert "Released API" in result.stdout
+    assert "synthetic-hook-key" not in result.stdout + result.stderr
+
+
+def test_unknown_release_mode_cannot_trigger_any_deployment():
+    with hosts() as (base, state):
+        result = run(base, RELEASE_MODE="unknown")
+    assert result.returncode != 0
+    assert state["hook_refs"] == [] and state["promoted"] == []

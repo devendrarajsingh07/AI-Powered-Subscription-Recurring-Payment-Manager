@@ -6,6 +6,13 @@ docs/RELEASE_GATE.md, docs/CSP_HARDENING.md and actual code. Do not redo complet
 
 ## Current state
 
+**Activation pending:** API-hook release controller and authenticated metadata gate are implemented
+and locally verified. The owner must save the two scoped credentials in docs/CI_ACCESS_SETUP.md.
+After confirmation, activate the single CI controller and run hosted verification. API5d9f4ce is
+live; frontendb6cfbab remains the prior strict-CSP build (financial application code is unchanged).
+Do not claim a paired latest release or automatic API deployment until actually observed.
+
+
 - Strict production CSP is implemented and deployed: self-only scripts/styles/style elements,
   style-src-attr none. Real charts, dialogs and themes work; no nonce/hash/inline workaround.
 - Last recorded verified paired demo release: **b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7**.
@@ -33,15 +40,25 @@ docs/RELEASE_GATE.md, docs/CSP_HARDENING.md and actual code. Do not redo complet
   master/Docker, existing Dockerfile/context/command preserved, After CI Checks Pass verified.
   A fresh push is the remaining automatic-trigger test; if it fails, keep manual green-only
   deployment and label automation unresolved rather than claiming completion.
-- Follow-up edits are factual receipt/docs changes. Run doc/secret checks, commit directly to
+- Native triggering is unresolved even after the fresh5d9f4ce green push (run40638645278).
+  API-only hook mode is now implemented in the existing deploy workflow, disabled by default;
+  exact master/push-CI checks precede credentials/code, API SHA/readiness required. Legacy full
+  mode remains. Build verifier supports optional GitHub read token, scoped only to metadata;
+  compiled-artifact credential scan prevents literal key inclusion. No Vercel deployment token.
+- **Next owner step:** docs/CI_ACCESS_SETUP.md: existing Render service hook into GitHub Actions
+  secret; owner-created Contents/Actions read token into Vercel Production Secret. Do not inspect
+  or generate those credentials for the owner. After confirmation, activate api-hook variables,
+  turn native auto-deploy Off (single controller), push, and prove actual hosted automated release.
+  Do not label it Done from stand-ins alone. No paid resource or live financial/AI access.
+- Follow-up edits include release-only code; all local gates pass before credential activation. Run doc/secret checks, commit directly to
   master, push, confirm all four CI jobs, observe native Render trigger, then paired Vercel release
   and automatic smoke. Do not declare that trigger verified before it actually runs.
 
 ## Verified commands and counts
 
 - `make dev verify`: passed; normal stack restored and health checked after isolated cleanup.
-- `make test lint evaluate`: passed locally:574 PostgreSQL tests(485.89s),99 component tests
-  in11 files(8.24s), initial17 Node tests. Final endpoint validation added one: **18 Node tests**
+- `make test lint evaluate`: passed locally:576 PostgreSQL tests(534.25s),99 component tests
+  in11 files(8.24s), initial17 Node tests. Final endpoint validation added one: **21 Node tests**
   pass; final frontend lint/types/OpenAPI-type drift/production build pass(10.63s Vite).
 - Hosted b6cfbab logs independently confirm574 backend(201.59s),99 component,18 Node and
   **29 distinct browser passes**:18 standard,1 strict same-site TLS,1 isolated public demo,
@@ -100,3 +117,14 @@ Public unauthenticated GitHub gating requires this repo to remain public or a re
 No managed recovery, capacity SLA, authenticated pentest or production-readiness claim.
 DB rotation was owner-confirmed 2026-10-22. MIT LICENSE is present, copyright 2026 DEVENDRA RAJ SINGH.
 Do not repeat obsolete requests to rotate that credential or choose/apply the license.
+
+## API-hook local verification receipt
+
+Full make test/lint/evaluate:576 backend(534.25s),99 component,18 pre-auth Node tests, drift and
+F1 gates passed. Final authenticated verifier/bundle scan:21 Node tests passed; final frontend
+lint/types/build passed with a synthetic build credential absent from the compiled output.
+Three-browser main flow18 passed; build/npm/pip audits passed; original clock/screenshots restored.
+Focused deployment HTTP tests6 passed, including API-only no-Vercel-credential and invalid-mode
+refusal. A host-venv launch lacked bcrypt; the real Docker dependency environment and full suite
+passed. No real credential was used by tests. Native auto-trigger and anonymous quota failures
+remain disclosed; owner credential setup/hosted activation is still pending.

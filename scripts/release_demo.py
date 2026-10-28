@@ -11,6 +11,7 @@ frontend. Exits non-zero if either host does not serve SHA in time, so the job f
   made for SHA from git and promotes it via the REST API. Success = /version.json reports SHA.
 
 Secrets are read from the environment and never printed.
+RELEASE_MODE=api releases only Render; Vercel's separate exact-CI/API build gate handles the web.
 """
 
 import json
@@ -126,7 +127,13 @@ def release_web():
 def main():
     if not re.fullmatch(r"[0-9a-f]{40}", SHA):
         sys.exit("::error::SHA must be a verified full commit id")
+    mode = os.environ.get("RELEASE_MODE", "full")
+    if mode not in ("full", "api"):
+        sys.exit("::error::RELEASE_MODE must be full or api")
     release_api()
+    if mode == "api":
+        print("Released API", SHA)
+        return
     release_web()
     print("Released", SHA)
 

@@ -15,7 +15,7 @@ measurements do not certify later revisions. "Done" below is limited to its stat
 | Separate-PG synthetic restore: 30 table counts/digests, ten exact API comparisons, restored login/dedupe/ownership/schema/deletion checks | Managed recovery (needs managed PITR, encrypted backup storage, retention and owner restore drill) | Managed PITR verification and production recovery-time objective |
 | Nine k6 full flows, zero HTTP failures, machine/quotas/p50/p95 recorded | Load sanity only (needs realistic private staging workloads before capacity planning) | Free-host capacity claim |
 | Strict production style CSP, nine compiled-browser checks and limited ZAP baseline with zero high/medium/low findings | Security hardening (needs authenticated testing) | Authenticated pentest; vulnerability-free claim |
-| Local and hosted same-schema strict-CSP rollback/re-promotion; Vercel CI/API gate and automatic post-deploy smoke | Render native setting and owner repository access saved (needs observed automatic trigger); staging/managed recovery still needed | Fully automatic API deployment enforcement until observed |
+| Local and hosted same-schema strict-CSP rollback/re-promotion; Vercel CI/API gate and automatic post-deploy smoke | API-hook controller and authenticated metadata checks locally verified (needs owner credential setup and hosted activation); staging/managed recovery still needed | Fully automatic API deployment enforcement until observed |
 | Recursive build exclusions: zero private canaries in both contexts; 16 approved backend EMLs only; CI Docker COPY regression | Container deployment (needs production role/network/secret/monitoring review) | Production deployment certification |
 | Local scheduler, retry, retention, content-free metrics and email-lifecycle tests | Operations/email/legal code (needs monitoring, incident contact, sender/DNS and qualified legal review) | Approved legal texts and human screen-reader pass |
 | Synthetic mailbox/evidence worker lab, explicit owned bank matching, separate voluntary interests | OAuth protocol foundation (needs Google/security/legal approval, real runtime integration and private accuracy checks) | Actual Gmail callback/orchestration, real incremental sync and revocation delivery |
@@ -87,3 +87,11 @@ Follow-up2492cd2: all four CI jobs in 40635104548 passed; manual API publication
 Vercel build timed out safely before API integration was repaired; old frontend remained live.
 No successful retry is claimed. Render app access/source binding are now refreshed; fresh-push
 automatic deployment remains unverified. See RELEASE_GATE.md for failures and next-gate scope.
+
+## API-hook fallback — implemented, locally verified, activation blocked
+
+576 backend,99 component,21 release-gate tests; full lint/types/contracts/evaluator; three-browser
+main flow18, build and audits passed. Scoped metadata authorization and compiled-artifact credential
+scan are tested with synthetic keys. API-hook mode needs owner service-hook/read-token setup in
+CI_ACCESS_SETUP.md and real hosted verification before automatic deployment can be marked Done.
+Native trigger remained unobserved after source refresh. No real credentials were read/generated.
