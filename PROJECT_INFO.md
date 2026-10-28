@@ -8,7 +8,7 @@ docs/RELEASE_GATE.md, docs/CSP_HARDENING.md and actual code. Do not redo complet
 
 - Strict production CSP is implemented and deployed: self-only scripts/styles/style elements,
   style-src-attr none. Real charts, dialogs and themes work; no nonce/hash/inline workaround.
-- Current verified paired demo release: **b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7**.
+- Last recorded verified paired demo release: **b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7**.
   All four hosted jobs passed in run 40615294692; automatic post-deploy smoke 40616602765 passed.
   Exact source verifier and 24 deployed headers/CORS/routing checks pass. Public browser shows
   isolated disposable sessions and the persistent synthetic-only banner; no password/file uploads.
@@ -19,11 +19,20 @@ docs/RELEASE_GATE.md, docs/CSP_HARDENING.md and actual code. Do not redo complet
   Their native trigger did not run because Render lacked access to this repository. Owner has
   now completed GitHub verification and repository selection: Render appears on the repository's
   installed-app list; SubTrack is saved under Only select repositories. No agent permission grant,
-  new account, token or paid plan. **Automatic API deployment still needs observation on next push.**
+  new account, token or paid plan. **Automatic API deployment still needs observation on the next push after source refresh.**
 - Vercel's fail-closed build waits for exact master push CI, exact ready API SHA and rechecks head.
   The post-release workflow uses observed legacy Vercel success statuses, verifies approved history
   before checkout, then paired source and 24 smoke checks. Pending statuses correctly skip it.
   No dependency cycle. Optional secret-based controller remains disabled unless explicitly selected.
+- Commit2492cd2 passed all four CI jobs in 40635104548. Its API was manually deployed after
+  green CI as dep-dbgoccflk1mc73938d80. Vercel correctly timed out after 25m waiting for the API
+  while integration was being diagnosed; frontend stayed b6cfbab. Manual retry requests did not
+  produce an observed deployment; do not report them as success. Local anonymous GitHub
+  metadata verification also failed closed on403/quota; no quota bypass or timeout change.
+- Render's source binding has now been refreshed to the same repo through Git Provider:
+  master/Docker, existing Dockerfile/context/command preserved, After CI Checks Pass verified.
+  A fresh push is the remaining automatic-trigger test; if it fails, keep manual green-only
+  deployment and label automation unresolved rather than claiming completion.
 - Follow-up edits are factual receipt/docs changes. Run doc/secret checks, commit directly to
   master, push, confirm all four CI jobs, observe native Render trigger, then paired Vercel release
   and automatic smoke. Do not declare that trigger verified before it actually runs.

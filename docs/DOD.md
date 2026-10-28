@@ -72,8 +72,8 @@ live Gemini eval; repository visibility decision. DB rotation and MIT applicatio
 
 ## Hosted receipts — October28
 
-First 19799ee: all four CI jobs in40612395352; paired revision and 24 smoke checks passed on repeat.
-Follow-up b6cfbab: all four CI jobs in40615294692; automatic success-triggered deployed smoke 40616602765
+First 19799ee: all four CI jobs in 40612395352; paired revision and 24 smoke checks passed on repeat.
+Follow-up b6cfbab: all four CI jobs in 40615294692; automatic success-triggered deployed smoke 40616602765
 passed. Real hosted logs confirm574 backend,99 component,18 Node and29 browser passes. Hosted
 rollback to strict 19799ee and restoration to b6cfbab both passed source verification and 24 smoke.
 No DB downgrade, unsafe-CSP rollback, paid resources or live data/provider calls.
@@ -82,3 +82,8 @@ Owner completed Render repository selection on the existing app; it now appears 
 After CI Checks Pass restored; Vercel auto-assign domains checked. Automatic API trigger still must
 be demonstrated on the next push. Manual releases above happened only after green exact CI.
 See RELEASE_GATE.md for IDs, timestamps, failures/retries and limits. Free demo remains NO-GO.
+
+Follow-up2492cd2: all four CI jobs in 40635104548 passed; manual API publication verified. Its waiting
+Vercel build timed out safely before API integration was repaired; old frontend remained live.
+No successful retry is claimed. Render app access/source binding are now refreshed; fresh-push
+automatic deployment remains unverified. See RELEASE_GATE.md for failures and next-gate scope.

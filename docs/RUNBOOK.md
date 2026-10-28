@@ -162,3 +162,9 @@ Rollback builds Git archives without creating branches or downgrading the DB. An
 head is rejected by readiness. The verified previous/current revisions have identical business
 code and schema; this does not establish rollback compatibility for arbitrary later migrations.
 The October28 strict-CSP rescan has zero high/medium/low findings; no authenticated penetration test was run.
+
+Anonymous GitHub metadata reads can hit public rate limits. The build gate must fail closed;
+record the failure and retry after service/quota recovery. Never change headers/addresses to evade
+quota or bypass the SHA/CI checks. If a wait expires before API readiness, keep the prior frontend
+and retry the same approved source after readiness, or release a new fully checked master commit.
+A submitted UI action is not a deployment receipt: verify the new artifact and public revision.

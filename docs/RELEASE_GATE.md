@@ -99,3 +99,24 @@ Config remains demo-only, receipt imports off, legal drafts unapproved. No accou
   This repository was observed using legacy Vercel commit statuses, not deployment records.
 
 This design does not establish managed PITR, staging or production readiness.
+
+## Source-binding follow-up and failed closed attempt
+
+2492cd28fdafddcd0afab7eed57cb60a470e4814 passed all four CI jobs in 40635104548. No native API
+trigger was observed. Owner repository access is saved; the service source was reselected via
+Git Provider, same repository/master/Docker, preserving Dockerfile/context/command and After CI
+Checks Pass. Do not claim this is already an observed automatic deployment.
+
+The API was manually deployed after green CI: dep-dbgoccflk1mc73938d80. Vercel build
+GGHTAHpffGaRkf3G4dZQLgxopUmx failed closed after 25m5s with "Release verification timed out"
+while it waited for the matching API. Frontend stayed at the prior green b6cfbab. Two UI retry
+submissions produced no observed new deployment; neither is counted as success. A fresh receipt
+push will exercise the refreshed binding through the normal Git path and must pass every gate.
+
+Two local read-only Node metadata attempts failed closed. Safe diagnostic metadata identified
+HTTP403, anonymous quota0 on the master lookup, while the workflow endpoint remained available.
+No headers/IPs/credentials were changed to evade quota. Cloud build failure was the bounded API
+wait, not those local attempts. Keep these availability limits explicit; never relax provenance.
+
+Completed local TLS-test proxy was identified by project/service labels, removed without touching
+application containers/volumes, and normal make verify passed all three health checks again.
