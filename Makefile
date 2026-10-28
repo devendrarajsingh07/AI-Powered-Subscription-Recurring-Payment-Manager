@@ -10,6 +10,7 @@ test:
 	docker compose run --rm --no-deps api python scripts/evaluate_receipts.py
 	docker compose run --rm --no-deps api python scripts/export_openapi.py --check
 	docker compose run --rm --no-deps web npm test -- --run
+	docker compose run --rm --no-deps web npm run test:release
 	docker compose run --rm --no-deps web npm run types:check
 lint:
 	docker compose run --rm --no-deps api ruff check .
@@ -37,6 +38,10 @@ types:
 	docker compose run --rm --no-deps web npm run types
 e2e:
 	python scripts/run_e2e.py
+
+.PHONY: e2e-csp
+e2e-csp:
+	python scripts/run_csp_e2e.py
 
 chat-eval:
 	docker compose run --rm --no-deps api pytest -q -s tests/test_chat_evals.py

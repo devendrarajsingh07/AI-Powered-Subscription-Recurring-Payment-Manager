@@ -1,6 +1,7 @@
 name: deploy-demo
 # Opt-in release for the FREE synthetic-data demo only. Nothing runs unless the owner sets the
-# repository variable DEPLOY_ENABLED=true plus the variables/secrets below.
+# repository variables DEPLOY_STRATEGY=legacy-secrets and DEPLOY_ENABLED=true plus the
+# variables/secrets below. Native provider gating is the default; never run both controllers.
 #
 # Trust model: secrets are only ever used with a commit that (1) is on this repository's master
 # history, (2) has a successful `checks` run triggered by a *push* to this repository for that exact
@@ -25,6 +26,7 @@ permissions:
 jobs:
   release:
     if: >-
+      vars.DEPLOY_STRATEGY == 'legacy-secrets' &&
       vars.DEPLOY_ENABLED == 'true' &&
       (github.event_name == 'workflow_dispatch' ||
         (github.event.workflow_run.conclusion == 'success' &&

@@ -27,12 +27,18 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     {
       name: "firefox",
-      testMatch: "**/main.spec.ts",
+      testMatch:
+        process.env.E2E_PRODUCTION_CSP === "1"
+          ? "**/csp.spec.ts"
+          : "**/main.spec.ts",
       use: { ...devices["Desktop Firefox"] },
     },
     {
       name: "webkit",
-      testMatch: "**/main.spec.ts",
+      testMatch:
+        process.env.E2E_PRODUCTION_CSP === "1"
+          ? "**/csp.spec.ts"
+          : "**/main.spec.ts",
       use: { ...devices["Desktop Safari"] },
     },
   ],

@@ -34,7 +34,7 @@ jobs:
         working-directory: backend
       - run: npm ci
         working-directory: frontend
-      - run: npm test -- --run && npm run lint && npm run build
+      - run: npm test -- --run && npm run test:release && npm run lint && npm run build
         working-directory: frontend
       - run: npm audit --audit-level=low
         working-directory: frontend
@@ -90,6 +90,8 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.public-demo-test.yml up -d --wait api
           cd frontend
           node node_modules/@playwright/test/cli.js test public-demo.spec.ts --project=chromium
+      - name: Compiled production CSP across Chromium, Firefox and WebKit
+        run: make e2e-csp
       - uses: actions/upload-artifact@v4
         if: always()
         with:

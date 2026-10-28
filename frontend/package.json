@@ -9,6 +9,7 @@
     "typecheck": "node node_modules/typescript/bin/tsc -b --pretty false",
     "lint": "node node_modules/eslint/bin/eslint.js .",
     "test": "node node_modules/vitest/vitest.mjs",
+    "test:release": "node --test scripts/deploy-gate.test.mjs",
     "types": "node scripts/types.mjs",
     "types:check": "node scripts/types.mjs --check",
     "e2e": "node node_modules/@playwright/test/cli.js test"

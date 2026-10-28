@@ -31,6 +31,28 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 OPENER = urllib.request.build_opener(NoRedirect)
 
 
+def strict_style_policy(value):
+    directives = {}
+    for part in value.split(";"):
+        words = part.split()
+        if not words:
+            continue
+        if words[0] in directives:
+            return (
+                False  # Ambiguous duplicate directives must not certify a deployment.
+            )
+        directives[words[0]] = words[1:]
+    return all(
+        directives.get(name) == [expected]
+        for name, expected in {
+            "script-src": "'self'",
+            "style-src": "'self'",
+            "style-src-elem": "'self'",
+            "style-src-attr": "'none'",
+        }.items()
+    )
+
+
 def call(url, method="GET", headers=None, timeout=60):
     request = urllib.request.Request(url, method=method, headers=headers or {})
     try:
@@ -38,9 +60,17 @@ def call(url, method="GET", headers=None, timeout=60):
             headers = {k.lower(): v for k, v in response.headers.items()}
             return response.status, headers, response.read(200_000)
     except urllib.error.HTTPError as error:
-        return error.code, {k.lower(): v for k, v in error.headers.items()}, error.read(200_000)
+        return (
+            error.code,
+            {k.lower(): v for k, v in error.headers.items()},
+            error.read(200_000),
+        )
     except (urllib.error.URLError, TimeoutError, OSError) as error:
-        return 0, {}, str(error).encode()  # Unreachable host: reported as a failed check.
+        return (
+            0,
+            {},
+            str(error).encode(),
+        )  # Unreachable host: reported as a failed check.
 
 
 def main(argv=None):
@@ -52,11 +82,17 @@ def main(argv=None):
     failures = []
 
     def check(name, ok, detail=""):
-        print(("PASS " if ok else "FAIL ") + name + (f" - {detail}" if detail and not ok else ""))
+        print(
+            ("PASS " if ok else "FAIL ")
+            + name
+            + (f" - {detail}" if detail and not ok else "")
+        )
         if not ok:
             failures.append(name)
 
-    status, headers, _ = call(api + "/health", timeout=120)  # Free instances may be waking up.
+    status, headers, _ = call(
+        api + "/health", timeout=120
+    )  # Free instances may be waking up.
     check("api health 200", status == 200, str(status))
     status, _, body = call(api + "/health/ready")
     check("api ready 200", status == 200, str(status))
@@ -71,8 +107,14 @@ def main(argv=None):
         "OPTIONS",
         {"Origin": web, "Access-Control-Request-Method": "GET"},
     )
-    check("cors allows exact web origin", good[1].get("access-control-allow-origin") == web)
-    check("cors allows credentials", good[1].get("access-control-allow-credentials") == "true")
+    check(
+        "cors allows exact web origin",
+        good[1].get("access-control-allow-origin") == web,
+    )
+    check(
+        "cors allows credentials",
+        good[1].get("access-control-allow-credentials") == "true",
+    )
     for evil in ("https://evil.example", web + ".evil.example"):
         probe = {"Origin": evil, "Access-Control-Request-Method": "GET"}
         bad = call(api + "/auth/config", "OPTIONS", probe)
@@ -91,9 +133,16 @@ def main(argv=None):
         check(f"web header {key}", headers.get(key) == value, str(headers.get(key)))
     policy = headers.get("content-security-policy", "")
     check("web CSP restricts scripts", "script-src 'self'" in policy)
+    check(
+        "web CSP blocks inline styles and keeps scripts self-only",
+        strict_style_policy(policy),
+    )
     check("web CSP forbids framing", "frame-ancestors 'none'" in policy)
     status, _, body = call(web + "/unsubscribe?u=x&t=y")
-    check("web unsubscribe route serves the SPA", status == 200 and b'<div id="root"' in body)
+    check(
+        "web unsubscribe route serves the SPA",
+        status == 200 and b'<div id="root"' in body,
+    )
     status, headers, _ = call(web + "/api/v1/health")
     html = "text/html" in headers.get("content-type", "")
     check("web does not masquerade API paths as HTML", not html)

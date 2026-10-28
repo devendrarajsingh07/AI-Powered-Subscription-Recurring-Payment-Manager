@@ -1,0 +1,27 @@
+# Disposable production-web test profile; uses synthetic accounts on the local API only.
+services:
+  api:
+    environment:
+      WEB_ORIGIN: http://localhost:${CSP_WEB_PORT:-5174}
+  csp-web:
+    image: subtrack-csp-web:local
+    build:
+      context: ./frontend
+      dockerfile: ../ops/web.Dockerfile
+      additional_contexts:
+        contract: ./backend/openapi
+      args:
+        SOURCE_REVISION: ${CSP_SOURCE_REVISION:-}
+    ports: ['127.0.0.1:${CSP_WEB_PORT:-5174}:8080']
+    volumes: ['./ops/csp-test-nginx.conf:/etc/nginx/nginx.conf:ro']
+    read_only: true
+    tmpfs: ['/tmp:size=32m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/login]
+      interval: 3s
+      timeout: 5s
+      retries: 20

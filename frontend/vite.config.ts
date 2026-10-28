@@ -14,6 +14,11 @@ const headers = {
   "X-Frame-Options": "DENY",
   "Content-Security-Policy": `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self' ws: wss: ${apiConnect}; frame-ancestors 'none'; base-uri 'self'; object-src 'none'`,
 };
+// Preview serves compiled assets; development-only HMR exceptions must not follow it.
+const productionHeaders = {
+  ...headers,
+  "Content-Security-Policy": `default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self'; style-src-attr 'none'; img-src 'self' data: blob:; font-src 'self' data:; frame-src 'self' blob:; connect-src 'self' ${apiConnect}; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'`,
+};
 // Publishes the built commit so a release pipeline can prove the new frontend is serving.
 const commit = process.env.VERCEL_GIT_COMMIT_SHA || "";
 function versionFile(): Plugin {
@@ -32,7 +37,7 @@ function versionFile(): Plugin {
   };
 }
 export default defineConfig({
-  preview: { headers },
+  preview: { headers: productionHeaders },
   plugins: [react(), tailwindcss(), versionFile()],
   server: {
     headers,

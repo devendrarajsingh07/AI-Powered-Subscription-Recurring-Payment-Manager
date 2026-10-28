@@ -13,6 +13,10 @@ test("the deployed static host has a restrictive CSP with only the configured de
     }),
   );
   expect(policy["script-src"]).toBe("'self'");
+  expect(policy["style-src"]).toBe("'self'");
+  expect(policy["style-src-elem"]).toBe("'self'");
+  expect(policy["style-src-attr"]).toBe("'none'");
+  expect(header!.value).not.toContain("'unsafe-inline'");
   expect(policy["frame-ancestors"]).toBe("'none'");
   expect(policy["object-src"]).toBe("'none'");
   expect(policy["connect-src"]).toBe(
