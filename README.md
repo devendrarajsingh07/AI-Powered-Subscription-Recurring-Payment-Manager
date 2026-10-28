@@ -571,7 +571,7 @@ The repository keeps **one branch: `master`**, both locally and on GitHub. Do no
 2. Keep money in `Decimal`, API contracts typed, and migrations additive.
 3. Add or update tests for behaviour changes, including independent ground-truth checks.
 4. Run `make lint`, `make test` and `make e2e`; regenerate types with `make openapi types` if the API changes.
-5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render has its checks-passed setting saved, but native triggering remained unobserved after access/source refresh. An API-hook controller and authenticated metadata reads are implemented and locally tested; credentials and activation flags are now saved, with the first hosted API-hook release still awaiting verification in docs/CI_ACCESS_SETUP.md. See [release configuration and receipts](docs/RELEASE_GATE.md).
+5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render native auto-deploy is Off; the scoped API-hook workflow is the single controller. Automatic exact-CI API deployment, authenticated Vercel build gating and paired-source/24-check smoke were demonstrated for 1646662. Credentials/activation and exact hosted receipts are recorded in docs/CI_ACCESS_SETUP.md. See [release configuration and receipts](docs/RELEASE_GATE.md).
 
 Never commit `.env` files, real statements, outbox copies, keys or browser traces. Use the ignored `private-statements/` folder or a location outside the checkout.
 
@@ -592,7 +592,7 @@ Created by [Devendra Raj Singh](https://github.com/devendrarajsingh07)
 </div>
 
 CI setup: [credential setup and activation receipt](docs/CI_ACCESS_SETUP.md). Credentials and
-activation flags are saved; the first automatic API-hook release is awaiting hosted verification.
+activation flags are saved; the automatic API-hook/Vercel release and all24 post-deploy smoke checks passed for1646662.
 The existing service hook is scoped
 to Render deployment; the Vercel build credential reads only GitHub commit/CI metadata. Never use
 a VITE-prefixed name for either credential. The public demo remains synthetic-only and beta locked.

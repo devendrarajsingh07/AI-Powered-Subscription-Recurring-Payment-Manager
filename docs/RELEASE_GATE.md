@@ -176,3 +176,30 @@ the source tree. Vercel has no saved GITHUB_RELEASE_READ_TOKEN; the one-time Git
 closed and the value is no longer retrievable. The prepared Secret form awaits the owner's copy.
 Release activation remains off. Repeated whole-history scan87 commits and current-tree scan
 found no leaks. This receipt does not establish a new hosted release or automatic deployment.
+
+### Automatic scoped API-hook release verified — October28,13:33 IST
+
+The owner regenerated the existing SubTrack-only read token. Its existing value was transferred
+to Vercel Production Secret GITHUB_RELEASE_READ_TOKEN under explicit owner authorization, with
+no value printed or stored in source/local files. RENDER_DEPLOY_HOOK_URL was already saved in
+repository Actions secrets. DEPLOY_STRATEGY=api-hook and DEPLOY_ENABLED=true are saved; native
+Render Auto-Deploy is Off. Earlier credential-pending receipts above are superseded by this result.
+
+Pushed164666273ab320e8ce1333d81a0c3c2b2276ecdf directly to master. All four jobs in
+[CI40652737156](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40652737156)
+passed:577 PostgreSQL tests(207.84s),99 component,21 Node,lint/types/contracts/audits/evaluators.
+Browser18 standard(4.8m),public demo1(5.5s),compiled CSP9(19s),same-site TLS1(8.3s):29 total;
+five standard-command skips run separately. Native WebKit reporting limits still apply.
+
+[Automatic release40653857775](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40653857775)
+passed. Render events explicitly record Triggered via Deploy Hook; live artifact
+dep-dbgqnmmc6qcc73cd9sa0. Vercel EiVfq2WkUQEm8HWaMBYJ4Rba6k2D is Ready Production,
+11m56s including its observed exact-CI wait. Both public endpoints independently returned the
+same full SHA. [Automatic verification40654055799](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40654055799)
+passed paired-source verification and all24 read-only smoke checks, including strict CSP, CORS,
+headers and private/ops route restrictions. Pending-status smoke correctly skipped.
+
+Entire-history89 commits and current-source secret scans found no leaks before this receipt.
+No Vercel deployment token, paid resource, live provider, real-user data or beta was introduced.
+This proves the scoped demo pipeline, not production readiness. Later documentation receipts
+must pass their own CI/publication gates; they are not certified by this historical result.

@@ -8,18 +8,17 @@ and actual code. Do not redo completed product phases or repeat the unsuccessful
 
 - Strict production CSP deployed: self-only scripts/styles/style elements, style-src-attr none.
   Actual compiled charts/dialogs/themes and CSS attack probes pass in all three browsers.
-- Last recorded verified paired demo release: b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7,
-  CI 40615294692 and automatic post-deploy smoke 40616602765. Hosted same-schema rollback to
-  strict 19799ee and restoration both passed source verification and 24 smoke checks; no DB downgrade.
-- Current API is manually published 5d9f4ce (green CI 40638645278); frontend remains strict b6cfbab.
-  Financial application code is unchanged between these receipt commits. Latest paired release
-  is NOT claimed. Waiting builds failed closed; failures and retry observations are preserved.
+- Last recorded verified automatic paired demo release:164666273ab320e8ce1333d81a0c3c2b2276ecdf.
+  All four CI jobs passed in40652737156; automatic API release40653857775 and automatic
+  paired-source/24-check smoke40654055799 passed. Both public version endpoints matched.
+  Render explicitly records Triggered via Deploy Hook, artifact dep-dbgqnmmc6qcc73cd9sa0;
+  Vercel EiVfq2WkUQEm8HWaMBYJ4Rba6k2D is Ready Production (11m56s including gate wait).
+  Later documentation receipt commits use the same gates; do not infer their publication from
+  this recorded release. Earlier fail-closed builds/rollback receipts remain in RELEASE_GATE.md.
 - Native Render After CI Checks Pass did not trigger after owner repository access and source
   binding refresh. Do not claim it fixed or retry it indefinitely. Replacement **api-hook** mode
-  is implemented in the existing guarded workflow. Owner credential setup is now complete;
-  activation is configured, with the first hosted release still awaiting verification.
-- Local code35f4134 plus the sanitized-input privacy follow-up are committed on master.
-  Push the verified code and this activation receipt; only one branch: master.
+  is implemented in the existing guarded workflow and demonstrated by the automatic release above.
+  Only one local/remote branch:master. No Vercel deployment PAT or paid service was added.
 - **Credential setup:** after the owner's explicit transfer instruction, the existing Render hook
   was saved as encrypted repository Actions secret RENDER_DEPLOY_HOOK_URL and its saved name
   verified. No credential was generated or rotated; its value was not printed or stored locally.
@@ -28,15 +27,19 @@ and actual code. Do not redo completed product phases or repeat the unsuccessful
   under the owner's explicit authorization, saved name verified, no value printed or stored in
   source/local files. No agent generated or rotated credentials. See CI_ACCESS_SETUP.md.
 - Repository variables DEPLOY_STRATEGY=api-hook and DEPLOY_ENABLED=true are saved; Render native
-  Auto-Deploy is verified Off (one controller). Push current local master. Require all four exact-commit
-  CI jobs, the API-hook job's matching SHA/readiness, Vercel's matching version, and automatic
-  paired-source/24-check smoke. Record actual results before marking automation Done.
+  Auto-Deploy is verified Off (one controller). Future releases still require all four exact-commit
+  CI jobs, matching API SHA/readiness, Vercel version and automatic paired-source/24-check smoke.
 - API-hook mode uses current master only, successful exact push CI/repository checks before
   checkout/deployment credentials, and no Vercel deployment token. Superseded jobs skip. Vercel
   retains its exact-CI/API build gate; read token goes only to repository metadata URLs. CI uses
   its ephemeral read-only token. Literal credential scanning also runs on compiled output.
 
 ## Latest real local verification
+
+Hosted verification for1646662:577 backend tests(207.84s),99 component,21 Node release tests;
+lint/types/contracts/audits/evaluator gates pass. Browser18 standard(4.8m),public demo1(5.5s),
+compiled CSP9(19s),same-site TLS1(8.3s):29 distinct passes, five separate-profile skips.
+Whole-history89 commits and current-source secret scans found no leaks before the receipt commit.
 
 - Full `make test lint evaluate`: **577 PostgreSQL tests** (463.52s), **99 component tests** in
   11 files (8.82s), **21 release-gate tests**, Ruff/ESLint/types/OpenAPI/generated-type drift pass.
