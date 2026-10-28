@@ -168,3 +168,11 @@ malformed credential input cannot appear in errors.7 focused HTTP tests and the 
 passed:577 backend(463.52s),99 component(8.82s),21 release-gate tests, lint/types/contracts and
 all evaluator gates. This supersedes the earlier576 count. Owner credential setup and actual
 hosted automatic-release verification remain pending; no live-credential success is claimed.
+
+Credential setup receipt: the owner explicitly authorized transferring existing values. The
+Render service hook was saved as RENDER_DEPLOY_HOOK_URL in repository Actions secrets and the
+saved name verified. No hook/token was generated or rotated, and no value printed or stored in
+the source tree. Vercel has no saved GITHUB_RELEASE_READ_TOKEN; the one-time GitHub token tab
+closed and the value is no longer retrievable. The prepared Secret form awaits the owner's copy.
+Release activation remains off. Repeated whole-history scan87 commits and current-tree scan
+found no leaks. This receipt does not establish a new hosted release or automatic deployment.

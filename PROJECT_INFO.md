@@ -19,12 +19,14 @@ and actual code. Do not redo completed product phases or repeat the unsuccessful
   is implemented in the existing guarded workflow and disabled pending owner setup.
 - Local code 35f4134 plus the sanitized-input privacy follow-up are committed on master. They
   have NOT been pushed while credential entry is in progress. Only one branch: master.
-- **Required owner handoff (already requested):** existing Render service hook saved as GitHub
-  repository Actions secret RENDER_DEPLOY_HOOK_URL; owner-generated SubTrack-only Actions/Contents
-  read token saved as Vercel Production Secret GITHUB_RELEASE_READ_TOKEN. Drafts are prepared;
-  no agent generated, read or copied a real credential. See CI_ACCESS_SETUP.md.
-- While the owner enters credentials, do not read those form contents or token page. After ready,
-  verify saved key NAMES only (without collecting input values). If missing, keep activation off.
+- **Credential setup:** after the owner's explicit transfer instruction, the existing Render hook
+  was saved as encrypted repository Actions secret RENDER_DEPLOY_HOOK_URL and its saved name
+  verified. No credential was generated or rotated; its value was not printed or stored locally.
+- Vercel Production still has no GITHUB_RELEASE_READ_TOKEN. The owner generated a scoped token,
+  but its one-time tab is now closed and it cannot be retrieved. The prepared Vercel Secret form
+  awaits the owner's retained copy (or owner-created replacement if lost). Do not create a new
+  credential or inspect entered values. Verify saved names only; keep activation off meanwhile.
+  See CI_ACCESS_SETUP.md. Only the GitHub hook step is complete; no new hosted release is claimed.
 - Then set repository variables DEPLOY_STRATEGY=api-hook and DEPLOY_ENABLED=true; set Render
   native Auto-Deploy Off (one controller); push current local master. Require all four exact-commit
   CI jobs, the API-hook job's matching SHA/readiness, Vercel's matching version, and automatic
@@ -50,6 +52,8 @@ and actual code. Do not redo completed product phases or repeat the unsuccessful
   actual compiled output. npm audit 0, locked pip-audit no known vulnerabilities. No new dependency.
 - Whole-history/source Gitleaks passes; narrow historical synthetic exceptions unchanged. No .env,
   outbox, private statements or unapproved emails tracked. Private receipts: ignored var/drills.
+- Repeated before credential activation: entire history87 commits and current source scan both
+  found no leaks. This is a scan receipt, not a claim that the missing Vercel token is configured.
 - Local ZAP rescan: zero high/medium/low findings, three informational discovery types. Raw exit 2
   retained; no authenticated pentest or security-certification claim.
 - WebKit emits native unstyled-select reports; tests require exact bootstrap-origin/constructor
@@ -59,7 +63,8 @@ and actual code. Do not redo completed product phases or repeat the unsuccessful
 ## Publication / privacy rules
 
 Only master locally/remotely; no branches/worktrees/PRs, force push, history rewrite or beta tag.
-Owner creates/enters scoped credentials themselves; do not read, print, generate or copy them.
+Owner creates any new scoped credentials. The existing-hook transfer was explicitly authorized;
+never print credentials, commit them, or collect owner-entered token form contents.
 No paid resources, new accounts/terms, real users/data, live Gmail/Gemini or provider contact.
 Repo: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager
 Web: https://ai-powered-subscription-recurring-p.vercel.app
