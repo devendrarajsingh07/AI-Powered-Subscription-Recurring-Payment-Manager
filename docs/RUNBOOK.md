@@ -12,6 +12,11 @@ requires exact repository/master push CI, matching ready API revision and a fina
 check. Missing configuration, failed checks and timeouts fail the build; old production remains.
 Set non-secret repository variables DEMO_API_URL and DEMO_WEB_URL for post-deploy verification;
 Vercel reads the existing VITE_API_BASE_URL. No new token/deploy hook is required for this path.
+October28 observation: the saved Render trigger did not automatically deploy19799ee. Owner has since saved Render app access for this repository; the next automatic trigger needs observation; never claim automatic enforcement from the dropdown
+alone. Until repaired and demonstrated, an operator must verify all four exact-commit CI jobs
+before Manual Deploy latest master. Keep After CI Checks Pass selected; never switch to On Commit.
+Vercel still fails closed until that exact API revision is ready.
+
 See [configuration, tests and publication receipts](RELEASE_GATE.md). Native integration is a
 free synthetic-demo control, not staging or production release certification. Keep additive
 migrations and verify readiness/version/security smoke. Never copy platform environment pages.
@@ -20,8 +25,12 @@ migrations and verify readiness/version/security smoke. Never copy platform envi
 
 Render and Vercel expose previous deployments. Select the same last verified source revision on
 both. Check Alembic compatibility before rollback; never downgrade a real database automatically.
-A local same-schema source rollback/re-promotion has run; see LOCAL_DRILLS.md. No hosted or
-separate staging rollback has run, so platform recovery remains a procedure to verify.
+Local and hosted same-schema rollback/re-promotion have run; see RELEASE_GATE.md for actual
+strict-CSP artifacts, paired source/smoke results and limits. No separate staging or managed
+DB recovery is established. Render dashboard rollback disables auto-deploy: after restoring the
+approved release, save After CI Checks Pass again. Vercel Instant Rollback pauses promotion;
+promote the approved artifact to undo it, then verify Auto-Assign Custom Production Domains
+is checked. Never rollback to an unsafe policy or downgrade a real DB automatically.
 
 ## Containment
 

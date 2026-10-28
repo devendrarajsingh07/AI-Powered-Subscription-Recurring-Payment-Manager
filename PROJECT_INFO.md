@@ -1,69 +1,66 @@
 # SubTrack — current-state handoff
 
-Updated 2026-10-28. Sole current instruction source. Prior complete handoff and phase receipts:
-[history](docs/history/HANDOFF_BEFORE_CSP_2026_10_28.md). Read README, docs/CSP_HARDENING.md,
-docs/RELEASE_GATE.md, docs/DOD.md and actual code. Do not redo completed product phases.
+Updated 2026-10-28. Sole current instruction source. Earlier complete handoffs, phase receipts and
+release progress are preserved in [history](docs/history/). Read README, docs/DOD.md,
+docs/RELEASE_GATE.md, docs/CSP_HARDENING.md and actual code. Do not redo completed product phases.
 
-## Current work: CSP hardening and free demo release verification
+## Current state
 
-First strict paired release published as19799ee; follow-up workflow/receipt verification in progress:
-- Production Vercel/nginx/preview policies require self-only scripts/styles/style elements and
-  style-src-attr none. Vite HMR exceptions remain development-only. No nonce/hash workaround.
-- Actual compiled build on read-only non-root nginx; nine Chromium/Firefox/WebKit cases pass:
-  CSS attack probes, real registration/demo ingestion, charts/tooltips/tables, both themes,
-  mobile/desktop, charge/chat dialogs, navigation, API-equal money and deletion.
-- WebKit independently reports style-src-attr when constructing an unstyled native select.
-  A minimal div/select probe reproduced this before app styling. Tests observe constructors
-  without changing them, attribute only the bootstrap-origin reports, and require their exact
-  count to match constructors. All application-origin reports and all CSS payload probes remain
-  strict. WebKit screenshots inject their own style tag, so visual captures use Chromium/Firefox;
-  WebKit functional/negative tests remain enabled. Do not claim zero raw WebKit console notices.
-- Eighteen real local-HTTP/configuration Node release-gate tests pass. The key-free Vercel build gate waits
-  for exact repo/master push CI, exact ready Render SHA, and rechecks head before build. It
-  fails closed on missing/wrong metadata, errors/rate limits, old API, superseded SHA or timeout.
-- Render native After CI Checks Pass is configured, but no automatic trigger was observed for19799ee; first API release was manual after CI. Repository app inspection found no Render attachment; existing installation settings require owner GitHub verification.
-  Enabled After CI Checks Pass on October28 after local gates passed; saved setting visually verified. Root is already repository
-  root, Dockerfile ./backend/Dockerfile, context ./backend; no build path filters.
-- GitHub repository deployment secrets were absent on inspection. No new token is needed for
-  the native integration path. Existing optional secret workflow additionally requires explicit
-  DEPLOY_STRATEGY=legacy-secrets; never activate both controllers.
-- New post-deploy workflow runs after Vercel commit-status success, verifies approved
-  master history/CI before checkout, then exact paired revisions and read-only security smoke.
-  It must not start before Render deploy, to avoid a check/deployment dependency cycle.
+- Strict production CSP is implemented and deployed: self-only scripts/styles/style elements,
+  style-src-attr none. Real charts, dialogs and themes work; no nonce/hash/inline workaround.
+- Current verified paired demo release: **b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7**.
+  All four hosted jobs passed in run 40615294692; automatic post-deploy smoke 40616602765 passed.
+  Exact source verifier and 24 deployed headers/CORS/routing checks pass. Public browser shows
+  isolated disposable sessions and the persistent synthetic-only banner; no password/file uploads.
+- Hosted same-schema rollback to strict release 19799ee and re-promotion to b6cfbab both passed
+  paired source verification and 24 smoke checks. No DB downgrade or older unsafe CSP. Vercel
+  auto-assign domains is checked again; Render After CI Checks Pass restored after rollback.
+- The first two API deployments were manual, only after all exact-commit CI jobs passed.
+  Their native trigger did not run because Render lacked access to this repository. Owner has
+  now completed GitHub verification and repository selection: Render appears on the repository's
+  installed-app list; SubTrack is saved under Only select repositories. No agent permission grant,
+  new account, token or paid plan. **Automatic API deployment still needs observation on next push.**
+- Vercel's fail-closed build waits for exact master push CI, exact ready API SHA and rechecks head.
+  The post-release workflow uses observed legacy Vercel success statuses, verifies approved history
+  before checkout, then paired source and 24 smoke checks. Pending statuses correctly skip it.
+  No dependency cycle. Optional secret-based controller remains disabled unless explicitly selected.
+- Follow-up edits are factual receipt/docs changes. Run doc/secret checks, commit directly to
+  master, push, confirm all four CI jobs, observe native Render trigger, then paired Vercel release
+  and automatic smoke. Do not declare that trigger verified before it actually runs.
 
-## Current measured results and gates
+## Verified commands and counts
 
-- `make dev verify` passed; `make test lint evaluate` passed: **574 backend** (485.89s),
-  **99 components** (8.24s), initial17 Node release tests. Explicit endpoint validation added
-  one test; final **18 Node** passed, plus lint/types/production build (10.63s) on final source.
-- Browser wrapper passed **18 standard + one same-site TLS + one isolated public demo + nine
-  compiled CSP = 29** distinct cases. Five standard-profile skips run separately. The wrapper
-  restored normal API/worker flags/clocks and tracked screenshots. Chromium/Firefox/WebKit ran.
-- Detector TP/FP/FN16/0/0,3/0/0,5/0/0: P/R/F1=1.0000 in each synthetic/handwritten set.
-  Extraction18-variant and receipt16/16 gates passed. Real-source accuracy remains unmeasured.
-- npm audit zero; locked pip-audit no known vulnerabilities. OpenAPI/types, Ruff/ESLint pass.
-- Gitleaks scanned all80 pre-change reachable commits and current source: no leaks found.
-  No private .env, outbox, statements or unapproved emails tracked; existing narrow exceptions unchanged.
-- ZAP web/API rescan: zero high/medium/low findings in limited unauthenticated baseline;
-  three informational discovery types remain. Raw scanner exit2 retained. No pentest claim.
-- Private logs under ignored var/drills/csp-*. Initial Node deadline-classification failures,
-  WebKit harness issues and Docker DNS interruption are retained; all final relevant checks pass.
-- Non-secret GitHub variables DEMO_API_URL and DEMO_WEB_URL now saved. No new deployment secret.
-- Remaining: verify native auto-trigger on follow-up (Render app repository access needs owner GitHub verification), status-trigger post-deploy workflow,
-  strict-CSP same-schema hosted rollback/re-promotion and final receipts. Do not claim these yet.
+- `make dev verify`: passed; normal stack restored and health checked after isolated cleanup.
+- `make test lint evaluate`: passed locally:574 PostgreSQL tests(485.89s),99 component tests
+  in11 files(8.24s), initial17 Node tests. Final endpoint validation added one: **18 Node tests**
+  pass; final frontend lint/types/OpenAPI-type drift/production build pass(10.63s Vite).
+- Hosted b6cfbab logs independently confirm574 backend(201.59s),99 component,18 Node and
+  **29 distinct browser passes**:18 standard,1 strict same-site TLS,1 isolated public demo,
+  9 compiled CSP across Chromium/Firefox/WebKit. Five standard skips run in separate profiles.
+- Detector TP/FP/FN:16/0/0 synthetic,3/0/0 handwritten bank,5/0/0 handwritten products;
+  precision/recall/F1=1.0000 each. Extraction18-variant and receipt16/16 gates pass.
+- npm audit zero; locked pip-audit no known vulnerabilities; Ruff/ESLint/types/contracts pass.
+- Whole-history Gitleaks:83 reachable commits and current source, no leaks. No private .env,
+  outbox, statements or unapproved emails tracked. Narrow historical synthetic exceptions unchanged.
+- Repeated local ZAP: zero high/medium/low findings; three informational discovery types remain.
+  Raw scanner exit2 retained; no authenticated pentest or vulnerability-free claim.
+- WebKit reports native unstyled select construction; tests characterize it separately with exact
+  bootstrap-origin/constructor counts. All app violations and CSS payload probes remain fatal.
+  Playwright's WebKit screenshot preparation injects CSS, so captures use Chromium/Firefox;
+  WebKit functional/negative tests still run. See CSP_HARDENING.md, not a zero-raw-warning claim.
+- Private logs/screenshots remain outside tracked source. Initial Node deadline-classification
+  failures, browser harness issues, DNS interruption and first unavailable hosted health request
+  are retained; successful retries are reported separately. Human screen-reader check not performed.
 
 ## Publication rules
 
-Exactly one local/remote branch: master. No worktrees/topic branches/PRs, force push, history
-rewrite or beta tag. Baseline master 714ac03 passed all four hosted checks in run 40363921345.
-Technical35677df and docs19799ee are pushed. Follow-up workflow/receipt edits remain uncommitted. Hosted run40612395352 passed all four jobs; both hosts serve19799ee and24 smoke checks pass. Verify current source versions before any live-version claim.
+Only one local/remote branch: **master**. No worktrees/topic branches/PRs, force push, history
+rewrite or beta tag. Technical35677df, first strict 19799ee, corrected status/receiptb6cfbab.
+Latest docs-only receipt commits run the same CI; final publication must be checked by exact SHA.
 Repo: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager
 Web: https://ai-powered-subscription-recurring-p.vercel.app
 API: https://ai-powered-subscription-recurring.onrender.com/api/v1
-
-Owner authorized finishing the remaining technical work and updating the existing free demo
-after local/hosted gates. Render login was completed by the owner on 2026-10-28. No credentials
-may be created/copied/read as a workaround. Use existing native integrations where possible.
+No new credential may be created/copied/read as a workaround. Keep hosted access synthetic-only.
 
 ## Preserved product state and limits
 

@@ -6,6 +6,8 @@
   attack blocking in Chromium, Firefox and WebKit without changing financial code.
 - Add fail-closed Vercel exact-commit CI/API build gate, native Render CI integration procedure
   and read-only post-deployment verification, without new deployment credentials.
+- Verify paired strict-CSP hosted releases, automatic post-deploy smoke and same-schema
+  rollback/re-promotion; restore provider promotion settings. Native API trigger still needs observation.
 - Record 574 backend, 99 component, 18 release-gate and 29 browser passes; limited ZAP rescan
   has zero high/medium/low findings. Hosted publication receipts are recorded separately.
 

@@ -15,7 +15,7 @@ measurements do not certify later revisions. "Done" below is limited to its stat
 | Separate-PG synthetic restore: 30 table counts/digests, ten exact API comparisons, restored login/dedupe/ownership/schema/deletion checks | Managed recovery (needs managed PITR, encrypted backup storage, retention and owner restore drill) | Managed PITR verification and production recovery-time objective |
 | Nine k6 full flows, zero HTTP failures, machine/quotas/p50/p95 recorded | Load sanity only (needs realistic private staging workloads before capacity planning) | Free-host capacity claim |
 | Strict production style CSP, nine compiled-browser checks and limited ZAP baseline with zero high/medium/low findings | Security hardening (needs authenticated testing) | Authenticated pentest; vulnerability-free claim |
-| Local same-schema archived-source rollback/re-promotion; incompatible head refused readiness | Vercel exact-CI/API build gate verified; Render native setting saved (needs repository app access, observed auto-trigger, staging and hosted rollback) | Verified hosted rollback and fully automatic API deployment enforcement |
+| Local and hosted same-schema strict-CSP rollback/re-promotion; Vercel CI/API gate and automatic post-deploy smoke | Render native setting and owner repository access saved (needs observed automatic trigger); staging/managed recovery still needed | Fully automatic API deployment enforcement until observed |
 | Recursive build exclusions: zero private canaries in both contexts; 16 approved backend EMLs only; CI Docker COPY regression | Container deployment (needs production role/network/secret/monitoring review) | Production deployment certification |
 | Local scheduler, retry, retention, content-free metrics and email-lifecycle tests | Operations/email/legal code (needs monitoring, incident contact, sender/DNS and qualified legal review) | Approved legal texts and human screen-reader pass |
 | Synthetic mailbox/evidence worker lab, explicit owned bank matching, separate voluntary interests | OAuth protocol foundation (needs Google/security/legal approval, real runtime integration and private accuracy checks) | Actual Gmail callback/orchestration, real incremental sync and revocation delivery |
@@ -70,11 +70,15 @@ worker availability; sibling domains; verified sender/SPF/DKIM/DMARC; paid Gemin
 alerts; legal review; incident contact; screen-reader pass; private statement/receipt accuracy;
 live Gemini eval; repository visibility decision. DB rotation and MIT application are complete.
 
-## First strict hosted receipt — October28
+## Hosted receipts — October28
 
-All four hosted CI jobs passed on19799ee in run40612395352. Both hosts report that revision;
-Vercel waited for exact CI and API readiness. Deployed read-only smoke24/24 passed on repeat
-after one unavailable initial health request. Render deployment was manual after green CI;
-its saved native trigger has not been demonstrated. Repository app access inspection is waiting
-for owner GitHub identity verification. Post-release status trigger and rollback remain pending.
-See RELEASE_GATE.md for actual IDs, failed-attempt disclosure and follow-up receipts.
+First 19799ee: all four CI jobs in40612395352; paired revision and 24 smoke checks passed on repeat.
+Follow-up b6cfbab: all four CI jobs in40615294692; automatic success-triggered deployed smoke 40616602765
+passed. Real hosted logs confirm574 backend,99 component,18 Node and29 browser passes. Hosted
+rollback to strict 19799ee and restoration to b6cfbab both passed source verification and 24 smoke.
+No DB downgrade, unsafe-CSP rollback, paid resources or live data/provider calls.
+
+Owner completed Render repository selection on the existing app; it now appears on this repository.
+After CI Checks Pass restored; Vercel auto-assign domains checked. Automatic API trigger still must
+be demonstrated on the next push. Manual releases above happened only after green exact CI.
+See RELEASE_GATE.md for IDs, timestamps, failures/retries and limits. Free demo remains NO-GO.

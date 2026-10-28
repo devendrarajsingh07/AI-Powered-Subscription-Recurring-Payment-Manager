@@ -1,7 +1,60 @@
-# Free demo release gate
+# Free demo release gate — verified receipts
 
-Design recorded before implementation, 2026-10-28. The owner keeps free hosting and a
-synthetic-only demo. No accounts, paid resources, live providers or beta activation.
+Updated 2026-10-28. Free hosting, synthetic-only demo, beta locked. Current instructions: PROJECT_INFO.
+No new account, deployment token, hook, paid plan, live provider or real-data access was created.
+Historical progress/failures are preserved in history/RELEASE_PROGRESS_2026_10_28.md.
+
+## Current outcome
+
+- Vercel exact-CI/API build gate and automatic post-release verification are demonstrated.
+- Hosted same-schema strict-CSP rollback/re-promotion is demonstrated; no database restore claimed.
+- Render's native checks-passed setting is saved/restored. The first two releases required manual
+  deployment after green CI. Owner has since saved repository access on the existing Render GitHub
+  app (Only select repositories); its attachment is now visible on this repository. **Observe the
+  next green master push before claiming automatic API deployment.** No agent access grant occurred.
+- No new secrets are needed. Public endpoint variables DEMO_API_URL and DEMO_WEB_URL are saved;
+  Vercel uses VITE_API_BASE_URL and exposed source metadata. Private repository conversion needs
+  a reviewed replacement for anonymous GitHub metadata reads, which otherwise fail closed.
+
+## Actual releases and checks
+
+| Source | Hosted CI | API artifact | Frontend artifact | Outcome |
+| --- | --- | --- | --- | --- |
+|19799eee9f750d7c110eb80ec6c99074bbc44601|40612395352, all four success|dep-dbgksglg1s2s73bl4pqg|HyS4RkTfYrUrXoQ55tBi6AdzmJRu|Paired source  + 24 smoke passed|
+|b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7|40615294692, all four success|dep-dbgl568ae00c73couq9g|C8SEsrScQmjT5Kv1EQU3YToyMPC2|Paired source + automatic smoke 40616602765 passed|
+|Rollback to 19799ee (source 19799ee)|Previously green ancestor|dep-dbglafh42hec73ddhji0|HyS4RkTfYrUrXoQ55tBi6AdzmJRu|Paired source  + 24 smoke passed|
+|Restore b6cfbab|Previously green master|dep-dbglc8vb9u1s738l1cfg|C8SEsrScQmjT5Kv1EQU3YToyMPC2|Paired source  + 24 smoke passed|
+
+The first API releases were explicitly manual after CI; the saved setting alone was not called
+proof. First frontend build waited for CI and then matching API, publishing after readiness;
+23m31s included its fail-closed wait. The follow-up status workflow skipped the pending event
+(run 40615299506), then ran successfully on actual Vercel success(run 40616602765). It verifies
+approved master history and exact push CI before checkout; no financial endpoints or secrets.
+
+Hosted b6cfbab logs: 574 backend(201.59s),99 component,18 release-gate tests;18 standard browser
+passes(5.4m) +1 public-demo(6.3s) +9 compiled CSP(22.0s) +1 same-site =29 distinct passes.
+Five profile skips run separately. Local final results and detector/audit/scan limits: DOD.md.
+
+## Rollback rehearsal and limits
+
+Vercel Instant Rollback selected exactly the immediately previous strict-CSP19799ee artifact.
+Render rollback selected its matching artifact; no Alembic downgrade, credential change or user
+record mutation. CLI source verifier accepted only the CI-approved master ancestor. All24 smoke
+checks passed, including strict styles/CORS/headers/readiness. Rollback verification window:
+2026-10-28 07:22:28.739333–07:23:38.179144 IST, **69.439811s**, including polling and smoke.
+
+Restored API b6cfbab first, then promoted the matching frontend. Vercel explicitly said promotion
+undoes Instant Rollback; auto-assign custom domains is checked again. Render rollback had turned
+Auto-Deploy Off; After CI Checks Pass was saved again. Post-idle roll-forward verification:
+10:17:35.095837–10:19:00.901582 IST, **85.805745s**, including polling, wake-up and smoke.
+These are verification-command wall times, not downtime/RTO/SLA. An owner-verification pause
+occurred between actions; do not interpret the gap as a service outage or managed recovery test.
+
+First smoke attempt had one unavailable health request, producing7 derived failures; subsequent
+24/24 passed. The failed log is retained. One Vercel rollback dialog disappeared on a data-refresh
+failure before submission; reopening the exact artifact succeeded. No false success was recorded.
+Public browser shows the persistent demo banner and isolated-session button, no password form.
+Config remains demo-only, receipt imports off, legal drafts unapproved. No account was read/changed.
 
 ## Native integration path (no new deployment credentials)
 
@@ -42,59 +95,7 @@ synthetic-only demo. No accounts, paid resources, live providers or beta activat
 - [Render free limitations](https://render.com/docs/free): only the two recent previous artifacts
   are retained for rollback; this is a demo rehearsal, not managed production recovery.
 - [Vercel builds](https://vercel.com/docs/limits): build time remains bounded by the free plan.
-- [Vercel GitHub integration](https://vercel.com/docs/git/vercel-for-github): deployment-status
-  events support post-deployment verification without a new token.
+- [Vercel GitHub integration](https://vercel.com/docs/git/vercel-for-github): Git-connected deployment behavior.
+  This repository was observed using legacy Vercel commit statuses, not deployment records.
 
-Results, configuration evidence and remaining human/paid launch requirements will be recorded
-after execution. This design does not establish managed PITR, staging or production readiness.
-
-## Local/configuration receipt — October28
-
-Full local gates passed: backend574, components99, final Node18, browser29, evaluator F1=1.0000
-on all three committed sets, lint/types/contracts/build, zero known audit vulnerabilities,
-whole-history80-commit/current-tree Gitleaks no leaks. Compiled strict-CSP ZAP rescan has zero
-high/medium/low findings. Detailed counts and limits: DOD.md and CSP_HARDENING.md.
-
-Render's existing free service srv-dbbha7bbc2fs73b770j0 saved **After CI Checks Pass**;
-visual confirmation captured outside the repo. Repository/master, root, Dockerfile/context and
-health check were inspected; no credentials displayed or changed. GitHub non-secret URL variables
-were saved; deployment secrets remain absent. Vercel's new gate is supplied by checked-in config.
-No new account, token, hook or paid plan was created. Hosted commit/CI/deploy/rollback receipts
-remain pending until publication and observation; baseline714ac03 is still the deployed version.
-
-Post-push integration observation: public GitHub deployment metadata returned an empty list,
-while the exact commit has a legacy `Vercel` pending/success status. The post-release workflow
-was corrected to `status` with exact context/state filtering, rather than relying on an
-unobserved deployment event. It still verifies successful push CI, master ancestry and paired
-source versions before its read-only smoke. Pending/error statuses skip the job; Render uses
-check runs, not this legacy status. First publication is verified manually as well.
-
-### First strict release (publication in progress)
-
-Source19799eee9f750d7c110eb80ec6c99074bbc44601 (technical35677df, documentation19799ee)
-passed all four hosted jobs in run40612395352. Vercel buildHyS4RkTfYrUrXoQ55tBi6AdzmJRu
-was observed holding first for exact CI and then matching API readiness. The persisted Render
-checks-passed setting did not produce an observed auto-trigger for this commit. A manual latest
-master deploy was started only after green CI: dep-dbgksglg1s2s73bl4pqg. Automatic triggering
-remains unverified; do not equate a saved setting with demonstrated enforcement. No weaker
-On Commit trigger was enabled. Publication is checked independently before marking success.
-
-### First paired publication verified — October28 06:54 IST
-
-Both public version endpoints report19799eee9f750d7c110eb80ec6c99074bbc44601. Render
-`dep-dbgksglg1s2s73bl4pqg` succeeded; Vercel `HyS4RkTfYrUrXoQ55tBi6AdzmJRu` is Ready,
-Production/Current, source master19799ee (23m31s including fail-closed wait). The frontend was
-observed waiting for CI and then API; it published only after matching API readiness.
-
-Read-only smoke repeated after an initial unavailable health request: **24/24 passed** on
-both hosts, including strict CSP, headers, exact-origin CORS and private/ops route restrictions.
-The first attempt's seven failures all derived from that single health request; its report is
-retained, not counted as success. Public config remains `public_demo_only=true`, demo sessions,
-receipt imports off and unapproved legal acceptance off. No account data was read or changed.
-
-Repository app inspection shows no Render app attached to this repository. Opening the existing
-account-level Render installation requires GitHub identity verification; owner action requested.
-No app permissions have been granted/expanded. Native Render auto-trigger is not yet demonstrated.
-The first deployment was explicitly manual after all green checks; do not claim full automatic
-API release enforcement from that observation. The follow-up status-trigger workflow syntax and
-read-only permissions were locally parsed/checked; its actual event execution remains to verify.
+This design does not establish managed PITR, staging or production readiness.

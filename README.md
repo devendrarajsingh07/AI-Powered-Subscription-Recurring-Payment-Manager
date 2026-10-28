@@ -571,7 +571,7 @@ The repository keeps **one branch: `master`**, both locally and on GitHub. Do no
 2. Keep money in `Decimal`, API contracts typed, and migrations additive.
 3. Add or update tests for behaviour changes, including independent ground-truth checks.
 4. Run `make lint`, `make test` and `make e2e`; regenerate types with `make openapi types` if the API changes.
-5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render uses its native checks-passed trigger. See [release configuration and receipts](docs/RELEASE_GATE.md).
+5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render has its checks-passed setting saved, but repository app access is now saved; automatic triggering still needs observation. API releases remain manual after green CI until demonstrated. See [release configuration and receipts](docs/RELEASE_GATE.md).
 
 Never commit `.env` files, real statements, outbox copies, keys or browser traces. Use the ignored `private-statements/` folder or a location outside the checkout.
 

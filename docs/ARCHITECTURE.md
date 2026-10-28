@@ -72,7 +72,7 @@ Notifier. Real sender/domain/inbox checks remain owner-blocked. The offline PSL 
 HTTPS sibling origins, and production still refuses startup pending the independent beta gate.
 
 The public cross-site demo uses no refresh cookie: isolated disposable synthetic sessions, no
-password registration/login or file uploads, a persistent privacy warning, and24-hour account TTL.
+password registration/login or file uploads, a persistent privacy warning, and 24-hour account TTL.
 Expired accounts cannot authenticate; physical purge runs at startup/every15 minutes while awake.
 Free-service sleeping can delay purge. Original-upload and durable-job isolation remain WP4 work.
 
@@ -258,3 +258,12 @@ compiled-build browser checks pass across Chromium, Firefox and WebKit; see
 publication/rollback receipts are maintained in [RELEASE_GATE](RELEASE_GATE.md). Earlier
 statements about never-tested hosted behavior describe their historical date; current receipts
 control. Managed PITR, staging and real-user launch remain blocked.
+
+## October28 hosted evidence
+
+Both strict releases19799ee andb6cfbab passed all four hosted CI jobs; success-triggered deployed
+smoke 40616602765 passed. A paired same-schema rollback/re-promotion passed source verification
+and 24 smoke checks in each direction. No DB downgrade or managed recovery claim. Earlier dated
+"hosted rollback unverified" statements are superseded for this limited demo rehearsal only.
+Owner has now saved Render app repository access; automatic API triggering still requires an
+observed green push. Staging/PITR, real domains/sender/workers/legal and beta remain blocked.
