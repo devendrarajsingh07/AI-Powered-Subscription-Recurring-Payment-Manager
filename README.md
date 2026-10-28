@@ -13,7 +13,7 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.147-009688?style=for-the-badge&logo=fastapi&logoColor=white)](backend/requirements.in)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](backend/Dockerfile)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-696_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
+[![Tests](https://img.shields.io/badge/Tests-697_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
 
 <br />
 
@@ -368,7 +368,7 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 
 | Suite | Scope |
 |---|---|
-| **Backend: 576 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Backend: 577 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
 | **Release gate: 21 Node tests** | Real local HTTP metadata/CI/readiness checks, stale and superseded revisions, fail-closed errors, endpoint validation and rollback ancestry |
 | **Frontend: 99 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
 | **Browser e2e: 29 distinct passes** | 18 standard cases across Chromium, Firefox and WebKit, one strict same-site auth case, one public-demo restriction case and nine compiled-CSP cases; five profile-specific skips in the standard run. Real Compose stack, synthetic data, and light/dark/mobile axe checks. |

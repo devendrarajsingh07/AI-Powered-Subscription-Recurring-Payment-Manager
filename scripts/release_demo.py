@@ -40,10 +40,10 @@ def call(url, method="GET", token=None, timeout=30):
     headers = {"User-Agent": "subtrack-release", "Cache-Control": "no-cache"}
     if token:
         headers["Authorization"] = "Bearer " + token
-    request = urllib.request.Request(
-        url, method=method, headers=headers, data=b"" if method == "POST" else None
-    )
     try:
+        request = urllib.request.Request(
+            url, method=method, headers=headers, data=b"" if method == "POST" else None
+        )
         with urllib.request.urlopen(request, timeout=timeout) as response:
             body = response.read(1_000_000)
             return response.status, json.loads(body) if body.strip().startswith(

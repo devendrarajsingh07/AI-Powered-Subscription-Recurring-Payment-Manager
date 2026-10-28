@@ -1,92 +1,69 @@
 # SubTrack — current-state handoff
 
-Updated 2026-10-28. Sole current instruction source. Earlier complete handoffs, phase receipts and
-release progress are preserved in [history](docs/history/). Read README, docs/DOD.md,
-docs/RELEASE_GATE.md, docs/CSP_HARDENING.md and actual code. Do not redo completed product phases.
+Updated 2026-10-28. Sole current instruction source. Earlier phases and release progress are in
+[history](docs/history/). Read README, docs/DOD.md, docs/RELEASE_GATE.md, docs/CI_ACCESS_SETUP.md
+and actual code. Do not redo completed product phases or repeat the unsuccessful native attempt.
 
-## Current state
+## Current outcome / next step
 
-**Activation pending:** API-hook release controller and authenticated metadata gate are implemented
-and locally verified. The owner must save the two scoped credentials in docs/CI_ACCESS_SETUP.md.
-After confirmation, activate the single CI controller and run hosted verification. API5d9f4ce is
-live; frontendb6cfbab remains the prior strict-CSP build (financial application code is unchanged).
-Do not claim a paired latest release or automatic API deployment until actually observed.
+- Strict production CSP deployed: self-only scripts/styles/style elements, style-src-attr none.
+  Actual compiled charts/dialogs/themes and CSS attack probes pass in all three browsers.
+- Last recorded verified paired demo release: b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7,
+  CI 40615294692 and automatic post-deploy smoke 40616602765. Hosted same-schema rollback to
+  strict 19799ee and restoration both passed source verification and 24 smoke checks; no DB downgrade.
+- Current API is manually published 5d9f4ce (green CI 40638645278); frontend remains strict b6cfbab.
+  Financial application code is unchanged between these receipt commits. Latest paired release
+  is NOT claimed. Waiting builds failed closed; failures and retry observations are preserved.
+- Native Render After CI Checks Pass did not trigger after owner repository access and source
+  binding refresh. Do not claim it fixed or retry it indefinitely. Replacement **api-hook** mode
+  is implemented in the existing guarded workflow and disabled pending owner setup.
+- Local code 35f4134 plus the sanitized-input privacy follow-up are committed on master. They
+  have NOT been pushed while credential entry is in progress. Only one branch: master.
+- **Required owner handoff (already requested):** existing Render service hook saved as GitHub
+  repository Actions secret RENDER_DEPLOY_HOOK_URL; owner-generated SubTrack-only Actions/Contents
+  read token saved as Vercel Production Secret GITHUB_RELEASE_READ_TOKEN. Drafts are prepared;
+  no agent generated, read or copied a real credential. See CI_ACCESS_SETUP.md.
+- While the owner enters credentials, do not read those form contents or token page. After ready,
+  verify saved key NAMES only (without collecting input values). If missing, keep activation off.
+- Then set repository variables DEPLOY_STRATEGY=api-hook and DEPLOY_ENABLED=true; set Render
+  native Auto-Deploy Off (one controller); push current local master. Require all four exact-commit
+  CI jobs, the API-hook job's matching SHA/readiness, Vercel's matching version, and automatic
+  paired-source/24-check smoke. Record actual results before marking automation Done.
+- API-hook mode uses current master only, successful exact push CI/repository checks before
+  checkout/deployment credentials, and no Vercel deployment token. Superseded jobs skip. Vercel
+  retains its exact-CI/API build gate; read token goes only to repository metadata URLs. CI uses
+  its ephemeral read-only token. Literal credential scanning also runs on compiled output.
 
+## Latest real local verification
 
-- Strict production CSP is implemented and deployed: self-only scripts/styles/style elements,
-  style-src-attr none. Real charts, dialogs and themes work; no nonce/hash/inline workaround.
-- Last recorded verified paired demo release: **b6cfbab8b4adee4c056d9e7fac09c7be6bf200d7**.
-  All four hosted jobs passed in run 40615294692; automatic post-deploy smoke 40616602765 passed.
-  Exact source verifier and 24 deployed headers/CORS/routing checks pass. Public browser shows
-  isolated disposable sessions and the persistent synthetic-only banner; no password/file uploads.
-- Hosted same-schema rollback to strict release 19799ee and re-promotion to b6cfbab both passed
-  paired source verification and 24 smoke checks. No DB downgrade or older unsafe CSP. Vercel
-  auto-assign domains is checked again; Render After CI Checks Pass restored after rollback.
-- The first two API deployments were manual, only after all exact-commit CI jobs passed.
-  Their native trigger did not run because Render lacked access to this repository. Owner has
-  now completed GitHub verification and repository selection: Render appears on the repository's
-  installed-app list; SubTrack is saved under Only select repositories. No agent permission grant,
-  new account, token or paid plan. **Automatic API deployment still needs observation on the next push after source refresh.**
-- Vercel's fail-closed build waits for exact master push CI, exact ready API SHA and rechecks head.
-  The post-release workflow uses observed legacy Vercel success statuses, verifies approved history
-  before checkout, then paired source and 24 smoke checks. Pending statuses correctly skip it.
-  No dependency cycle. Optional secret-based controller remains disabled unless explicitly selected.
-- Commit2492cd2 passed all four CI jobs in 40635104548. Its API was manually deployed after
-  green CI as dep-dbgoccflk1mc73938d80. Vercel correctly timed out after 25m waiting for the API
-  while integration was being diagnosed; frontend stayed b6cfbab. Manual retry requests did not
-  produce an observed deployment; do not report them as success. Local anonymous GitHub
-  metadata verification also failed closed on403/quota; no quota bypass or timeout change.
-- Render's source binding has now been refreshed to the same repo through Git Provider:
-  master/Docker, existing Dockerfile/context/command preserved, After CI Checks Pass verified.
-  A fresh push is the remaining automatic-trigger test; if it fails, keep manual green-only
-  deployment and label automation unresolved rather than claiming completion.
-- Native triggering is unresolved even after the fresh5d9f4ce green push (run40638645278).
-  API-only hook mode is now implemented in the existing deploy workflow, disabled by default;
-  exact master/push-CI checks precede credentials/code, API SHA/readiness required. Legacy full
-  mode remains. Build verifier supports optional GitHub read token, scoped only to metadata;
-  compiled-artifact credential scan prevents literal key inclusion. No Vercel deployment token.
-- **Next owner step:** docs/CI_ACCESS_SETUP.md: existing Render service hook into GitHub Actions
-  secret; owner-created Contents/Actions read token into Vercel Production Secret. Do not inspect
-  or generate those credentials for the owner. After confirmation, activate api-hook variables,
-  turn native auto-deploy Off (single controller), push, and prove actual hosted automated release.
-  Do not label it Done from stand-ins alone. No paid resource or live financial/AI access.
-- Follow-up edits include release-only code; all local gates pass before credential activation. Run doc/secret checks, commit directly to
-  master, push, confirm all four CI jobs, observe native Render trigger, then paired Vercel release
-  and automatic smoke. Do not declare that trigger verified before it actually runs.
+- Full `make test lint evaluate`: **577 PostgreSQL tests** (463.52s), **99 component tests** in
+  11 files (8.82s), **21 release-gate tests**, Ruff/ESLint/types/OpenAPI/generated-type drift pass.
+- Focused release HTTP suite: 7 passed, including API-only without Vercel credentials, exact-revision
+  waiting, invalid-mode refusal and malformed-hook error redaction. Host-venv attempt lacked bcrypt;
+  the real Docker dependency environment and complete suite passed. No real credential in tests.
+- Detector TP/FP/FN: 16/0/0 synthetic; 3/0/0 handwritten bank; 5/0/0 products: P/R/F1=1.0000 each.
+  Extraction 18-variant and receipt 16/16 gates passed. Real-source accuracy remains unmeasured.
+- Latest three-browser main flow: 18 passes (384.719s), five profile skips. Existing separate
+  strict same-site 1/public-demo 1/compiled-CSP 9 also passed in prior full hosted runs (29 total);
+  the next hosted run repeats them for the new release code. Normal flags/clock/screenshots restored.
+- Final frontend production build 12.24s, with a synthetic build-only credential absent from the
+  actual compiled output. npm audit 0, locked pip-audit no known vulnerabilities. No new dependency.
+- Whole-history/source Gitleaks passes; narrow historical synthetic exceptions unchanged. No .env,
+  outbox, private statements or unapproved emails tracked. Private receipts: ignored var/drills.
+- Local ZAP rescan: zero high/medium/low findings, three informational discovery types. Raw exit 2
+  retained; no authenticated pentest or security-certification claim.
+- WebKit emits native unstyled-select reports; tests require exact bootstrap-origin/constructor
+  counts, while all app-origin violations and CSS payload probes remain fatal. Its screenshot
+  helper injects CSS, so captures use Chromium/Firefox; WebKit functional/negative tests still run.
 
-## Verified commands and counts
+## Publication / privacy rules
 
-- `make dev verify`: passed; normal stack restored and health checked after isolated cleanup.
-- `make test lint evaluate`: passed locally:576 PostgreSQL tests(534.25s),99 component tests
-  in11 files(8.24s), initial17 Node tests. Final endpoint validation added one: **21 Node tests**
-  pass; final frontend lint/types/OpenAPI-type drift/production build pass(10.63s Vite).
-- Hosted b6cfbab logs independently confirm574 backend(201.59s),99 component,18 Node and
-  **29 distinct browser passes**:18 standard,1 strict same-site TLS,1 isolated public demo,
-  9 compiled CSP across Chromium/Firefox/WebKit. Five standard skips run in separate profiles.
-- Detector TP/FP/FN:16/0/0 synthetic,3/0/0 handwritten bank,5/0/0 handwritten products;
-  precision/recall/F1=1.0000 each. Extraction18-variant and receipt16/16 gates pass.
-- npm audit zero; locked pip-audit no known vulnerabilities; Ruff/ESLint/types/contracts pass.
-- Whole-history Gitleaks:83 reachable commits and current source, no leaks. No private .env,
-  outbox, statements or unapproved emails tracked. Narrow historical synthetic exceptions unchanged.
-- Repeated local ZAP: zero high/medium/low findings; three informational discovery types remain.
-  Raw scanner exit2 retained; no authenticated pentest or vulnerability-free claim.
-- WebKit reports native unstyled select construction; tests characterize it separately with exact
-  bootstrap-origin/constructor counts. All app violations and CSS payload probes remain fatal.
-  Playwright's WebKit screenshot preparation injects CSS, so captures use Chromium/Firefox;
-  WebKit functional/negative tests still run. See CSP_HARDENING.md, not a zero-raw-warning claim.
-- Private logs/screenshots remain outside tracked source. Initial Node deadline-classification
-  failures, browser harness issues, DNS interruption and first unavailable hosted health request
-  are retained; successful retries are reported separately. Human screen-reader check not performed.
-
-## Publication rules
-
-Only one local/remote branch: **master**. No worktrees/topic branches/PRs, force push, history
-rewrite or beta tag. Technical35677df, first strict 19799ee, corrected status/receiptb6cfbab.
-Latest docs-only receipt commits run the same CI; final publication must be checked by exact SHA.
+Only master locally/remotely; no branches/worktrees/PRs, force push, history rewrite or beta tag.
+Owner creates/enters scoped credentials themselves; do not read, print, generate or copy them.
+No paid resources, new accounts/terms, real users/data, live Gmail/Gemini or provider contact.
 Repo: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager
 Web: https://ai-powered-subscription-recurring-p.vercel.app
 API: https://ai-powered-subscription-recurring.onrender.com/api/v1
-No new credential may be created/copied/read as a workaround. Keep hosted access synthetic-only.
 
 ## Preserved product state and limits
 
@@ -117,14 +94,3 @@ Public unauthenticated GitHub gating requires this repo to remain public or a re
 No managed recovery, capacity SLA, authenticated pentest or production-readiness claim.
 DB rotation was owner-confirmed 2026-10-22. MIT LICENSE is present, copyright 2026 DEVENDRA RAJ SINGH.
 Do not repeat obsolete requests to rotate that credential or choose/apply the license.
-
-## API-hook local verification receipt
-
-Full make test/lint/evaluate:576 backend(534.25s),99 component,18 pre-auth Node tests, drift and
-F1 gates passed. Final authenticated verifier/bundle scan:21 Node tests passed; final frontend
-lint/types/build passed with a synthetic build credential absent from the compiled output.
-Three-browser main flow18 passed; build/npm/pip audits passed; original clock/screenshots restored.
-Focused deployment HTTP tests6 passed, including API-only no-Vercel-credential and invalid-mode
-refusal. A host-venv launch lacked bcrypt; the real Docker dependency environment and full suite
-passed. No real credential was used by tests. Native auto-trigger and anonymous quota failures
-remain disclosed; owner credential setup/hosted activation is still pending.

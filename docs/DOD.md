@@ -95,3 +95,9 @@ main flow18, build and audits passed. Scoped metadata authorization and compiled
 scan are tested with synthetic keys. API-hook mode needs owner service-hook/read-token setup in
 CI_ACCESS_SETUP.md and real hosted verification before automatic deployment can be marked Done.
 Native trigger remained unobserved after source refresh. No real credentials were read/generated.
+
+Final local privacy follow-up: request construction is inside the sanitized exception handler;
+malformed credential input cannot appear in errors.7 focused HTTP tests and the complete suite
+passed:577 backend(463.52s),99 component(8.82s),21 release-gate tests, lint/types/contracts and
+all evaluator gates. This supersedes the earlier576 count. Owner credential setup and actual
+hosted automatic-release verification remain pending; no live-credential success is claimed.

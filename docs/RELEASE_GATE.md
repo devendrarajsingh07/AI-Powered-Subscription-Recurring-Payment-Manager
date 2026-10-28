@@ -162,3 +162,9 @@ detector/extraction/receipt gates pass. Final frontend21 Node tests/lint/types/b
 12.24s Vite build with a synthetic read credential absent from compiled output. Real standard
 browser18 passes(384.719s), five separate-profile skips; normal settings/screenshots restored.
 Audits: npm0, pip no known vulnerabilities. No real credential was used by these checks.
+
+Final local privacy follow-up: request construction is inside the sanitized exception handler;
+malformed credential input cannot appear in errors.7 focused HTTP tests and the complete suite
+passed:577 backend(463.52s),99 component(8.82s),21 release-gate tests, lint/types/contracts and
+all evaluator gates. This supersedes the earlier576 count. Owner credential setup and actual
+hosted automatic-release verification remain pending; no live-credential success is claimed.

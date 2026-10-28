@@ -179,3 +179,9 @@ proceeds; GITHUB_RELEASE_READ_TOKEN (Contents/Actions read only) avoids anonymou
 without going to API/web requests or client assets. CI uses its ephemeral read-only token.
 No financial arithmetic/provider changes; failures remain closed. Use actual artifact receipts,
 not a submitted UI action, as proof. No activation claimed until hosted CI/release/smoke pass.
+
+Final local privacy follow-up: request construction is inside the sanitized exception handler;
+malformed credential input cannot appear in errors.7 focused HTTP tests and the complete suite
+passed:577 backend(463.52s),99 component(8.82s),21 release-gate tests, lint/types/contracts and
+all evaluator gates. This supersedes the earlier576 count. Owner credential setup and actual
+hosted automatic-release verification remain pending; no live-credential success is claimed.

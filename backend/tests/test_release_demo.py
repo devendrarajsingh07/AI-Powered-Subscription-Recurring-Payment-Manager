@@ -155,3 +155,12 @@ def test_unknown_release_mode_cannot_trigger_any_deployment():
         result = run(base, RELEASE_MODE="unknown")
     assert result.returncode != 0
     assert state["hook_refs"] == [] and state["promoted"] == []
+
+
+def test_malformed_hook_credential_never_appears_in_errors():
+    credential = "synthetic-private-invalid-hook"
+    with hosts() as (base, state):
+        result = run(base, RELEASE_MODE="api", RENDER_HOOK=credential)
+    assert result.returncode != 0
+    assert credential not in result.stdout + result.stderr
+    assert state["hook_refs"] == [] and state["promoted"] == []
