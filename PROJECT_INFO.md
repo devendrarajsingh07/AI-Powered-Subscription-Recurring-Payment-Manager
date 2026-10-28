@@ -16,19 +16,19 @@ and actual code. Do not redo completed product phases or repeat the unsuccessful
   is NOT claimed. Waiting builds failed closed; failures and retry observations are preserved.
 - Native Render After CI Checks Pass did not trigger after owner repository access and source
   binding refresh. Do not claim it fixed or retry it indefinitely. Replacement **api-hook** mode
-  is implemented in the existing guarded workflow and disabled pending owner setup.
-- Local code 35f4134 plus the sanitized-input privacy follow-up are committed on master. They
-  have NOT been pushed while credential entry is in progress. Only one branch: master.
+  is implemented in the existing guarded workflow. Owner credential setup is now complete;
+  activation is configured, with the first hosted release still awaiting verification.
+- Local code35f4134 plus the sanitized-input privacy follow-up are committed on master.
+  Push the verified code and this activation receipt; only one branch: master.
 - **Credential setup:** after the owner's explicit transfer instruction, the existing Render hook
   was saved as encrypted repository Actions secret RENDER_DEPLOY_HOOK_URL and its saved name
   verified. No credential was generated or rotated; its value was not printed or stored locally.
-- Vercel Production still has no GITHUB_RELEASE_READ_TOKEN. The owner generated a scoped token,
-  but its one-time tab is now closed and it cannot be retrieved. The prepared Vercel Secret form
-  awaits the owner's retained copy (or owner-created replacement if lost). Do not create a new
-  credential or inspect entered values. Verify saved names only; keep activation off meanwhile.
-  See CI_ACCESS_SETUP.md. Only the GitHub hook step is complete; no new hosted release is claimed.
-- Then set repository variables DEPLOY_STRATEGY=api-hook and DEPLOY_ENABLED=true; set Render
-  native Auto-Deploy Off (one controller); push current local master. Require all four exact-commit
+- The owner regenerated the existing scoped token after its original one-time page was lost.
+  The new existing value was transferred to Vercel Production Secret GITHUB_RELEASE_READ_TOKEN
+  under the owner's explicit authorization, saved name verified, no value printed or stored in
+  source/local files. No agent generated or rotated credentials. See CI_ACCESS_SETUP.md.
+- Repository variables DEPLOY_STRATEGY=api-hook and DEPLOY_ENABLED=true are saved; Render native
+  Auto-Deploy is verified Off (one controller). Push current local master. Require all four exact-commit
   CI jobs, the API-hook job's matching SHA/readiness, Vercel's matching version, and automatic
   paired-source/24-check smoke. Record actual results before marking automation Done.
 - API-hook mode uses current master only, successful exact push CI/repository checks before
