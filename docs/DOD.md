@@ -1,8 +1,8 @@
 # Definition-of-Done and launch-readiness evidence
 
-Updated 2026-10-26. **NO-GO for real users.** Current instructions: [PROJECT_INFO](../PROJECT_INFO.md).
+Updated 2026-10-28. **NO-GO for real users.** Current instructions: [PROJECT_INFO](../PROJECT_INFO.md).
 The previous evidence, including every earlier requirement/prohibition mapping and measured phase
-receipts, is preserved in [history](history/DOD_BEFORE_LOCAL_OPS_2026_10_26.md). Historical
+receipts, is preserved in [history](history/DOD_BEFORE_CSP_2026_10_28.md). Historical
 measurements do not certify later revisions. "Done" below is limited to its stated local/demo scope.
 
 | Done | Implemented — blocked for launch (needs X) | Not done |
@@ -14,7 +14,7 @@ measurements do not certify later revisions. "Done" below is limited to its stat
 | Eight real two-API/worker coordination/crash/quota/deletion checks | Durable jobs/restricted extraction (needs deployed worker resources and monitored operating procedures) | Production capacity or sustained stress claim |
 | Separate-PG synthetic restore: 30 table counts/digests, ten exact API comparisons, restored login/dedupe/ownership/schema/deletion checks | Managed recovery (needs managed PITR, encrypted backup storage, retention and owner restore drill) | Managed PITR verification and production recovery-time objective |
 | Nine k6 full flows, zero HTTP failures, machine/quotas/p50/p95 recorded | Load sanity only (needs realistic private staging workloads before capacity planning) | Free-host capacity claim |
-| Limited ZAP web/API baselines; findings disclosed, no high-risk alerts in that scope | Security hardening (needs inline-style CSP remediation/audit and authenticated testing) | Authenticated pentest; vulnerability-free claim |
+| Strict production style CSP, nine compiled-browser checks and limited ZAP baseline with zero high/medium/low findings | Security hardening (needs authenticated testing) | Authenticated pentest; vulnerability-free claim |
 | Local same-schema archived-source rollback/re-promotion; incompatible head refused readiness | Release pipeline code (needs enforced provider gate, separate staging and hosted rollback exercise) | Verified hosted rollback and CI-gated deployment enforcement |
 | Recursive build exclusions: zero private canaries in both contexts; 16 approved backend EMLs only; CI Docker COPY regression | Container deployment (needs production role/network/secret/monitoring review) | Production deployment certification |
 | Local scheduler, retry, retention, content-free metrics and email-lifecycle tests | Operations/email/legal code (needs monitoring, incident contact, sender/DNS and qualified legal review) | Approved legal texts and human screen-reader pass |
@@ -22,37 +22,32 @@ measurements do not certify later revisions. "Done" below is limited to its stat
 | Owner confirmed DB rotation 2026-10-22; MIT LICENSE present | Free PostgreSQL (needs PITR-capable replacement before 2026-11-19 or accepted demo-data loss) | Owner public/private repository decision |
 | No invented provider offers or shared entitlements | Any commercial expansion (needs owner-led agreements/licensing and fulfilment design) | Provider partnerships, negotiated offers or fulfilment |
 
-## Verification for this operations change
+## Verification for this hardening change — 2026-10-28
 
-- `make dev verify`: passed (47.375s).
-- `make test lint evaluate`: passed (674.172s): **568 backend tests** (565.73s) and
-  **99 frontend tests** in 11 files. Ruff/ESLint/types and OpenAPI/generated-type drift passed.
-  Detector TP/FP/FN: synthetic 16/0/0, handwritten bank 3/0/0, products 5/0/0;
-  P/R/F1=1.0000 each. Extraction gate and receipt outcomes 16/16 passed. Real-source accuracy unmeasured.
-- Extra full backend run on the restored PostgreSQL service: **568 passed** (547.50s).
-  These use separate fixture DBs, not the restored application rows. One upstream
-  Starlette/TestClient/httpx deprecation warning remains in each backend run.
-- Real-stack Linux/Docker browsers: **18 standard passes** (two profile skips), plus
-  **one strict sibling-host TLS pass** and **one isolated public-demo pass**: **20 distinct cases**.
-  Chromium/Firefox/WebKit ran; mobile light/dark axe, real imports/chat/outbox/privacy passed.
-  Existing tracked screenshots and normal API/worker flags/clocks were restored byte-for-byte.
-  Native Windows runner/cache limitations used the established Linux browser equivalent.
-- Production build passed: main 354.65kB/gzip111.74, lazy mailbox 11.84/gzip3.90,
-  chart 389.93/gzip114.22; Vite build 7.42s (full CLI 20.562s). No performance SLA.
-- `npm audit --audit-level=low`: zero; `pip-audit -r backend/requirements.lock --disable-pip`:
-  no known vulnerabilities. Root Ruff, k6 ESM syntax, isolated Compose configuration and
-  real Docker build-context canary checks passed.
-- Gitleaks entire pre-commit history (76 reachable commits) and current non-ignored source:
-  no leaks found. Exact historical synthetic-JWT exceptions and the 16-fixture EML allowlist
-  were not broadened. No .env/private statements/private emails/outbox are tracked.
+- `make dev verify`: passed; migrations/readiness and original stack boot verified.
+- `make test lint evaluate`: passed. **574 backend** (485.89s), **99 frontend** in 11 files
+  (8.24s), **17 release-gate** tests. Final endpoint validation added one further test;
+  current Node suite is **18 passed**. No financial application code changed.
+- Ruff, ESLint, TypeScript, OpenAPI and generated-type drift passed. Detector P/R/F1=1.0000
+  on synthetic16/0/0, handwritten-bank3/0/0 and handwritten-products5/0/0 TP/FP/FN.
+  Extraction18-variant and receipt16/16 gates passed. Real-bank accuracy remains unmeasured.
+- Browser profiles: **18 standard**, **one same-site TLS**, **one isolated public demo** and
+  **nine compiled CSP** = **29 distinct passes**. Five profile skips in the standard command
+  execute in their separate profiles. Chromium/Firefox/WebKit ran. See CSP_HARDENING.md for
+  the exact native-select and screenshot harness limits; no header exception was added.
+- Production build passed (8.68s Vite): main354.65kB/gzip111.73, lazy chart389.93/gzip114.22,
+  mailbox11.84/gzip3.90. No capacity or performance SLA.
+- `npm audit --audit-level=low`: zero; locked `pip-audit`: no known vulnerabilities.
+- ZAP repeated on isolated local web/API: zero high/medium/low findings. Three informational
+  discovery types remain. Private raw reports retain scanner exit2; no authenticated pentest.
+- Initial combined run stopped at three deadline-classification Node failures after backend
+  and component passes. The deadline handler was fixed; full combined re-run passed. Failed
+  attempts, registry DNS and browser-harness issues remain in private logs, not pass counts.
+- Secret scans, exact-commit hosted CI, native provider settings, paired publication and
+  hosted rollback receipts are recorded in RELEASE_GATE.md as they are actually executed.
 
-Publication still requires exact-commit hosted CI; no hosted rollback is claimed.
-
-Drill commands, real measurements, failed harness attempts and limits are in
-[LOCAL_DRILLS](LOCAL_DRILLS.md). Detailed logs/tokens/reports and the unencrypted synthetic-only
-archive remain ignored under var/drills. No hosted DB, real statements or live providers were used.
-The extra pytest run uses separate test databases on the restored PG service; actual restored
-rows are checked independently by table digests and API comparisons. Do not conflate the two.
+Earlier restore/load/coordination evidence remains in LOCAL_DRILLS.md and the historical DOD.
+The previous 568-test count and inline-style warning are historical, superseded here.
 
 ## Guarantees retained
 

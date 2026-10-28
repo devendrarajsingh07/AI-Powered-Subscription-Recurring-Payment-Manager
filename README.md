@@ -13,7 +13,7 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.147-009688?style=for-the-badge&logo=fastapi&logoColor=white)](backend/requirements.in)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](backend/Dockerfile)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-667_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
+[![Tests](https://img.shields.io/badge/Tests-691_unit_and_integration-22C55E?style=for-the-badge&logo=pytest&logoColor=white)](#-testing-and-quality-checks)
 
 <br />
 
@@ -137,7 +137,7 @@ flowchart LR
 - **Money is never a float.** Amounts are `Decimal` in Python and decimal strings over the API; charts derive only dimensionless coordinates.
 - **The model never computes figures.** Tools return typed data and the verifier checks every number in the final answer against them. It checks where figures came from, not whether the prose is true.
 - **Live AI is opt-in and bounded.** Per-user consent, a global kill switch, daily request and token caps, a reservation before every provider call, and a visible offline fallback.
-- **PostgreSQL coordinates shared state.** Job leases, rate limits, chat leases, alert locks and AI caps use the database. Worker timers still run in-process; the multi-instance operational drill remains unverified.
+- **PostgreSQL coordinates shared state.** Job leases, rate limits, chat leases, alert locks and AI caps use the database. Worker timers still run in-process; eight local two-API/worker coordination and crash checks have passed; hosted always-on worker availability remains a launch requirement.
 - **Production fails closed.** Weak secrets, test clocks, demo loading and the console notifier are refused outside development.
 - **Additive migrations only.** Schema changes go through Alembic; `create_all` is never used at runtime.
 
@@ -368,14 +368,16 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 
 | Suite | Scope |
 |---|---|
-| **Backend: 568 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Backend: 574 pytest tests** | Real PostgreSQL: auth and sessions, ingestion and extraction, detector evaluation, renewals, insights, alerts, chat grounding and verifier, AI controls, durable queue and crash recovery, public demo, retention, email lifecycle and release tooling |
+| **Release gate: 18 Node tests** | Real local HTTP metadata/CI/readiness checks, stale and superseded revisions, fail-closed errors, endpoint validation and rollback ancestry |
 | **Frontend: 99 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
-| **Browser e2e: 20 distinct passes** | 18 standard cases across Chromium, Firefox and WebKit, one strict same-site auth case and one public-demo restriction case; two profile-specific skips. Real Compose stack, synthetic data, and light/dark/mobile axe checks. |
+| **Browser e2e: 29 distinct passes** | 18 standard cases across Chromium, Firefox and WebKit, one strict same-site auth case, one public-demo restriction case and nine compiled-CSP cases; five profile-specific skips in the standard run. Real Compose stack, synthetic data, and light/dark/mobile axe checks. |
 
 ```sh
 make test       # pytest on PostgreSQL, detector evaluation, OpenAPI drift, Vitest, TS type drift
 make lint       # Ruff, ESLint, TypeScript
 make e2e        # real-stack Playwright flows
+make e2e-csp    # compiled production headers; all three browsers (same dependencies)
 make evaluate   # precision/recall/F1 on synthetic and handwritten fixtures
 make chat-eval  # 18 independent known-answer questions (offline)
 ```
@@ -552,11 +554,11 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 | Area | Status |
 |---|---|
 | Phases 1–7 (core product, statements, assistant, alerts, UI) | ✅ Complete for demo scope |
-| Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | Implemented; stand-in tests and historical CI receipts in PROJECT_INFO. The free demo uses its configured inline mode; local multi-instance, restore/load/ZAP and same-schema rollback drills are measured in docs/LOCAL_DRILLS.md. Managed recovery and enforced hosted release remain unverified. |
+| Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | Implemented; stand-in tests and historical CI receipts in PROJECT_INFO. The free demo uses its configured inline mode; local multi-instance, restore/load/ZAP and same-schema rollback drills are measured in docs/LOCAL_DRILLS.md. Managed recovery remains unverified. The native CI release gate and hosted receipts are tracked in docs/RELEASE_GATE.md. |
 | Receipt inbox and interests | Verified locally and in CI: synthetic sync, explicit evidence matching, privacy controls and separate voluntary preferences. Disabled on the hosted demo. |
 | Gmail protocol foundation | Local-only tests cover PKCE, scoped single-use state, encryption and bounded HTTP. Actual callback/orchestration, real incremental sync and revocation delivery are **not built**. |
 | Provider partnerships and offers | **Not built**; require owner-led agreements, licensing and fulfilment. Interest declarations do not grant redistribution rights. |
-| Local operational drills | Eight coordination checks; 30-table dump/restore equality; nine load flows; local rollback/re-promotion. ZAP retains one medium inline-style warning. [Evidence and limits](docs/LOCAL_DRILLS.md). |
+| Local operational drills | Eight coordination checks; 30-table dump/restore equality; nine load flows; local rollback/re-promotion. The October28 strict-CSP rescan has zero high/medium/low findings; informational discovery findings remain. [Evidence and limits](docs/LOCAL_DRILLS.md). |
 | Real-user beta | 🚫 Blocked: needs managed backups/PITR, deployed worker, staging, real email delivery, domains and approved legal documents |
 
 ---
@@ -569,7 +571,7 @@ The repository keeps **one branch: `master`**, both locally and on GitHub. Do no
 2. Keep money in `Decimal`, API contracts typed, and migrations additive.
 3. Add or update tests for behaviour changes, including independent ground-truth checks.
 4. Run `make lint`, `make test` and `make e2e`; regenerate types with `make openapi types` if the API changes.
-5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. Existing Vercel Git integration rebuilds `master` automatically.
+5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render uses its native checks-passed trigger. See [release configuration and receipts](docs/RELEASE_GATE.md).
 
 Never commit `.env` files, real statements, outbox copies, keys or browser traces. Use the ignored `private-statements/` folder or a location outside the checkout.
 

@@ -185,7 +185,7 @@ Production refuses demo/test-clock/console/adversarial settings; seed is develop
   Local two-API crash/limit, synthetic restore/load/ZAP and same-schema source rollback evidence is
   recorded in LOCAL_DRILLS.md. The free hosted demo has no separately deployed worker. Managed
   PITR, hosted rollback, staging and enforced provider CI gating remain unverified; local results
-  do not establish production recovery or capacity. ZAP retains an inline-style medium finding.
+  do not establish production recovery or capacity. The October28 strict-CSP rescan supersedes the prior inline-style warning; zero high/medium/low findings in that limited baseline.
 - Figure verification does not verify prose. Offline assistant handles recognized patterns only.
   Automated chat redaction is not a complete PII classifier. External retention follows the live provider.
 - SMTP has the send/commit ambiguity described above. Exported files and delivered email cannot be recalled.
@@ -249,3 +249,12 @@ scoped state, encrypted credential lifecycle and bounded HTTP behavior, not a re
 Interests use separate consent/table and no financial-model queries. Internal cohort visibility is
 operator-only and thresholded; no commercial sharing, offers or provider agreement is implemented.
 All existing free-hosting, real-data, production and beta restrictions remain.
+
+## October28 hardening update
+
+Production style policy is self-only for styles/elements and denies inline attributes. Nine
+compiled-build browser checks pass across Chromium, Firefox and WebKit; see
+[CSP behavior and limits](CSP_HARDENING.md). Native exact-commit CI/API gating and paired hosted
+publication/rollback receipts are maintained in [RELEASE_GATE](RELEASE_GATE.md). Earlier
+statements about never-tested hosted behavior describe their historical date; current receipts
+control. Managed PITR, staging and real-user launch remain blocked.

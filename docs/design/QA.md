@@ -313,3 +313,16 @@ passed. Local operations/ZAP evidence and limitations are in LOCAL_DRILLS.md. On
 inline-style CSP warning remains; no authenticated penetration test or human screen-reader
 certification is claimed. The public-demo profile uses a development Vite server for axe
 injection; production static CSP is checked separately. Human screen-reader pass remains a to-do.
+
+## October28 compiled production CSP audit
+
+Nine real Chromium/Firefox/WebKit cases pass: strict response directives, native-select
+characterization, blocked inline markup/style elements/setAttribute payloads, actual demo
+ingestion/API-equal totals, chart tooltips and text tables, light/dark at360/1280, charge/chat
+dialogs, all navigation and deletion. No app-origin CSP violation or runtime error is accepted.
+WebKit native-select reports are separately counted; Playwright WebKit screenshot style injection
+is avoided by capturing Chromium/Firefox only. No product CSS bypass was added.
+
+Full standard/TLS/public/CSP browser count29. Backend574, component99, release-gate18, types,
+lint, build and audits pass. Synthetic captures live outside source under the task visualization
+folder. Human screen-reader pass, private accuracy checks and live Gemini remain owner tasks.

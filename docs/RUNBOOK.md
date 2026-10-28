@@ -5,12 +5,16 @@ Incident contact: **OWNER TO SUPPLY**. Grievance/support contact: **OWNER TO SUP
 
 ## Deploy and verify
 
-Run the documented Make gates; push a logical commit and inspect every GitHub job. Vercel currently
-auto-deploys master; Render is manual. Together they do **not** yet enforce a green-CI deployment gate.
-Do not call this production CI/CD. For beta, disable that trigger and implement an authenticated
-post-CI release with a separate migration step, staging smoke and backward-compatible migrations.
-Verify `/api/v1/health` and `/api/v1/health/ready`, then the frontend registration/login and offline
-chat paths with synthetic data. Never copy platform environment pages into logs or issues.
+Run the documented Make gates; push a logical commit on the sole master branch and inspect
+all four CI jobs. The native free-demo strategy uses Render **After CI Checks Pass** and the
+Vercel normal build command `node scripts/deploy-gate.mjs && npm run build`. That command
+requires exact repository/master push CI, matching ready API revision and a final master-head
+check. Missing configuration, failed checks and timeouts fail the build; old production remains.
+Set non-secret repository variables DEMO_API_URL and DEMO_WEB_URL for post-deploy verification;
+Vercel reads the existing VITE_API_BASE_URL. No new token/deploy hook is required for this path.
+See [configuration, tests and publication receipts](RELEASE_GATE.md). Native integration is a
+free synthetic-demo control, not staging or production release certification. Keep additive
+migrations and verify readiness/version/security smoke. Never copy platform environment pages.
 
 ## Roll back
 
@@ -81,7 +85,7 @@ delivery, bounce handling and SPF/DKIM/DMARC need an owner-provided sending doma
 
 ## Automated release (opt-in) and rollback
 
-`.github/workflows/deploy.yml` runs only when repository variable `DEPLOY_ENABLED=true`. Before any
+The following is an alternative legacy path, disabled by default. Never run it alongside the native controller. `.github/workflows/deploy.yml` requires both `DEPLOY_ENABLED=true` and `DEPLOY_STRATEGY=legacy-secrets`. Before any
 secret is used or any code is checked out it verifies that the commit (a) is on this repository's
 master history, (b) has a successful **push-triggered** `checks` run for that exact SHA, and (c) for
 an automatic run, is still the master head (an older run is skipped as superseded). Pull requests,
@@ -148,4 +152,4 @@ and authorization. None of these managed guarantees follows from this drill.
 Rollback builds Git archives without creating branches or downgrading the DB. An incompatible
 head is rejected by readiness. The verified previous/current revisions have identical business
 code and schema; this does not establish rollback compatibility for arbitrary later migrations.
-The medium ZAP inline-style warning remains open; no authenticated penetration test was run.
+The October28 strict-CSP rescan has zero high/medium/low findings; no authenticated penetration test was run.

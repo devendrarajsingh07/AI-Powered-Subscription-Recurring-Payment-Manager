@@ -50,7 +50,16 @@ owner prerequisites above. See DOD.md for the exact evidence and what has not be
 
 Eight two-API/worker coordination checks, synthetic 30-table restore equality, a nine-flow bounded
 load test, local source rollback/re-promotion and limited ZAP baselines have run. See
-[measured results and limits](LOCAL_DRILLS.md). ZAP retains one medium inline-style finding.
+[measured results and limits](LOCAL_DRILLS.md). The October28 strict-CSP rescan has zero high/medium/low findings; informational discovery findings remain.
 These remove the previous "never run locally" gaps only. Managed PITR, hosted rollback, a
 CI-enforced provider gate, separate staging, encrypted backup operations, real sender/domains,
 worker availability and incident routing remain unverified. This remains **NO-GO**.
+
+## October28 hardening update
+
+Production style policy is self-only for styles/elements and denies inline attributes. Nine
+compiled-build browser checks pass across Chromium, Firefox and WebKit; see
+[CSP behavior and limits](CSP_HARDENING.md). Native exact-commit CI/API gating and paired hosted
+publication/rollback receipts are maintained in [RELEASE_GATE](RELEASE_GATE.md). Earlier
+statements about never-tested hosted behavior describe their historical date; current receipts
+control. Managed PITR, staging and real-user launch remain blocked.

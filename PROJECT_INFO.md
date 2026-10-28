@@ -1,138 +1,96 @@
 # SubTrack — current-state handoff
 
-Updated 2026-10-26. This is the sole current instruction source. Read README,
-[local drill evidence](docs/LOCAL_DRILLS.md), [DOD](docs/DOD.md), the runbook and real code.
-The complete preceding handoff is preserved in
-[history](docs/history/HANDOFF_BEFORE_LOCAL_OPS_2026_10_26.md); its old branch instructions and
-"drills not run" statements are superseded. Do not repeat completed product phases.
+Updated 2026-10-28. Sole current instruction source. Prior complete handoff and phase receipts:
+[history](docs/history/HANDOFF_BEFORE_CSP_2026_10_28.md). Read README, docs/CSP_HARDENING.md,
+docs/RELEASE_GATE.md, docs/DOD.md and actual code. Do not redo completed product phases.
 
-## Current task: local operational verification
+## Current work: CSP hardening and free demo release verification
 
-Implemented and exercised using synthetic data only:
-- Separate internal-only `subtrack-drills` Compose project; two APIs, separate worker,
-  credential-free/network-free extractor, web proxy, separate source and restore PostgreSQL.
-  No published ports, hosted credentials, normal DB dumps or live providers.
-- Eight real HTTP/coordination checks: worker SIGKILL/reclaim, duplicate concurrent uploads and
-  ownership, shared previews/chat/auth windows, API SIGKILL/chat expiry, queue admission,
-  queued deletion and deletion during extraction. Jobs use actual CSV/OCR handlers.
-- Synthetic dump/restore: all 30 table counts/canonical row digests and ten exact API responses
-  match; restored login/dedupe/ownership/schema/deletion behavior verified. No managed PITR claim.
-- k6: three VUs x three iterations, nine verified CSV/PDF/OCR/review/import/chat flows,
-  553 requests, 580 checks, zero HTTP failures. HTTP p50/p95 11.59/79.60ms; whole flow
-  14.14/19.30s. Machine and explicit local quota overrides are in LOCAL_DRILLS.md.
-- ZAP passive local baselines completed with warnings: one medium style-src unsafe-inline finding
-  remains, plus informational SPA/auth/session notices. Not a pentest or authenticated audit.
-- Git-archive source rollback/re-promotion, exact frontend/API revision and unchanged DB/summary;
-  incompatible head16 correctly refused readiness against head17. Previous/current business code
-  is identical, so this is a same-schema source rehearsal, not arbitrary feature rollback evidence.
-- Recursive Docker exclusions proven by actual COPY canaries: zero nested private canaries,
-  exactly 16 approved backend synthetic EMLs, no frontend EMLs. CI repeats this check.
-- Fourteen guard tests prevent normal/remote targets, unsafe SQL targets, unowned container
-  removal, private-settings overwrite and unsanitized scanner evidence publication.
+Working-tree implementation, not yet published:
+- Production Vercel/nginx/preview policies require self-only scripts/styles/style elements and
+  style-src-attr none. Vite HMR exceptions remain development-only. No nonce/hash workaround.
+- Actual compiled build on read-only non-root nginx; nine Chromium/Firefox/WebKit cases pass:
+  CSS attack probes, real registration/demo ingestion, charts/tooltips/tables, both themes,
+  mobile/desktop, charge/chat dialogs, navigation, API-equal money and deletion.
+- WebKit independently reports style-src-attr when constructing an unstyled native select.
+  A minimal div/select probe reproduced this before app styling. Tests observe constructors
+  without changing them, attribute only the bootstrap-origin reports, and require their exact
+  count to match constructors. All application-origin reports and all CSS payload probes remain
+  strict. WebKit screenshots inject their own style tag, so visual captures use Chromium/Firefox;
+  WebKit functional/negative tests remain enabled. Do not claim zero raw WebKit console notices.
+- Eighteen real local-HTTP/configuration Node release-gate tests pass. The key-free Vercel build gate waits
+  for exact repo/master push CI, exact ready Render SHA, and rechecks head before build. It
+  fails closed on missing/wrong metadata, errors/rate limits, old API, superseded SHA or timeout.
+- Render native After CI Checks Pass is available with already-connected Git credentials.
+  Enabled After CI Checks Pass on October28 after local gates passed; saved setting visually verified. Root is already repository
+  root, Dockerfile ./backend/Dockerfile, context ./backend; no build path filters.
+- GitHub repository deployment secrets were absent on inspection. No new token is needed for
+  the native integration path. Existing optional secret workflow additionally requires explicit
+  DEPLOY_STRATEGY=legacy-secrets; never activate both controllers.
+- New post-deploy workflow runs after production deployment_status success, verifies approved
+  master history/CI before checkout, then exact paired revisions and read-only security smoke.
+  It must not start before Render deploy, to avoid a check/deployment dependency cycle.
 
-Private results, logs, tokens and the unencrypted synthetic-only backup live in ignored var/drills.
-Never commit them. Restore outbox is separate from source outbox. `make drill-down` preserves
-volumes/evidence and stops only the drill project. No application feature, schema or hosting
-configuration changes are part of this task.
+## Current measured results and gates
 
-## Current verification
+- `make dev verify` passed; `make test lint evaluate` passed: **574 backend** (485.89s),
+  **99 components** (8.24s), initial17 Node release tests. Explicit endpoint validation added
+  one test; final **18 Node** passed, plus lint/types/production build (10.63s) on final source.
+- Browser wrapper passed **18 standard + one same-site TLS + one isolated public demo + nine
+  compiled CSP = 29** distinct cases. Five standard-profile skips run separately. The wrapper
+  restored normal API/worker flags/clocks and tracked screenshots. Chromium/Firefox/WebKit ran.
+- Detector TP/FP/FN16/0/0,3/0/0,5/0/0: P/R/F1=1.0000 in each synthetic/handwritten set.
+  Extraction18-variant and receipt16/16 gates passed. Real-source accuracy remains unmeasured.
+- npm audit zero; locked pip-audit no known vulnerabilities. OpenAPI/types, Ruff/ESLint pass.
+- Gitleaks scanned all80 pre-change reachable commits and current source: no leaks found.
+  No private .env, outbox, statements or unapproved emails tracked; existing narrow exceptions unchanged.
+- ZAP web/API rescan: zero high/medium/low findings in limited unauthenticated baseline;
+  three informational discovery types remain. Raw scanner exit2 retained. No pentest claim.
+- Private logs under ignored var/drills/csp-*. Initial Node deadline-classification failures,
+  WebKit harness issues and Docker DNS interruption are retained; all final relevant checks pass.
+- Non-secret GitHub variables DEMO_API_URL and DEMO_WEB_URL now saved. No new deployment secret.
+- Remaining: commit/push, exact-commit hosted CI, paired hosted publication/post-deploy smoke,
+  strict-CSP same-schema hosted rollback/re-promotion and final receipts. Do not claim these yet.
 
-- `make dev verify`: passed (47.375s).
-- `make test lint evaluate`: passed (674.172s): **568 backend tests** (565.73s) and
-  **99 frontend tests** in 11 files. Ruff/ESLint/types and OpenAPI/generated-type drift passed.
-  Detector TP/FP/FN: synthetic 16/0/0, handwritten bank 3/0/0, products 5/0/0;
-  P/R/F1=1.0000 each. Extraction gate and receipt outcomes 16/16 passed. Real-source accuracy unmeasured.
-- Extra full backend run on the restored PostgreSQL service: **568 passed** (547.50s).
-  These use separate fixture DBs, not the restored application rows. One upstream
-  Starlette/TestClient/httpx deprecation warning remains in each backend run.
-- Real-stack Linux/Docker browsers: **18 standard passes** (two profile skips), plus
-  **one strict sibling-host TLS pass** and **one isolated public-demo pass**: **20 distinct cases**.
-  Chromium/Firefox/WebKit ran; mobile light/dark axe, real imports/chat/outbox/privacy passed.
-  Existing tracked screenshots and normal API/worker flags/clocks were restored byte-for-byte.
-  Native Windows runner/cache limitations used the established Linux browser equivalent.
-- Production build passed: main 354.65kB/gzip111.74, lazy mailbox 11.84/gzip3.90,
-  chart 389.93/gzip114.22; Vite build 7.42s (full CLI 20.562s). No performance SLA.
-- `npm audit --audit-level=low`: zero; `pip-audit -r backend/requirements.lock --disable-pip`:
-  no known vulnerabilities. Root Ruff, k6 ESM syntax, isolated Compose configuration and
-  real Docker build-context canary checks passed.
-- Gitleaks entire pre-commit history (76 reachable commits) and current non-ignored source:
-  no leaks found. Exact historical synthetic-JWT exceptions and the 16-fixture EML allowlist
-  were not broadened. No .env/private statements/private emails/outbox are tracked.
+## Publication rules
 
-The initial extra restored-service run failed five tests due to inherited drill environment
-values and a fake HTTP fixture ordering race. The corrected standard-test environment and
-commit-before-503 fixture passed both complete suites. Privacy assertions and runtime behavior
-were unchanged. Failed receipts remain private. Exact-commit hosted checks must still pass
-before publication is considered verified; consult the checks workflow, not an older receipt.
-
-The previous app baseline is 92b9ae6; master 67d5a31 adds documentation only. Hosted checks
-40336004197 passed on 67d5a31 (deploy-demo skipped). These historical receipts do not certify
-this operations revision. Full preceding receipts, screenshots and UI details remain in history.
-
-## Existing expansion capabilities and limits
-
-Local-only optional synthetic receipt review/import and mailbox lab are complete: versioned
-consent, allowlisted 16-fixture worker sync, fenced leases/checkpoints/quotas/TTL, separate receipt
-evidence, explicit owned bank-charge matching, disconnect/purge/export and separate voluntary
-interests. Receipt evidence never enters financial summaries/detection/savings/chat. Interest
-counts use separate consent and threshold suppression; no provider contact or offers exist.
-OAuth PKCE/state/encryption and bounded HTTP methods have local stand-in tests, but actual
-Google callback/orchestration, real incremental inbox sync and revocation delivery are NOT built.
-`MAILBOX_LIVE_ENABLED=true` fails configuration. Both receipt/lab flags remain off on hosted demo.
-Additive migration0017_mailbox_lab is current; no create_all or runtime financial math changed.
-
-## Publication and hosting rules
-
-Keep exactly one local and remote branch: **master**. Work directly there, commit logically,
-run local gates before pushing and inspect exact-commit hosted CI. No topic branches, force-push,
-history rewrite or beta tag. Divergent historical local branches were saved in an ignored bundle
-before removal. Vercel's existing Git integration rebuilds master automatically; manual Render
-promotion requires green CI and explicit scope. This local-operations task makes no manual
-hosting/deployment changes. Check health.revision/version.json before claiming any live revision.
-
-Repository: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager
-Frontend: https://ai-powered-subscription-recurring-p.vercel.app
+Exactly one local/remote branch: master. No worktrees/topic branches/PRs, force push, history
+rewrite or beta tag. Baseline master 714ac03 passed all four hosted checks in run 40363921345.
+Current changes are uncommitted. Verify current source versions before any live-version claim.
+Repo: https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager
+Web: https://ai-powered-subscription-recurring-p.vercel.app
 API: https://ai-powered-subscription-recurring.onrender.com/api/v1
 
-## Owner constraints and remaining launch work
+Owner authorized finishing the remaining technical work and updating the existing free demo
+after local/hosted gates. Render login was completed by the owner on 2026-10-28. No credentials
+may be created/copied/read as a workaround. Use existing native integrations where possible.
 
-Hosting stays **free**, production fail-closed and beta locked. No paid resources, account/terms
-creation, real users/data, live Gmail/Gemini or provider contact. Preserve Architecture A,
-PostgreSQL coordination, bcrypt, strict SameSite/CSRF, offline deployed mode, Decimal money and
-educational/public-demo notices. Hosted visitors stay isolated/disposable/synthetic; password
-registration/login and file uploads remain disabled. Legal drafts remain unapproved/off.
+## Preserved product state and limits
 
-Remaining: managed PostgreSQL/PITR before free DB expiry 2026-11-19 or accepted demo-data loss;
-separate staging; deployed always-on worker; sibling custom domains; real sender/SPF/DKIM/DMARC;
-monitoring/incident contact; paid-tier Gemini/billing/spend alerts; legal review; screen-reader
-pass; private real-statement/receipt accuracy; live Gemini eval; repository visibility decision.
-Local stand-ins do not complete those gates. Hosted rollback and enforced provider CI gating
-have not been exercised. ZAP inline-style finding remains. Backup encryption/retention and
-revocation of copied sessions must be established before any real restored service is exposed.
-SQL deletion cannot recall delivered email, exports or managed backups.
+Deterministic Decimal detection/aggregation, scoped auth, upload progress/dedupe, advisory
+insights, alerts, read-only grounded chat, relative demo loading and deletion remain intact.
+Migration0017_mailbox_lab is current; no runtime create_all or destructive schema changes.
+Synthetic receipt/mailbox lab, consent/leases/checkpoints/evidence matching and voluntary
+interests are locally verified, but live Gmail callback/incremental sync/revocation are NOT
+implemented or enabled. MAILBOX_LIVE_ENABLED=true fails configuration. Hosted lab flags stay off.
+No offers, provider agreements, redistribution rights, invoice ledger or FX matching exist.
 
-Owner confirmed DB rotation 2026-10-22. MIT LICENSE is present, copyright 2026 DEVENDRA RAJ SINGH.
-Do not repeat obsolete rotation/license action requests. No provider agreement, redistribution
-rights, full reconciliation, invoice identity, FX matching or mail-only ledger is claimed.
+Local operations already completed: eight two-API/worker crash/shared-limit/deletion checks,
+30-table synthetic restore equality, nine k6 flows, local same-schema rollback. Details and
+limits are in docs/LOCAL_DRILLS.md. Old CSP finding is superseded locally by the rescan above.
 
-## Operations publication checkpoint
+Keep hosting free, fake LLM/console demo mode, production fail-closed, beta locked, Architecture A,
+PostgreSQL coordination, bcrypt and strict SameSite/CSRF. No paid provisioning, accounts/terms,
+real users/data, live Gmail/Gemini, provider contact or new stretch features. Public demo remains
+isolated/disposable/synthetic-only with password login and uploads disabled. Legal drafts off.
 
-Technical commit 14afdaa contains the verified tooling and build-context fix. Documentation is
-committed separately. All local gates passed before publication; exact-HEAD hosted CI remains
-the final check. `make drill-down` removed only the isolated project (volumes/evidence retained),
-and subsequent `make verify` passed all three normal-stack checks. No manual hosting changes.
+## Owner/launch requirements that cannot be claimed complete
 
-## Hosted browser-runner correction
-
-Run 40359305930 on 52b0f7c passed main checks, secrets and strict auth. The full browser job
-stalled before tests while apt downloaded 185 packages from the Ubuntu 26.04/resolute mirror
-(selected by floating ubuntu-latest). This was observed in its live GitHub log, not inferred
-from a test failure. Browser jobs now pin ubuntu-24.04, matching the successful local Noble
-runner, with an eight-minute installation limit and 30-minute job bound. No browser, assertion
-or test was disabled; the follow-up commit requires its own complete hosted CI result.
-
-The pinned run 40362767316 reproduced slow Azure-mirror downloads on Noble too; the OS pin alone
-was insufficient. CI browser jobs now fetch the same signed Ubuntu packages from Ubuntu's
-HTTPS primary archive, retaining signature validation, plus 30-second transport timeouts/two
-retries. This changes disposable CI only. The earlier run 40359305930 was canceled after
-explicit owner approval, before its browser tests. No test result was fabricated or skipped.
+Managed PostgreSQL/PITR before 2026-11-19 or accepted demo-data loss; separate staging; always-on
+worker; sibling custom domains; real transactional sender/SPF/DKIM/DMARC; monitoring and incident
+contact; paid Gemini/billing/spend alerts; qualified legal review; human screen-reader pass;
+private real-statement/receipt accuracy; owner live Gemini evaluation; repository visibility.
+Public unauthenticated GitHub gating requires this repo to remain public or a reviewed replacement.
+No managed recovery, capacity SLA, authenticated pentest or production-readiness claim.
+DB rotation was owner-confirmed 2026-10-22. MIT LICENSE is present, copyright 2026 DEVENDRA RAJ SINGH.
+Do not repeat obsolete requests to rotate that credential or choose/apply the license.

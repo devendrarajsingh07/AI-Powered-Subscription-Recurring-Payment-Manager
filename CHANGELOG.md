@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — strict style CSP and native release gate — 2026-10-28
+
+- Remove production inline-style permission; prove compiled charts, dialogs, themes and CSS
+  attack blocking in Chromium, Firefox and WebKit without changing financial code.
+- Add fail-closed Vercel exact-commit CI/API build gate, native Render CI integration procedure
+  and read-only post-deployment verification, without new deployment credentials.
+- Record 574 backend, 99 component, 18 release-gate and 29 browser passes; limited ZAP rescan
+  has zero high/medium/low findings. Hosted publication receipts are recorded separately.
+
 ## Unreleased — local operations evidence — 2026-10-26
 
 - Add isolated two-API/worker crash, shared-limit, queue/deletion and container-isolation drills.

@@ -237,3 +237,11 @@ was insufficient. CI browser jobs now fetch the same signed Ubuntu packages from
 HTTPS primary archive, retaining signature validation, plus 30-second transport timeouts/two
 retries. This changes disposable CI only. The earlier run 40359305930 was canceled after
 explicit owner approval, before its browser tests. No test result was fabricated or skipped.
+
+## October28 strict-CSP rescan
+
+The October26 medium inline-style finding above is superseded by the explicit self-only
+production style policy and nine compiled-browser tests. `make drill-scan` completed with
+zero high/medium/low findings on both local targets. Three informational discovery types remain;
+raw scanner exit2 is preserved. See [CSP_HARDENING](CSP_HARDENING.md) for browser quirks, failed
+attempts and limits. No live-host ZAP or authenticated pentest was run.
