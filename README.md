@@ -29,7 +29,9 @@ Import bank statements, detect subscriptions and fixed bills, track renewals and
 
 ## 📌 Project Overview
 
-**SubTrack** turns raw INR bank transactions into a clear picture of recurring spending. Deterministic code detects every subscription and fixed bill and computes every number; the AI assistant can only read scoped data through tools, and a server-side verifier blocks any figure it cannot trace back to those tool results.
+**SubTrack** turns INR bank transactions into a clearer picture of recurring spending. Deterministic rules identify subscription and fixed-bill candidates, expose confidence and uncertainty, and compute financial figures using Decimal arithmetic. The assistant reads user-scoped data through tools; a server-side verifier checks figures against that turn's tool results before an answer is displayed.
+
+**Status updated 29 October 2026.** The core product is complete for demo scope. The last verified paired release is **`527a87b`**, checked on 28 October: local files, GitHub `master`, Vercel and Render matched; hosted CI, automatic deployment and all 24 post-deploy smoke checks passed. Later commits must pass their own gates; this receipt does not certify them. The real-user beta remains blocked.
 
 ```text
 Statement (CSV / PDF / image) → Extract → Review → Normalize → Detect recurrence
@@ -57,7 +59,7 @@ A clock-relative demo loader feeds synthetic data through the **same real ingest
 | 🔁 **Recurrence Detection** | Weekly, monthly, quarterly and yearly cadence detection with regularity and amount-variation checks and a confidence score. |
 | 📋 **Subscriptions** | Filter, sort and review each detected plan, its underlying charges, status, category and price changes. |
 | 📅 **Renewals** | Next expected charge projected by calendar month from the last real charge, with missed-cycle and possibly-cancelled flags. |
-| 💡 **Recommendations** | Duplicate-plan savings, high-cost and price-increase notices, and possibly-unused plans. Each is explained and advisory only. |
+| 💡 **Recommendations** | Duplicate-plan savings, high-cost and price-increase notices, and usage-review suggestions only when a user-provided last-used date supports them. High-cost and price-change notices do not invent savings. |
 | 🏷️ **Categories** | Confirm or change categories; optional AI suggestions stay unconfirmed until you accept them. |
 | 💬 **Assistant** | Streaming chat over seven read-only tools. Unverified numbers never reach the browser. Offline by default, with optional opt-in Gemini. |
 | 🔔 **Alerts** | Renewal and monthly budget emails from a PostgreSQL-locked daily job, a private dev outbox or SMTP, and one-click unsubscribe. |
@@ -78,9 +80,13 @@ A clock-relative demo loader feeds synthetic data through the **same real ingest
 
 User confirmations, cancellations and category choices survive re-detection. Missed cycles express uncertainty only and never change a subscription's status on their own.
 
+The committed detector evaluation measured precision, recall and F1 of **1.0000** on synthetic history (16 true positives, zero false positives or misses), handwritten bank fixtures (3/0/0), and handwritten product fixtures (5/0/0). These are fixture results, not a real-bank accuracy estimate.
+
 ---
 
 ## 🏗️ System Architecture
+
+The diagram describes the local Compose architecture with a separate worker and restricted extractor. The free hosted demo uses its configured inline job mode, disables user uploads and does not provide an always-on worker guarantee.
 
 ```mermaid
 flowchart TB
@@ -157,7 +163,7 @@ flowchart LR
 | AI | Deterministic offline policy by default; optional Gemini REST function calling |
 | Email | Jinja2 templates, console outbox or SMTP with TLS, RFC 8058 one-click unsubscribe |
 | Testing | pytest on real PostgreSQL, Vitest + MSW, Playwright (Chromium, Firefox, WebKit), axe |
-| CI/CD | GitHub Actions (Gitleaks, checks, e2e, same-site auth); opt-in verified release workflow |
+| CI/CD | GitHub Actions (Gitleaks, checks, e2e, same-site auth); active exact-commit Render hook, Vercel build gate and post-deploy verification |
 | Hosting | Render (API, free tier) · Render PostgreSQL (free tier) · Vercel (frontend) |
 
 Exact versions: [frontend/package.json](frontend/package.json), [backend/requirements.in](backend/requirements.in), and the hash-pinned [backend/requirements.lock](backend/requirements.lock).
@@ -217,15 +223,25 @@ Demo data is generated relative to today in `APP_TIMEZONE`, and loading it again
 - `/api/v1/health` and the frontend's `/version.json` both report the deployed Git commit.
 - The free Render instance sleeps when idle, so the first request can take about a minute.
 
-Verified application release: `92b9ae6` (2026-10-26). Vercel and Render served that exact revision, all 23 post-deploy smoke checks passed, and [all four master CI jobs passed](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40315826402). These are dated verification receipts; the live revision endpoints and current CI badge show later changes.
+Last verified paired release: **`527a87b01476aee6ea766e3f8c38c8f65a56434e`**, checked on **28 October 2026**. Both hosts served that SHA and Render reported ready. Evidence:
+
+- [All four CI jobs passed](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40654535529): secrets, checks, e2e and same-site authentication.
+- [Automatic API deployment passed](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40655819688).
+- [Paired-source verification and all 24 deployed smoke checks passed](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40655990073).
+
+Check the [frontend revision](https://ai-powered-subscription-recurring-p.vercel.app/version.json), [API revision](https://ai-powered-subscription-recurring.onrender.com/api/v1/health) and [API readiness](https://ai-powered-subscription-recurring.onrender.com/api/v1/health/ready) for later releases. An older red Vercel build remains in deployment history; it does not describe the current production deployment.
+
+The release path is **push to `master` → successful exact-commit CI → Render deploy hook → matching API revision/readiness → Vercel build → paired-source smoke checks**. Render native Auto-Deploy is Off so the guarded workflow is the single API controller. Vercel's build-only GitHub read credential is not included in the frontend bundle. [Setup and credential maintenance](docs/CI_ACCESS_SETUP.md) · [Release evidence and limits](docs/RELEASE_GATE.md).
 
 Receipt import, mailbox sync, Gmail authorization and interest writes remain disabled on the public demo. Hosting stays free; the real-user beta remains locked. See [Free demo hosting](docs/FREE_DEMO_HOSTING.md) for the deployment setup.
+
+The free PostgreSQL database has a documented expiry of **19 November 2026**. Arrange a replacement before that date or accept loss of synthetic demo data; managed backups and point-in-time recovery have not been verified.
 
 ---
 
 ## 🔌 API Overview
 
-All business routes live under `/api/v1` and require a bearer access token. The complete contract is in [backend/openapi/openapi.json](backend/openapi/openapi.json) and at `/docs` while the API is running.
+Routes live under `/api/v1`. User business endpoints require a bearer access token; health, account entry/recovery, cookie-session and signed unsubscribe endpoints have their documented authentication rules. The complete contract is in [backend/openapi/openapi.json](backend/openapi/openapi.json) and at `/docs` while the API is running.
 
 | Area | Endpoints |
 |---|---|
@@ -257,7 +273,7 @@ Login errors never reveal whether an account exists. Passwords need 12+ characte
 | PDF | 10 MB, 30 pages; English text or scanned; encrypted PDFs use a separate memory-only password field |
 | Image | JPEG/PNG, 10 MB, 25 megapixels; clean scans around 200 dpi or better work best |
 
-- Original files and passwords are not kept, and row previews expire after 30 minutes.
+- Original bytes and PDF passwords are temporary job inputs, encrypted if persisted while queued or processing, and cleared on completion, failure, cancellation, expiry or account deletion. Row previews expire after 30 minutes; the app is not a statement archive.
 - Every extracted row needs your review, even when balances match.
 - INR only. Excel, phone photos and handwriting are unsupported or best effort.
 - Extraction runs locally in Docker with no cloud OCR, no LLM extraction and no API key. Native Windows parsing is unsupported; use the Linux Docker API.
@@ -274,6 +290,8 @@ Details: [Statement import](docs/STATEMENT_IMPORT.md).
 |---|---|
 | **Offline (default)** | `LLM_PROVIDER=fake`: a deterministic tool-using policy with no network and no hard-coded figures. Says so when information is unavailable. |
 | **Live Gemini (opt-in)** | `LLM_PROVIDER=gemini` plus your own `LLM_API_KEY` and `LLM_MODEL` in a private `.env`. Each user must consent separately. |
+
+The hosted demo runs **offline mode**. Gemini integration and its controls have been tested against local fake HTTP servers; no live Gemini evaluation has been performed. Live Gmail is unavailable, independently of the assistant provider setting.
 
 When live mode is used, only redacted questions, recent history, tool schemas and scoped merchant names, categories, amounts, dates and counts are sent. Raw descriptions, emails, account IDs and tokens are not. Redaction is not a complete PII filter, so do not type personal material.
 
@@ -359,6 +377,7 @@ are separate unfinished work. See [Mailbox Lab](docs/MAILBOX_LAB.md) for precise
 - Retention jobs purge old jobs (7 days), chat (30), alerts (180) and audit records (90). Account deletion purges immediately.
 - Emails honour bounce/complaint suppression and signed one-click unsubscribe links.
 - Python dependencies are hash-pinned; CI runs full-history Gitleaks, `npm audit` and lockfile checks.
+- Production web CSP permits self-hosted scripts and styles and blocks inline style attributes. Compiled UI and injection checks run in all three browsers; native WebKit reporting limits are recorded in [CSP hardening](docs/CSP_HARDENING.md).
 
 See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.md) and [Security incident log](docs/SECURITY_INCIDENT.md).
 
@@ -373,6 +392,7 @@ See [Privacy](docs/PRIVACY.md), [Account security](docs/PHASE8_ACCOUNT_SECURITY.
 | **Frontend: 99 Vitest tests** | Components and pages with typed MSW handlers, money formatting, accessibility |
 | **Browser e2e: 29 distinct passes** | 18 standard cases across Chromium, Firefox and WebKit, one strict same-site auth case, one public-demo restriction case and nine compiled-CSP cases; five profile-specific skips in the standard run. Real Compose stack, synthetic data, and light/dark/mobile axe checks. |
 
+These counts were verified in [CI for `527a87b`](https://github.com/devendrarajsingh07/AI-Powered-Subscription-Recurring-Payment-Manager/actions/runs/40654535529) on 28 October 2026. The 697 unit/integration badge totals 577 backend + 99 component + 21 release-gate tests; browser passes and deployed smoke checks are separate. Lint, types, OpenAPI/generated-type drift, builds and dependency audits passed. Recorded history/source secret scans found no leaks under the documented narrow synthetic-fixture exceptions. This is test evidence, not a security certification or production-capacity claim.
 ```sh
 make test       # pytest on PostgreSQL, detector evaluation, OpenAPI drift, Vitest, TS type drift
 make lint       # Ruff, ESLint, TypeScript
@@ -431,7 +451,7 @@ AI-Powered-Subscription-Recurring-Payment-Manager/
 │   └── requirements.lock
 ├── scripts/                      # Stack verification, e2e runner, release, smoke tests
 ├── docs/                         # Architecture, privacy, runbook, launch gates, screenshots
-├── .github/workflows/            # ci.yml, deploy.yml
+├── .github/workflows/            # ci.yml, deploy.yml, verify-demo.yml
 ├── docker-compose.yml
 ├── Makefile
 ├── PROJECT_INFO.md               # Current state and handoff notes
@@ -487,6 +507,7 @@ Main settings are in [.env.example](.env.example); the rest have safe defaults i
 | Alerts and email | `NOTIFIER_PROVIDER`, `SCHEDULER_ENABLED`, `ALERT_JOB_HOUR`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_SECURITY` |
 | Insights | `HIGH_COST_YEARLY_INR`, `HIGH_COST_SHARE`, `UNUSED_DAYS` |
 | Web | `WEB_ORIGIN`, `VITE_API_BASE_URL`, `VITE_API_PROXY_TARGET`, `API_PORT`, `WEB_PORT` |
+| Hosted release only | GitHub variables `DEPLOY_STRATEGY=api-hook`, `DEPLOY_ENABLED=true`, `DEMO_API_URL`, `DEMO_WEB_URL`; encrypted Actions secret `RENDER_DEPLOY_HOOK_URL`; Vercel Production Secret `GITHUB_RELEASE_READ_TOKEN`. Keep values out of source, logs and VITE-prefixed variables. |
 
 ---
 
@@ -522,6 +543,12 @@ Older builds needed `DATABASE_URL` to start with `postgresql+psycopg://`. Curren
 
 Check the recipient, alert settings and planned send date in Settings, then run `make run-alerts AS_OF=YYYY-MM-DD` and `make outbox`. Past or possibly-cancelled renewals are skipped on purpose.
 
+### Vercel shows an old failed deployment
+
+Compare the failed build's commit with the current production deployment and both public revision endpoints. The historical `5d9f4ce` build stopped with `Release metadata unavailable or invalid`; `2492cd2` timed out waiting for the matching API. Later `1646662` and `527a87b` releases passed after scoped metadata authentication and the API-hook controller were configured. Keep those failed records as history; do not bypass the gate or redeploy old code to clear a red entry.
+
+For a new failure, inspect the exact build log, matching GitHub CI run and Render revision/readiness. Expired build credentials or unavailable metadata fail closed, preserving the previous frontend. Renew scoped credentials through their provider dashboards; never paste their values into chat or commit them. See the [release runbook](docs/RUNBOOK.md).
+
 ---
 
 ## 📚 Engineering Documentation
@@ -542,6 +569,8 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 | [Definition of Done](docs/DOD.md) | Evidence table and honest gaps |
 | [Phase 8 Plan](docs/PHASE8_PLAN.md) | Implementation decisions for the beta foundation |
 | [Free Demo Hosting](docs/FREE_DEMO_HOSTING.md) | Render and Vercel setup |
+| [Release Gate](docs/RELEASE_GATE.md) | Exact-commit deployment verification, fail-closed builds and hosted rollback evidence |
+| [CI Access Setup](docs/CI_ACCESS_SETUP.md) | Scoped deployment credentials, activation and maintenance |
 | [Security Incident](docs/SECURITY_INCIDENT.md) | Credential exposure and rotation record |
 | [UI QA](docs/design/QA.md) | State matrix and visual checks |
 | [Legal drafts](docs/legal/) | Privacy policy and terms (**drafts, not approved**) |
@@ -554,12 +583,15 @@ Check the recipient, alert settings and planned send date in Settings, then run 
 | Area | Status |
 |---|---|
 | Phases 1–7 (core product, statements, assistant, alerts, UI) | ✅ Complete for demo scope |
-| Phase 8 code (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle, release pipeline) | Implemented; stand-in tests and historical CI receipts in PROJECT_INFO. The free demo uses its configured inline mode; local multi-instance, restore/load/ZAP and same-schema rollback drills are measured in docs/LOCAL_DRILLS.md. Managed recovery remains unverified. The native CI release gate and hosted receipts are tracked in docs/RELEASE_GATE.md. |
+| Phase 8 foundation (accounts, durable jobs, rate limits, AI controls, retention, email lifecycle) | Implemented and locally/CI tested, including stand-ins for external services. The free demo uses inline jobs; a dedicated deployed worker, real sender, custom same-site origins and managed recovery remain launch requirements. |
+| Automatic demo releases | Verified for `527a87b`: all four CI jobs, exact-SHA Render hook, Vercel gate, paired versions and all 24 deployed smoke checks passed. Render native Auto-Deploy is Off. |
 | Receipt inbox and interests | Verified locally and in CI: synthetic sync, explicit evidence matching, privacy controls and separate voluntary preferences. Disabled on the hosted demo. |
 | Gmail protocol foundation | Local-only tests cover PKCE, scoped single-use state, encryption and bounded HTTP. Actual callback/orchestration, real incremental sync and revocation delivery are **not built**. |
 | Provider partnerships and offers | **Not built**; require owner-led agreements, licensing and fulfilment. Interest declarations do not grant redistribution rights. |
 | Local operational drills | Eight coordination checks; 30-table dump/restore equality; nine load flows; local rollback/re-promotion. The October28 strict-CSP rescan has zero high/medium/low findings; informational discovery findings remain. [Evidence and limits](docs/LOCAL_DRILLS.md). |
 | Real-user beta | 🚫 Blocked: needs managed backups/PITR, deployed worker, staging, real email delivery, domains and approved legal documents |
+
+Before a real-user launch, the owner also needs monitoring and an incident contact, a human screen-reader pass, private statement/receipt accuracy checks, paid-tier Gemini billing/spend controls and a live evaluation if enabled, and a public/private repository decision. Legal documents remain unapproved drafts. No provider partnerships or shared-subscription rights are implied by the local interest lab. [Launch checklist](docs/LAUNCH.md).
 
 ---
 
@@ -571,7 +603,7 @@ The repository keeps **one branch: `master`**, both locally and on GitHub. Do no
 2. Keep money in `Decimal`, API contracts typed, and migrations additive.
 3. Add or update tests for behaviour changes, including independent ground-truth checks.
 4. Run `make lint`, `make test` and `make e2e`; regenerate types with `make openapi types` if the API changes.
-5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect the exact-commit CI result before any manual demo API deployment. Documentation-only changes need link/diff checks; application changes still require the full relevant gates. The Vercel build gate waits for exact-commit CI and a matching ready API; Render native auto-deploy is Off; the scoped API-hook workflow is the single controller. Automatic exact-CI API deployment, authenticated Vercel build gating and paired-source/24-check smoke were demonstrated for 1646662. Credentials/activation and exact hosted receipts are recorded in docs/CI_ACCESS_SETUP.md. See [release configuration and receipts](docs/RELEASE_GATE.md).
+5. Record the user-facing impact, verification and limitations in the commit and handoff. Push directly to `master`; inspect that commit's CI and automatic release results. Documentation-only changes need link/diff checks; application changes still require the full relevant local gates. The enabled deployment workflow still runs hosted CI for documentation pushes. Keep Render native Auto-Deploy Off and preserve the exact-CI/API Vercel gate. Never infer publication from a push alone. See [CI access setup](docs/CI_ACCESS_SETUP.md) and [release receipts](docs/RELEASE_GATE.md).
 
 Never commit `.env` files, real statements, outbox copies, keys or browser traces. Use the ignored `private-statements/` folder or a location outside the checkout.
 
@@ -590,9 +622,3 @@ Released under the [MIT License](LICENSE), copyright © 2026 DEVENDRA RAJ SINGH.
 Created by [Devendra Raj Singh](https://github.com/devendrarajsingh07)
 
 </div>
-
-CI setup: [credential setup and activation receipt](docs/CI_ACCESS_SETUP.md). Credentials and
-activation flags are saved; the automatic API-hook/Vercel release and all24 post-deploy smoke checks passed for1646662.
-The existing service hook is scoped
-to Render deployment; the Vercel build credential reads only GitHub commit/CI metadata. Never use
-a VITE-prefixed name for either credential. The public demo remains synthetic-only and beta locked.
