@@ -218,10 +218,24 @@ export function StatementReview({
           ? "Receipt fields are unverified. Check the actual payment date, merchant, amount and debit/credit type against your synthetic fixture. Approval does not verify authenticity or bank settlement. INR only."
           : "OCR can misread digits. Compare dates, descriptions, amounts and debit/credit types with your local copy. You are responsible for verifying flagged values before import. All imports are INR only."}
       </p>
-      <p>
-        Source: {result.source_type.replaceAll("_", " ")} · Pages:{" "}
-        {result.page_count} · Flagged rows: {result.flagged_count}
-      </p>
+      <dl className="review-facts">
+        <div>
+          <dt>Source</dt>
+          <dd>{result.source_type.replaceAll("_", " ")}</dd>
+        </div>
+        <div>
+          <dt>Pages</dt>
+          <dd>{result.page_count}</dd>
+        </div>
+        <div>
+          <dt>Rows</dt>
+          <dd>{result.rows.length}</dd>
+        </div>
+        <div>
+          <dt>Flagged rows</dt>
+          <dd>{result.flagged_count}</dd>
+        </div>
+      </dl>
       {!receipt && (
         <p className="notice-box">
           Reconciliation: <strong>{result.reconciliation.status}</strong> ·
@@ -233,17 +247,20 @@ export function StatementReview({
       {result.warnings.map((warning) => (
         <p key={warning}>{warning}</p>
       ))}
-      <p className="muted">
-        Preview expires: {job.expires_at}. Originals are not retained.{" "}
-        {receipt
-          ? "Only extracted fields are retained for review; email headers and bodies are not stored."
-          : "This preview uses only your browser’s local file."}
-      </p>
-      <p className="muted">
-        {receipt
-          ? "Every receipt row needs explicit approval. The merchant is normalized; original email content is never displayed or embedded here."
-          : "Recognition scores are not transaction accuracy. Descriptions are plain text; formula prefixes are neutralized in this preview. Extracted descriptions retain their original text unless you edit them."}
-      </p>
+      <details className="review-fine-print">
+        <summary>About this preview</summary>
+        <p className="muted">
+          Preview expires: {job.expires_at}. Originals are not retained.{" "}
+          {receipt
+            ? "Only extracted fields are retained for review; email headers and bodies are not stored."
+            : "This preview uses only your browser’s local file."}
+        </p>
+        <p className="muted">
+          {receipt
+            ? "Every receipt row needs explicit approval. The merchant is normalized; original email content is never displayed or embedded here."
+            : "Recognition scores are not transaction accuracy. Descriptions are plain text; formula prefixes are neutralized in this preview. Extracted descriptions retain their original text unless you edit them."}
+        </p>
+      </details>
       <div
         className={
           receipt ? "receipt-review-layout" : "statement-review-layout"
@@ -335,11 +352,19 @@ export function StatementReview({
                   const value = { ...row, ...edits[row.index] };
                   const n = row.index + 1;
                   return (
-                    <tr key={row.index}>
+                    <tr
+                      key={row.index}
+                      className={
+                        value.delete
+                          ? "is-removed"
+                          : value.verified
+                            ? "is-reviewed"
+                            : undefined
+                      }
+                    >
                       <th scope="row">
                         Row {n}
-                        <br />
-                        Page {row.page}
+                        <small>Page {row.page}</small>
                       </th>
                       {value.delete ? (
                         <td colSpan={6}>
@@ -426,7 +451,7 @@ export function StatementReview({
                               ))}
                             </ul>
                           </td>
-                          <td>
+                          <td className="review-cell">
                             <label>
                               <input
                                 type="checkbox"
@@ -461,7 +486,15 @@ export function StatementReview({
               </p>
             )}
           </div>
-          <div className="review-toolbar">
+          <div className="review-toolbar review-actions">
+            <span className="review-count">
+              {`${
+                result.rows.filter(
+                  (row) =>
+                    edits[row.index]?.delete || edits[row.index]?.verified,
+                ).length
+              } of ${result.rows.length} rows reviewed`}
+            </span>
             <button
               disabled={page === 0}
               onClick={() => setPage((current) => current - 1)}

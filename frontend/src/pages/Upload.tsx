@@ -183,6 +183,33 @@ function UploadWorkspace({ receiptsEnabled }: { receiptsEnabled: boolean }) {
       setBusy(false);
     }
   }
+  const progress = (
+    <>
+      {uploadId &&
+        (upload.isError ? (
+          <ErrorState
+            error={upload.error}
+            retry={() => {
+              void upload.refetch();
+            }}
+          />
+        ) : upload.data ? (
+          <UploadProgress upload={upload.data} />
+        ) : (
+          <Loading text="Waiting for upload progress…" />
+        ))}
+      {!receiptMode && upload.data?.status === "failed" && (
+        <button
+          onClick={() => {
+            setUploadId(null);
+            if (file) void choose(file);
+          }}
+        >
+          Retry upload
+        </button>
+      )}
+    </>
+  );
   return (
     <>
       <Heading
@@ -216,6 +243,7 @@ function UploadWorkspace({ receiptsEnabled }: { receiptsEnabled: boolean }) {
           </select>
         </label>
       )}
+      {receiptMode && progress}
       {receiptMode && (
         <ReceiptImport
           onImported={setUploadId}
@@ -224,97 +252,25 @@ function UploadWorkspace({ receiptsEnabled }: { receiptsEnabled: boolean }) {
       )}
       {!receiptMode && (
         <>
-          {!statementJobId && !uploadId && <DemoPanel />}
-          <div className="steps" aria-label="Upload steps">
-            <span
-              className={
-                !preview && !uploadId && !statementJobId ? "current" : ""
-              }
-            >
-              1 · Choose a file
-            </span>
-            <span className={preview || statementJobId ? "current" : ""}>
-              2 · Check columns
-            </span>
-            <span className={uploadId ? "current" : ""}>
-              3 · Process & review
-            </span>
-          </div>
-          {statementJobId && file && (
-            <StatementReview
-              key={statementJobId}
-              jobId={statementJobId}
-              file={file}
-              onImported={(id) => {
-                setStatementJobId(null);
-                setUploadId(id);
-              }}
-              onCancel={() => {
-                setStatementJobId(null);
-                picker.current?.focus();
-              }}
-              onRetry={() => void choose(file)}
-            />
-          )}
-          <section className="panel">
-            <div
-              className="dropzone"
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                if (!busy) void choose(event.dataTransfer.files[0]);
-              }}
-            >
-              <FileUp size={36} />
-              <h2>Start with your transaction history</h2>
-              <p>Drop a CSV, PDF, JPEG or PNG here, or choose a file below.</p>
-              <label className="file-label">
-                Choose statement file
-                <input
-                  aria-label="Choose statement file"
-                  ref={picker}
-                  type="file"
-                  accept=".csv,.pdf,.jpg,.jpeg,.png,text/csv,application/pdf,image/jpeg,image/png"
-                  disabled={busy}
-                  onChange={(event) => {
-                    void choose(event.target.files?.[0]);
-                    event.target.value = "";
-                  }}
-                />
-              </label>
-              <small>
-                CSV: 5 MB / 50,000 rows · PDF: 10 MB / 30 pages · JPEG/PNG: 10
-                MB / 25 megapixels · INR only
-              </small>
-            </div>
-            <p className="muted">
-              Simple date / description / amount / type exports and Indian bank
-              debit / credit layouts are supported. Other currencies are
-              rejected by the server for CSV. For extracted statements, verify
-              the currency yourself; only INR is supported.
-            </p>
-            <p className="muted">
-              PDF/image extraction runs locally on our server and requires
-              review. Use clean English scans around 200 dpi or better. Photos,
-              handwriting, heavy skew and blur may be rejected.
-            </p>
-            <label>
-              PDF password (only if encrypted)
-              <input
-                type="password"
-                autoComplete="off"
-                value={password}
-                maxLength={256}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-            <small>
-              Used in memory only, never stored or logged. Enter it before
-              choosing an encrypted PDF, or before retrying.
-            </small>
-          </section>
+          <ol className="steps" aria-label="Upload steps">
+            {["Choose a file", "Review", "Import"].map((name, index) => {
+              const at = uploadId ? 2 : preview || statementJobId ? 1 : 0;
+              return (
+                <li
+                  key={name}
+                  className={
+                    index === at ? "current" : index < at ? "done" : undefined
+                  }
+                  aria-current={index === at ? "step" : undefined}
+                >
+                  {name}
+                </li>
+              );
+            })}
+          </ol>
           {error && <ErrorState error={new Error(error)} />}
           {busy && <Loading text="Reading your statement…" />}
+          {progress}
           {preview && (
             <section className="panel">
               <h2>Check your column mapping</h2>
@@ -412,30 +368,98 @@ function UploadWorkspace({ receiptsEnabled }: { receiptsEnabled: boolean }) {
               </button>
             </section>
           )}
+          {statementJobId && file && (
+            <StatementReview
+              key={statementJobId}
+              jobId={statementJobId}
+              file={file}
+              onImported={(id) => {
+                setStatementJobId(null);
+                setUploadId(id);
+              }}
+              onCancel={() => {
+                setStatementJobId(null);
+                picker.current?.focus();
+              }}
+              onRetry={() => void choose(file)}
+            />
+          )}
+          <section className="panel upload-chooser">
+            <div
+              className="dropzone"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (!busy) void choose(event.dataTransfer.files[0]);
+              }}
+            >
+              <FileUp size={36} />
+              <h2>Start with your transaction history</h2>
+              <p>Drop a CSV, PDF, JPEG or PNG here, or choose a file below.</p>
+              <label className="file-label">
+                Choose statement file
+                <input
+                  aria-label="Choose statement file"
+                  ref={picker}
+                  type="file"
+                  accept=".csv,.pdf,.jpg,.jpeg,.png,text/csv,application/pdf,image/jpeg,image/png"
+                  disabled={busy}
+                  onChange={(event) => {
+                    void choose(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            <div className="upload-facts">
+              <h3>What you can import</h3>
+              <dl className="definition-list">
+                <div>
+                  <dt>CSV</dt>
+                  <dd>5 MB, 50,000 rows</dd>
+                </div>
+                <div>
+                  <dt>PDF</dt>
+                  <dd>10 MB, 30 pages</dd>
+                </div>
+                <div>
+                  <dt>JPEG or PNG</dt>
+                  <dd>10 MB, 25 megapixels</dd>
+                </div>
+                <div>
+                  <dt>Currency</dt>
+                  <dd>INR only</dd>
+                </div>
+              </dl>
+              <p className="muted">
+                Simple date / description / amount / type exports and Indian
+                bank debit / credit layouts are supported. Other currencies are
+                rejected by the server for CSV. For extracted statements, verify
+                the currency yourself; only INR is supported.
+              </p>
+              <p className="muted">
+                PDF/image extraction runs locally on our server and requires
+                review. Use clean English scans around 200 dpi or better.
+                Photos, handwriting, heavy skew and blur may be rejected.
+              </p>
+              <label>
+                PDF password (only if encrypted)
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={password}
+                  maxLength={256}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </label>
+              <small>
+                Used in memory only, never stored or logged. Enter it before
+                choosing an encrypted PDF, or before retrying.
+              </small>
+            </div>
+          </section>
+          {!statementJobId && !uploadId && !preview && <DemoPanel />}
         </>
-      )}
-      {uploadId &&
-        (upload.isError ? (
-          <ErrorState
-            error={upload.error}
-            retry={() => {
-              void upload.refetch();
-            }}
-          />
-        ) : upload.data ? (
-          <UploadProgress upload={upload.data} />
-        ) : (
-          <Loading text="Waiting for upload progress…" />
-        ))}
-      {!receiptMode && upload.data?.status === "failed" && (
-        <button
-          onClick={() => {
-            setUploadId(null);
-            if (file) void choose(file);
-          }}
-        >
-          Retry upload
-        </button>
       )}
       <section className="panel">
         <h2>Recent uploads</h2>

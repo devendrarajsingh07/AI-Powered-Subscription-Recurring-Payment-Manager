@@ -78,7 +78,7 @@ export function SpendCharts({
               className="table-scroll"
               tabIndex={0}
               role="region"
-              aria-label="Scrollable data table"
+              aria-label="Monthly spending table"
             >
               <table>
                 <caption>Actual charges by month</caption>
@@ -160,7 +160,7 @@ export function SpendCharts({
               className="table-scroll"
               tabIndex={0}
               role="region"
-              aria-label="Scrollable data table"
+              aria-label="Category spending table"
             >
               <table>
                 <caption>Category monthly equivalents</caption>
