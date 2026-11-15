@@ -19,10 +19,11 @@ import {
 import { formatMoney } from "../lib/money";
 import { SpendCharts } from "../components/SpendCharts";
 import { SavingsPanel } from "../components/SavingsPanel";
+import { MonthAhead } from "../components/MonthAhead";
 export default function Dashboard() {
   const summary = useSummary();
   const trend = useTrend();
-  const renewals = useRenewals(5);
+  const renewals = useRenewals(100);
   return (
     <>
       <Heading
@@ -91,6 +92,9 @@ export default function Dashboard() {
               </small>
             </article>
           </div>
+          {!!renewals.data?.items.length && (
+            <MonthAhead items={renewals.data.items} />
+          )}
           {!summary.data.active_count && (
             <div className="notice-box">
               Your workspace is ready. <Link to="/upload">Upload a CSV</Link> to
@@ -128,7 +132,7 @@ export default function Dashboard() {
             }}
           />
         ) : (
-          <RenewalRows items={renewals.data.items} />
+          <RenewalRows items={renewals.data.items.slice(0, 5)} />
         )}
       </section>
       <SavingsPanel />

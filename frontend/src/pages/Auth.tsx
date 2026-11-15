@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { api, ApiError, errorMessage } from "../api/client";
 import { getSignOutNotice, saveSession, useSession } from "../lib/session";
 import { useAuthMode } from "../components/AuthMode";
@@ -116,20 +116,28 @@ export function Auth({ register = false }: { register?: boolean }) {
           SubTrack<span className="brand-dot">.</span>
         </Link>
         <div>
-          <span className="eyebrow">A LITTLE CLARITY, EVERY MONTH</span>
-          <h1>
-            Keep track.
-            <br />
-            Stay a step ahead.
-          </h1>
+          <h1>Know what leaves your account before it does.</h1>
           <p>
-            A clear view of your subscriptions, recurring bills and the renewals
-            around the corner.
+            SubTrack reads your bank statement, finds every subscription and
+            recurring bill, and shows what renews next.
           </p>
-          <div className="auth-proof">
-            <ShieldCheck size={20} />
-            <span>CSV uploads. Your data, your control.</span>
-          </div>
+          <figure>
+            <ul className="auth-ledger">
+              <li>
+                <span>Music plan, monthly</span>
+                <span>₹119.00</span>
+              </li>
+              <li>
+                <span>Cloud storage, monthly</span>
+                <span>₹130.00</span>
+              </li>
+              <li className="due">
+                <span>Streaming plan, renews in 3 days</span>
+                <span>₹219.00</span>
+              </li>
+            </ul>
+            <figcaption className="sr-only">Sample entries</figcaption>
+          </figure>
         </div>
         <p className="notice">
           For demo and educational use with uploaded or simulated data.
@@ -137,7 +145,6 @@ export function Auth({ register = false }: { register?: boolean }) {
       </section>
       <section className="auth-panel">
         <div className="auth-form">
-          <span className="eyebrow">WELCOME TO SUBTRACK</span>
           <h2>{register ? "Create your account" : "Good to see you"}</h2>
           <p>
             {register

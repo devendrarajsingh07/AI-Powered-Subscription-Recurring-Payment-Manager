@@ -166,7 +166,6 @@ function Shell() {
         <a className="brand" href="/">
           SubTrack<span className="brand-dot">.</span>
         </a>
-        <span className="nav-label">YOUR WORKSPACE</span>
         <nav aria-label="Main navigation">
           {navigation.map(([path, title, Icon]) => (
             <NavLink

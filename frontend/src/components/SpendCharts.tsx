@@ -58,14 +58,14 @@ export function SpendCharts({
   return (
     <>
       <div className="chart-controls">
-        <span className="eyebrow">THE BIG PICTURE</span>
+        <h2 className="eyebrow">Where the money goes</h2>
         <button aria-pressed={tables} onClick={() => setTables(!tables)}>
           {tables ? "Show charts" : "Show data tables"}
         </button>
       </div>
       <div className="chart-grid">
         <section className="panel">
-          <h2>Spending over time</h2>
+          <h3>Spending over time</h3>
           <p className="muted">Actual detected charges · last 12 months</p>
           {pending ? (
             <Loading />
@@ -108,7 +108,7 @@ export function SpendCharts({
               role="img"
               aria-label="Trend of actual recurring charges. Use Show data tables for exact amounts."
             >
-              <ResponsiveContainer width="100%" height={245}>
+              <ResponsiveContainer width="100%" height={320}>
                 <AreaChart
                   data={points}
                   margin={{ top: 20, right: 15, left: 15, bottom: 0 }}
@@ -151,7 +151,7 @@ export function SpendCharts({
           )}
         </section>
         <section className="panel">
-          <h2>By category</h2>
+          <h3>By category</h3>
           <p className="muted">Monthly equivalent · all recurring payments</p>
           {!slices.length ? (
             <Empty>Upload a statement to see categories.</Empty>
@@ -227,9 +227,7 @@ export function SpendCharts({
                 {slices.map((item, index) => (
                   <li key={index}>
                     <span>
-                      <i
-                        style={{ background: palette[index % palette.length] }}
-                      />
+                      <i className={`swatch-${index % palette.length}`} />
                       {item.name}
                     </span>
                     <strong>{formatMoney(item.monthly_equivalent)}</strong>

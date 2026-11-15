@@ -29,3 +29,8 @@ export const dateLabel = (value: string) =>
   }).format(new Date(value.slice(0, 10) + "T12:00:00"));
 export const label = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
+/** Whole-percent label for a 0-1 decimal string, truncated; display only. */
+export function percent(value: string): string {
+  const [whole, fraction = ""] = String(value).split(".");
+  return `${Number(whole) * 100 + Number((fraction + "00").slice(0, 2))}%`;
+}

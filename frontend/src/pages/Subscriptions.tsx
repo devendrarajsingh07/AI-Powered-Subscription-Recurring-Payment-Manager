@@ -17,7 +17,7 @@ import {
   useSubscriptions,
   type SubscriptionFilters,
 } from "../hooks/data";
-import { dateLabel, formatMoney, label } from "../lib/money";
+import { dateLabel, formatMoney, label, percent } from "../lib/money";
 type Subscription = components["schemas"]["SubscriptionOut"];
 export function filtersFromSearch(
   params: URLSearchParams,
@@ -215,9 +215,8 @@ export default function Subscriptions() {
                             title="Deterministic score from regularity, amount stability and occurrence count; not certainty."
                           >
                             {Number(item.confidence) < 0.8
-                              ? "Lower confidence · "
-                              : "Score "}
-                            {String(item.confidence)}
+                              ? `Lower confidence, ${percent(item.confidence)}`
+                              : `${percent(item.confidence)} confidence`}
                           </span>
                           <small>
                             {item.occurrences} charges ·{" "}
@@ -226,7 +225,9 @@ export default function Subscriptions() {
                               : "Review suggested"}
                           </small>
                         </td>
-                        <td>{dateLabel(item.next_expected)}</td>
+                        <td className="nowrap">
+                          {dateLabel(item.next_expected)}
+                        </td>
                         <td>
                           <span
                             className={`badge ${item.status === "active" ? "positive" : ""}`}
