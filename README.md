@@ -467,7 +467,9 @@ AI-Powered-Subscription-Recurring-Payment-Manager/
 |---|---|
 | `/login`, `/register` | Sign in, register, or start an isolated public demo |
 | `/verify-email`, `/reset-password` | Email verification and password recovery |
-| `/` | Dashboard |
+| `/` | Public journey when signed out, recurring-spend dashboard when signed in |
+| `/journey` | Six chapters on how SubTrack handles statements, permissions and recurring charges |
+| `/system-notes` | Public documentation on service scope, data handling and accessibility |
 | `/upload` | Import CSV, PDF or image statements and review rows |
 | `/subscriptions` | Detected subscriptions and fixed bills |
 | `/renewals` | Upcoming renewals |
@@ -476,6 +478,8 @@ AI-Powered-Subscription-Recurring-Payment-Manager/
 | `/settings` | Budget, alerts, export, demo data and account deletion |
 | `/mailbox` | Development-only synthetic receipt evidence, explicit bank matching and voluntary interests |
 | `/unsubscribe` | One-click email unsubscribe |
+
+On the journey, drag an object or focus it and press the arrow keys to rotate it. Home resets the view. Chapter links jump directly to each scene. Pause motion switches to still images, which are also used automatically with reduced motion or when 3D rendering is unavailable. The dashboard's import walkthrough runs locally in the browser and never submits a statement.
 
 <table>
   <tr>

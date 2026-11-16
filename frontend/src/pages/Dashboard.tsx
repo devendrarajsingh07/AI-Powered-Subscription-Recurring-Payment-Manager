@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useRenewals, useSummary, useTrend } from "../hooks/data";
 import {
-  Empty,
   ErrorState,
   Heading,
   Loading,
@@ -20,20 +19,25 @@ import { formatMoney } from "../lib/money";
 import { SpendCharts } from "../components/SpendCharts";
 import { SavingsPanel } from "../components/SavingsPanel";
 import { MonthAhead } from "../components/MonthAhead";
+import { ImportWalkthrough } from "../cinematic/ImportWalkthrough";
+import { useAuthMode } from "../components/AuthMode";
 export default function Dashboard() {
   const summary = useSummary();
   const trend = useTrend();
   const renewals = useRenewals(100);
+  const mode = useAuthMode();
   return (
     <>
       <Heading
         title="Your recurring spend"
         subtitle="A clearer picture of every renewal."
       >
-        <Link className="button primary" to="/upload">
-          <Upload size={17} />
-          Upload statement
-        </Link>
+        {mode.data?.public_demo_only === false && (
+          <Link className="button primary" to="/upload">
+            <Upload size={17} />
+            Upload statement
+          </Link>
+        )}
       </Heading>
       <DemoPanel />
       {summary.isPending ? (
@@ -92,24 +96,19 @@ export default function Dashboard() {
               </small>
             </article>
           </div>
-          {!!renewals.data?.items.length && (
-            <MonthAhead items={renewals.data.items} />
-          )}
           {!summary.data.active_count && (
             <div className="notice-box">
-              Your workspace is ready. <Link to="/upload">Upload a CSV</Link> to
-              detect recurring payments.
+              {mode.data?.public_demo_only === false ? (
+                <>
+                  {" "}
+                  <Link to="/upload">Upload a statement</Link> or load the
+                  synthetic demo to explore recurring payments.
+                </>
+              ) : (
+                "Load the sample data to explore recurring payments."
+              )}
             </div>
           )}
-          <SpendCharts
-            summary={summary.data}
-            trend={trend.data}
-            pending={trend.isPending}
-            error={trend.error}
-            retry={() => {
-              void trend.refetch();
-            }}
-          />
         </>
       )}
       <section className="panel">
@@ -136,11 +135,20 @@ export default function Dashboard() {
         )}
       </section>
       <SavingsPanel />
-      {summary.data?.active_count === 0 && (
-        <Empty>
-          Start with your own statement or the synthetic sample CSV included in
-          the project.
-        </Empty>
+      <ImportWalkthrough />
+      {!!renewals.data?.items.length && (
+        <MonthAhead items={renewals.data.items} />
+      )}
+      {summary.data && (
+        <SpendCharts
+          summary={summary.data}
+          trend={trend.data}
+          pending={trend.isPending}
+          error={trend.error}
+          retry={() => {
+            void trend.refetch();
+          }}
+        />
       )}
     </>
   );

@@ -61,6 +61,30 @@ test("native-select CSP reporting is characterized separately from application C
   ).toEqual([]);
 });
 
+test("compiled public journey and notes work under strict CSP", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/journey");
+  await expect(
+    page.getByRole("heading", { name: "Money moves. Trust stays." }),
+  ).toBeVisible();
+  await expect(page.getByText("Still view", { exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(() => (window as CspWindow).cspViolations),
+  ).toEqual([]);
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "System notes" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "How SubTrack works" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => (window as CspWindow).cspViolations),
+  ).toEqual([]);
+});
+
 test("production CSP blocks inline CSS payloads while allowing trusted property updates", async ({
   page,
 }) => {
@@ -75,7 +99,7 @@ test("production CSP blocks inline CSS payloads while allowing trusted property 
   ])
     expect(policy.split(";").map((part) => part.trim())).toContain(directive);
   await expect(
-    page.getByRole("heading", { name: "Good to see you" }),
+    page.getByRole("heading", { name: "Open your workspace" }),
   ).toBeVisible();
   const results = await page.evaluate(() => {
     const target = document.createElement("div");

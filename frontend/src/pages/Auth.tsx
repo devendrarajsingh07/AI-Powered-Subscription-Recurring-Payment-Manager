@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { api, ApiError, errorMessage } from "../api/client";
 import { getSignOutNotice, saveSession, useSession } from "../lib/session";
 import { useAuthMode } from "../components/AuthMode";
+import { CinemaNav } from "../cinematic/CinemaNav";
 export function passwordError(
   password: string,
   register: boolean,
@@ -110,199 +111,183 @@ export function Auth({ register = false }: { register?: boolean }) {
     }
   }
   return (
-    <main id="content" tabIndex={-1} className="auth-page">
-      <section className="auth-story">
-        <Link className="brand" to="/login">
-          SubTrack<span className="brand-dot">.</span>
-        </Link>
-        <div>
-          <h1>Know what leaves your account before it does.</h1>
-          <p>
-            SubTrack reads your bank statement, finds every subscription and
-            recurring bill, and shows what renews next.
-          </p>
-          <figure>
-            <ul className="auth-ledger">
-              <li>
-                <span>Music plan, monthly</span>
-                <span>₹119.00</span>
-              </li>
-              <li>
-                <span>Cloud storage, monthly</span>
-                <span>₹130.00</span>
-              </li>
-              <li className="due">
-                <span>Streaming plan, renews in 3 days</span>
-                <span>₹219.00</span>
-              </li>
-            </ul>
-            <figcaption className="sr-only">Sample entries</figcaption>
-          </figure>
-        </div>
-        <p className="notice">
-          For demo and educational use with uploaded or simulated data.
-        </p>
-      </section>
-      <section className="auth-panel">
-        <div className="auth-form">
-          <h2>{register ? "Create your account" : "Good to see you"}</h2>
-          <p>
-            {register
-              ? "Start with a statement. Get a clearer picture."
-              : "Sign in to your recurring spend workspace."}
-          </p>
-          {state?.message && (
-            <p role="status" className="success">
-              {state.message}
+    <div className="cinema-site cinema-access">
+      <header className="cinema-header">
+        <CinemaNav />
+      </header>
+      <main id="content" tabIndex={-1} className="auth-page">
+        <div className="cinema-access-art" aria-hidden="true" />
+        <section className="auth-panel">
+          <div className="auth-form">
+            <h1>
+              {register && !mode.data?.public_demo_only
+                ? "Create your account"
+                : "Open your workspace"}
+            </h1>
+            <p className="cinema-access-intro">
+              {register
+                ? "Start with a statement. See what comes around."
+                : "See your recurring spend, clearly in one place."}
             </p>
-          )}
-          {state?.deleted && (
-            <details open>
-              <summary>Deleted data counts</summary>
-              <dl className="definition-list">
-                {Object.entries(state.deleted).map(([name, count]) => (
-                  <div key={name}>
-                    <dt>{name.replaceAll("_", " ")}</dt>
-                    <dd>{count}</dd>
-                  </div>
-                ))}
-              </dl>
-            </details>
-          )}
-          {mode.isPending ? (
-            <p role="status">Checking sign-in options…</p>
-          ) : mode.isError ? (
-            <>
-              <p role="alert">Sign-in options are unavailable. Please retry.</p>
-              <button
-                onClick={() => {
-                  void mode.refetch();
-                }}
-              >
-                Retry
-              </button>
-            </>
-          ) : mode.data?.public_demo_only ? (
-            <>
-              <p>
-                No email or password needed. Each session is isolated and
-                expires automatically.
+            {state?.message && (
+              <p role="status" className="success">
+                {state.message}
               </p>
-              <button
-                className="primary full"
-                disabled={busy}
-                onClick={() => {
-                  setBusy(true);
-                  setError("");
-                  void api
-                    .POST("/api/v1/auth/demo")
-                    .then((result) => {
-                      saveSession(result.data!);
-                      navigate(destination, { replace: true });
-                    })
-                    .catch((caught) => setError(errorMessage(caught)))
-                    .finally(() => setBusy(false));
-                }}
-              >
-                {busy ? "Starting demo…" : "Start isolated demo"}
-              </button>
-              {error && (
-                <p role="alert" className="error">
-                  {error}
+            )}
+            {state?.deleted && (
+              <details open>
+                <summary>Deleted data counts</summary>
+                <dl className="definition-list">
+                  {Object.entries(state.deleted).map(([name, count]) => (
+                    <div key={name}>
+                      <dt>{name.replaceAll("_", " ")}</dt>
+                      <dd>{count}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </details>
+            )}
+            {mode.isPending ? (
+              <p role="status">Checking sign-in options…</p>
+            ) : mode.isError ? (
+              <>
+                <p role="alert">
+                  Sign-in options are unavailable. Please retry.
                 </p>
-              )}
-            </>
-          ) : (
-            <>
-              <form
-                onSubmit={submit}
-                aria-describedby={error ? "auth-error" : undefined}
-              >
-                <label>
-                  Email address
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    required
-                    maxLength={254}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </label>
-                {register && (
-                  <label>
-                    Invitation code (if required)
-                    <input
-                      type="password"
-                      autoComplete="off"
-                      maxLength={128}
-                      value={inviteCode}
-                      onChange={(event) => setInviteCode(event.target.value)}
-                    />
-                  </label>
-                )}
-                <label>
-                  Password
-                  <input
-                    type="password"
-                    autoComplete={
-                      register ? "new-password" : "current-password"
-                    }
-                    required
-                    minLength={register ? 12 : 1}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    aria-describedby={register ? "password-help" : undefined}
-                  />
-                </label>
-                {register && (
-                  <small id="password-help">
-                    At least 12 characters, with three of: lowercase, uppercase,
-                    numbers and symbols. Maximum 72 UTF-8 bytes.
-                  </small>
-                )}
-                {register && mode.data?.legal_acceptance_required && (
-                  <label className="checkbox">
-                    <input
-                      type="checkbox"
-                      checked={accepted}
-                      onChange={(event) => setAccepted(event.target.checked)}
-                    />
-                    I have read the draft Terms and Privacy Notice (version{" "}
-                    {mode.data.legal_version})
-                  </label>
-                )}
+                <button
+                  onClick={() => {
+                    void mode.refetch();
+                  }}
+                >
+                  Retry
+                </button>
+              </>
+            ) : mode.data?.public_demo_only ? (
+              <>
+                <p>
+                  No email or password needed. Each session is isolated and
+                  expires automatically.
+                </p>
+                <button
+                  className="primary full"
+                  disabled={busy}
+                  onClick={() => {
+                    setBusy(true);
+                    setError("");
+                    void api
+                      .POST("/api/v1/auth/demo")
+                      .then((result) => {
+                        saveSession(result.data!);
+                        navigate(destination, { replace: true });
+                      })
+                      .catch((caught) => setError(errorMessage(caught)))
+                      .finally(() => setBusy(false));
+                  }}
+                >
+                  {busy ? "Starting demo…" : "Start isolated demo"}
+                </button>
                 {error && (
-                  <p id="auth-error" role="alert" className="error">
+                  <p role="alert" className="error">
                     {error}
                   </p>
                 )}
-                <button className="primary full" disabled={busy}>
-                  {busy
-                    ? "Please wait…"
-                    : register
-                      ? "Create account"
-                      : "Sign in"}
-                  <ArrowRight size={17} />
-                </button>
-              </form>
-              <p className="auth-switch">
-                {register ? "Already have an account?" : "New here?"}{" "}
-                <Link
-                  to={register ? "/login" : "/register"}
-                  state={{ from: state?.from }}
+              </>
+            ) : (
+              <>
+                <form
+                  onSubmit={submit}
+                  aria-describedby={error ? "auth-error" : undefined}
                 >
-                  {register ? "Sign in" : "Create an account"}
-                </Link>
-              </p>
-              <p>
-                <Link to="/reset-password">Forgot your password?</Link> ·{" "}
-                <Link to="/verify-email">Verify email</Link>
-              </p>
-            </>
-          )}
-        </div>
-      </section>
-    </main>
+                  <label>
+                    Email address
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      required
+                      maxLength={254}
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </label>
+                  {register && (
+                    <label>
+                      Invitation code (if required)
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        maxLength={128}
+                        value={inviteCode}
+                        onChange={(event) => setInviteCode(event.target.value)}
+                      />
+                    </label>
+                  )}
+                  <label>
+                    Password
+                    <input
+                      type="password"
+                      autoComplete={
+                        register ? "new-password" : "current-password"
+                      }
+                      required
+                      minLength={register ? 12 : 1}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      aria-describedby={register ? "password-help" : undefined}
+                    />
+                  </label>
+                  {register && (
+                    <small id="password-help">
+                      At least 12 characters, with three of: lowercase,
+                      uppercase, numbers and symbols. Maximum 72 UTF-8 bytes.
+                    </small>
+                  )}
+                  {register && mode.data?.legal_acceptance_required && (
+                    <label className="checkbox">
+                      <input
+                        type="checkbox"
+                        checked={accepted}
+                        onChange={(event) => setAccepted(event.target.checked)}
+                      />
+                      I have read the draft Terms and Privacy Notice (version{" "}
+                      {mode.data.legal_version})
+                    </label>
+                  )}
+                  {error && (
+                    <p id="auth-error" role="alert" className="error">
+                      {error}
+                    </p>
+                  )}
+                  <button className="primary full" disabled={busy}>
+                    {busy
+                      ? "Please wait…"
+                      : register
+                        ? "Create account"
+                        : "Sign in"}
+                    <ArrowRight size={17} />
+                  </button>
+                </form>
+                <p className="auth-switch">
+                  {register ? "Already have an account?" : "New here?"}{" "}
+                  <Link
+                    to={register ? "/login" : "/register"}
+                    state={{ from: state?.from }}
+                  >
+                    {register ? "Sign in" : "Create an account"}
+                  </Link>
+                </p>
+                <p>
+                  <Link to="/reset-password">Forgot your password?</Link> ·{" "}
+                  <Link to="/verify-email">Verify email</Link>
+                </p>
+              </>
+            )}
+          </div>
+        </section>
+      </main>
+      <footer className="cinema-footer">
+        <span>SubTrack</span>
+        <p>For demo and educational use with uploaded or simulated data.</p>
+      </footer>
+    </div>
   );
 }

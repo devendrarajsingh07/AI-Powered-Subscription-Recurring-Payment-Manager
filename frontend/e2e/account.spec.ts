@@ -54,7 +54,7 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
   await page.getByRole("link", { name: "Back to sign in" }).click();
   // Both routes contain an email field: wait for the destination before filling it.
   await expect(
-    page.getByRole("heading", { name: "Good to see you" }),
+    page.getByRole("heading", { name: "Open your workspace" }),
   ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(original);
@@ -96,7 +96,7 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
   expect(rotated.value).not.toBe(refresh.value);
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(
-    page.getByRole("heading", { name: "Good to see you" }),
+    page.getByRole("heading", { name: "Open your workspace" }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Forgot your password?" }).click();
   await expect(
@@ -116,7 +116,7 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
   await page.getByRole("link", { name: "Back to sign in" }).click();
   // Both routes contain an email field: wait for the destination before filling it.
   await expect(
-    page.getByRole("heading", { name: "Good to see you" }),
+    page.getByRole("heading", { name: "Open your workspace" }),
   ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(replacement);
@@ -124,10 +124,10 @@ test("same-site TLS verification, cookie reload, reset and session revocation", 
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Sign out everywhere" }).click();
   await expect(
-    page.getByRole("heading", { name: "Good to see you" }),
+    page.getByRole("heading", { name: "Open your workspace" }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Good to see you" }),
+    page.getByRole("heading", { name: "Open your workspace" }),
   ).toBeVisible();
 });

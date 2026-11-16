@@ -9,6 +9,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   NavLink,
+  Link,
   Navigate,
   Outlet,
   Route,
@@ -44,6 +45,8 @@ import { ErrorState, Loading } from "./components/Common";
 import { Auth } from "./pages/Auth";
 import { ChatAssistant } from "./components/ChatAssistant";
 import { applyTheme, readTheme, type Theme } from "./lib/theme";
+const Journey = lazy(() => import("./pages/Journey"));
+const SystemNotes = lazy(() => import("./pages/SystemNotes"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const MailboxLab = lazy(() => import("./pages/MailboxLab"));
 const UploadPage = lazy(() => import("./pages/Upload"));
@@ -94,6 +97,8 @@ function pageTitle(pathname: string) {
         "/verify-email": "Verify email",
         "/reset-password": "Reset password",
         "/unsubscribe": "Unsubscribe",
+        "/journey": "The journey",
+        "/system-notes": "System notes",
       } as Record<string, string>
     )[pathname] ||
     "Page not found"
@@ -216,6 +221,13 @@ function Shell() {
         </div>
       </aside>
       <main id="content" tabIndex={-1}>
+        <div className="workspace-toolbar">
+          <nav aria-label="Product pages">
+            <Link to="/journey">Journey</Link>
+            <Link to="/system-notes">System notes</Link>
+          </nav>
+          <ChatAssistant />
+        </div>
         {logoutError && (
           <p role="alert" className="error">
             {logoutError}
@@ -243,7 +255,6 @@ function Shell() {
           data.
         </footer>
       </main>
-      <ChatAssistant />
     </div>
   );
 }
@@ -252,10 +263,12 @@ export function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const session = useSession();
+  const standalone = ["/journey", "/system-notes"].includes(location.pathname);
+  const publicJourney = location.pathname === "/" && !session;
   const [booted, setBooted] = useState(!!session);
   useEffect(() => {
     let active = true;
-    if (!session)
+    if (!session && !standalone)
       void refreshSession().finally(() => {
         if (active) setBooted(true);
       });
@@ -263,12 +276,12 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [session]);
+  }, [session, standalone]);
   useEffect(() => {
-    const title = pageTitle(location.pathname);
+    const title = publicJourney ? "The journey" : pageTitle(location.pathname);
     document.title = `${title} · SubTrack`;
-    document.getElementById("content")?.focus();
-  }, [location.pathname]);
+    document.getElementById("content")?.focus({ preventScroll: true });
+  }, [location.pathname, publicJourney]);
   useEffect(() => {
     const onLogout = (event: Event) => {
       const expired = (event as CustomEvent<{ expired: boolean }>).detail
@@ -301,6 +314,25 @@ export function App() {
     );
     return () => clearTimeout(timeout);
   }, [session]);
+  if (standalone || publicJourney) {
+    return (
+      <ErrorBoundary>
+        <Suspense
+          fallback={
+            <main className="cinema-loading">
+              <Loading />
+            </main>
+          }
+        >
+          {location.pathname === "/system-notes" ? (
+            <SystemNotes />
+          ) : (
+            <Journey />
+          )}
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
   return (
     <ErrorBoundary>
       <PublicDemoNotice />

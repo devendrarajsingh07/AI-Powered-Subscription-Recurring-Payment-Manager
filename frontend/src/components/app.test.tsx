@@ -530,7 +530,7 @@ test("delete receipt survives protected-route redirect and cache is cleared", as
 test("protected routes keep the intended destination for sign-in", async () => {
   wrapper(<App />, "/subscriptions?status=dismissed");
   expect(
-    await screen.findByRole("heading", { name: "Good to see you" }),
+    await screen.findByRole("heading", { name: "Open your workspace" }),
   ).toBeVisible();
   server.use(
     http.post("*/api/v1/auth/login", () =>
